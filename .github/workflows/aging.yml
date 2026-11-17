@@ -1,23 +1,28 @@
 name: Lao hoa DFN 5 coupled (buoc C)
 
 # Tu kiem tra mo hinh lao hoa (ag_selftest) + mo phong Expt 2 (70-85 %) / Expt 3 (85-100 %)
-# o 10/25/40 C (Li 2025 / Kirkaldy 2024), moi truong hop mot job, chay noi tiep toi 3 chang
+# o 10/25/40 C (Li 2025 / Kirkaldy 2024), moi truong hop mot chuoi job, noi tiep toi 3 chang
 # (checkpoint), so voi du lieu Kirkaldy 2024 va sai so Li 2025 cong bo.
 # Mac dinh mo phong TUNG chu ky (Jmax = 0). jumpcheck: kiem chung phuong phap nhay chu ky
-# (Jmax = 20, 50) tren set 1, 25 C, so voi chay tung chu ky.
+# (Jmax = 20, 50) tren du 12 set, so voi chay tung chu ky.
+# Ban 18/11/2026:
+#  - moi chang chia 3 doan MATLAB x 1.6 h, sau moi doan tai checkpoint len (overwrite): runner
+#    mat ket noi (run 44123422399, Expt 2 25 C) thi chang sau van tiep tuc tu checkpoint gan nhat;
+#  - resume_run: lay checkpoint moi nhat cua tung truong hop tu mot lan chay truoc (gh run download);
+#  - mode=report: chi lam bao cao tu artifact cua cac lan chay trong report_runs (+ lan nay).
 on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "selftest | smoke (chi chay thu ngan) | full (selftest + mo phong + jumpcheck + bao cao)"
+        description: "selftest | smoke (chi chay thu ngan) | full (selftest + mo phong + jumpcheck + bao cao) | runs (mo phong + jumpcheck + bao cao, khong selftest) | report"
         required: false
         default: 'full'
       variants:
         description: 'Bien the, JSON (default = V_cv 4.116 V; vcv42 = 4.2 V)'
         required: false
-        default: '["default","vcv42"]'
+        default: '["default"]'
       expts:
-        description: 'Thi nghiem, JSON'
+        description: 'Thi nghiem, JSON ([] = khong mo phong brute force)'
         required: false
         default: '[2,3]'
       temps:
@@ -25,13 +30,29 @@ on:
         required: false
         default: '[10,25,40]'
       jmax:
-        description: 'Jmax cua phuong phap nhay chu ky (0 = brute force, mac dinh)'
+        description: 'Jmax cua phuong phap nhay chu ky cho mo phong chinh (0 = brute force, mac dinh)'
         required: false
         default: '0'
       jumpcheck:
-        description: 'Danh sach Jmax cho kiem chung nhay chu ky (set 1, 25 C, bien the default), JSON; [] = bo qua'
+        description: 'Danh sach Jmax cho kiem chung nhay chu ky (bien the default), JSON; [] = bo qua'
         required: false
         default: '[20,50]'
+      jc_temps:
+        description: 'Nhiet do cho kiem chung nhay chu ky, JSON'
+        required: false
+        default: '[10,25,40]'
+      resume_run:
+        description: 'ID lan chay truoc de lay checkpoint (tiep tuc thay vi chay lai); trong = bat dau moi'
+        required: false
+        default: ''
+      report_runs:
+        description: 'ID cac lan chay khac (cach nhau dau cach) de gop vao bao cao (artifact ck3-*, jc-*)'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+  actions: read
 
 concurrency:
   group: aging-${{ github.run_id }}
@@ -39,6 +60,7 @@ concurrency:
 
 jobs:
   selftest:
+    if: ${{ github.event.inputs.mode == 'selftest' || github.event.inputs.mode == 'smoke' || github.event.inputs.mode == 'full' }}
     runs-on: ubuntu-latest
     timeout-minutes: 150
     steps:
@@ -66,8 +88,7 @@ jobs:
           path: results/aging_selftest
 
   run1:
-    needs: selftest
-    if: ${{ github.event.inputs.mode == 'full' }}
+    if: ${{ (github.event.inputs.mode == 'full' || github.event.inputs.mode == 'runs') && github.event.inputs.expts != '[]' }}
     runs-on: ubuntu-latest
     timeout-minutes: 350
     strategy:
@@ -76,27 +97,66 @@ jobs:
       matrix:
         expt: ${{ fromJSON(github.event.inputs.expts || '[2,3]') }}
         temp: ${{ fromJSON(github.event.inputs.temps || '[10,25,40]') }}
-        variant: ${{ fromJSON(github.event.inputs.variants || '["default","vcv42"]') }}
+        variant: ${{ fromJSON(github.event.inputs.variants || '["default"]') }}
+    env:
+      CASE: e${{ matrix.expt }}-T${{ matrix.temp }}-${{ matrix.variant }}
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
+      - name: Lay checkpoint tu lan chay truoc (resume_run)
+        if: ${{ github.event.inputs.resume_run != '' }}
+        run: |
+          gh run download ${{ github.event.inputs.resume_run }} --repo "$GITHUB_REPOSITORY" -p "ck*-$CASE" -D prev || true
+          d=$(ls -d prev/ck*-"$CASE" 2>/dev/null | sort | tail -1)
+          if [ -n "$d" ]; then mkdir -p results/run; cp -r "$d"/. results/run/; echo "tiep tuc tu $d"; cat results/run/status.txt || true; else echo "khong co checkpoint, bat dau moi"; fi
+      - name: Da xong o chang truoc?
+        id: st
+        run: if grep -q '^done' results/run/status.txt 2>/dev/null; then echo "done=true" >> "$GITHUB_OUTPUT"; else echo "done=false" >> "$GITHUB_OUTPUT"; fi
       - uses: matlab-actions/setup-matlab@v2
+        if: steps.st.outputs.done != 'true'
         with:
           release: R2024b
           cache: true
-      - name: Expt ${{ matrix.expt }}, ${{ matrix.temp }} C, ${{ matrix.variant }} (chang 1)
+      - name: Chang 1 doan 1
+        if: ${{ !cancelled() && steps.st.outputs.done != 'true' }}
         uses: matlab-actions/run-command@v2
         with:
-          command: addpath('src/dfn'); addpath('src/dfn/aging'); ag_run(${{ matrix.expt }}, ${{ matrix.temp }}, 'results/run', struct('variant', '${{ matrix.variant }}', 'Jmax', ${{ github.event.inputs.jmax || 0 }}, 'budget_s', 5.1*3600));
+          command: addpath('src/dfn'); addpath('src/dfn/aging'); ag_run(${{ matrix.expt }}, ${{ matrix.temp }}, 'results/run', struct('variant', '${{ matrix.variant }}', 'Jmax', ${{ github.event.inputs.jmax || 0 }}, 'budget_s', 1.6*3600));
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: ${{ always() && hashFiles('results/run/checkpoint.mat') != '' }}
         with:
-          name: ck1-e${{ matrix.expt }}-T${{ matrix.temp }}-${{ matrix.variant }}
+          name: ck1-${{ env.CASE }}
           path: results/run
-          retention-days: 14
+          overwrite: true
+          retention-days: 30
+      - name: Chang 1 doan 2
+        if: ${{ !cancelled() && steps.st.outputs.done != 'true' }}
+        uses: matlab-actions/run-command@v2
+        with:
+          command: addpath('src/dfn'); addpath('src/dfn/aging'); ag_run(${{ matrix.expt }}, ${{ matrix.temp }}, 'results/run', struct('variant', '${{ matrix.variant }}', 'Jmax', ${{ github.event.inputs.jmax || 0 }}, 'budget_s', 1.6*3600));
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() && hashFiles('results/run/checkpoint.mat') != '' }}
+        with:
+          name: ck1-${{ env.CASE }}
+          path: results/run
+          overwrite: true
+          retention-days: 30
+      - name: Chang 1 doan 3
+        if: ${{ !cancelled() && steps.st.outputs.done != 'true' }}
+        uses: matlab-actions/run-command@v2
+        with:
+          command: addpath('src/dfn'); addpath('src/dfn/aging'); ag_run(${{ matrix.expt }}, ${{ matrix.temp }}, 'results/run', struct('variant', '${{ matrix.variant }}', 'Jmax', ${{ github.event.inputs.jmax || 0 }}, 'budget_s', 1.6*3600));
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() && hashFiles('results/run/checkpoint.mat') != '' }}
+        with:
+          name: ck1-${{ env.CASE }}
+          path: results/run
+          overwrite: true
+          retention-days: 30
 
   run2:
     needs: run1
-    if: ${{ always() && github.event.inputs.mode == 'full' }}
+    if: ${{ always() && (github.event.inputs.mode == 'full' || github.event.inputs.mode == 'runs') && github.event.inputs.expts != '[]' }}
     runs-on: ubuntu-latest
     timeout-minutes: 350
     strategy:
@@ -105,12 +165,16 @@ jobs:
       matrix:
         expt: ${{ fromJSON(github.event.inputs.expts || '[2,3]') }}
         temp: ${{ fromJSON(github.event.inputs.temps || '[10,25,40]') }}
-        variant: ${{ fromJSON(github.event.inputs.variants || '["default","vcv42"]') }}
+        variant: ${{ fromJSON(github.event.inputs.variants || '["default"]') }}
+    env:
+      CASE: e${{ matrix.expt }}-T${{ matrix.temp }}-${{ matrix.variant }}
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
+        continue-on-error: true
         with:
-          name: ck1-e${{ matrix.expt }}-T${{ matrix.temp }}-${{ matrix.variant }}
+          name: ck1-${{ env.CASE }}
           path: results/run
       - name: Da xong o chang truoc?
         id: st
@@ -120,21 +184,46 @@ jobs:
         with:
           release: R2024b
           cache: true
-      - name: Chang 2
-        if: steps.st.outputs.done != 'true'
+      - name: Chang 2 doan 1
+        if: ${{ !cancelled() && steps.st.outputs.done != 'true' }}
         uses: matlab-actions/run-command@v2
         with:
-          command: addpath('src/dfn'); addpath('src/dfn/aging'); ag_run(${{ matrix.expt }}, ${{ matrix.temp }}, 'results/run', struct('variant', '${{ matrix.variant }}', 'Jmax', ${{ github.event.inputs.jmax || 0 }}, 'budget_s', 5.1*3600));
+          command: addpath('src/dfn'); addpath('src/dfn/aging'); ag_run(${{ matrix.expt }}, ${{ matrix.temp }}, 'results/run', struct('variant', '${{ matrix.variant }}', 'Jmax', ${{ github.event.inputs.jmax || 0 }}, 'budget_s', 1.6*3600));
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: ${{ always() && hashFiles('results/run/checkpoint.mat') != '' }}
         with:
-          name: ck2-e${{ matrix.expt }}-T${{ matrix.temp }}-${{ matrix.variant }}
+          name: ck2-${{ env.CASE }}
           path: results/run
-          retention-days: 14
+          overwrite: true
+          retention-days: 30
+      - name: Chang 2 doan 2
+        if: ${{ !cancelled() && steps.st.outputs.done != 'true' }}
+        uses: matlab-actions/run-command@v2
+        with:
+          command: addpath('src/dfn'); addpath('src/dfn/aging'); ag_run(${{ matrix.expt }}, ${{ matrix.temp }}, 'results/run', struct('variant', '${{ matrix.variant }}', 'Jmax', ${{ github.event.inputs.jmax || 0 }}, 'budget_s', 1.6*3600));
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() && hashFiles('results/run/checkpoint.mat') != '' }}
+        with:
+          name: ck2-${{ env.CASE }}
+          path: results/run
+          overwrite: true
+          retention-days: 30
+      - name: Chang 2 doan 3
+        if: ${{ !cancelled() && steps.st.outputs.done != 'true' }}
+        uses: matlab-actions/run-command@v2
+        with:
+          command: addpath('src/dfn'); addpath('src/dfn/aging'); ag_run(${{ matrix.expt }}, ${{ matrix.temp }}, 'results/run', struct('variant', '${{ matrix.variant }}', 'Jmax', ${{ github.event.inputs.jmax || 0 }}, 'budget_s', 1.6*3600));
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() && hashFiles('results/run/checkpoint.mat') != '' }}
+        with:
+          name: ck2-${{ env.CASE }}
+          path: results/run
+          overwrite: true
+          retention-days: 30
 
   run3:
     needs: run2
-    if: ${{ always() && github.event.inputs.mode == 'full' }}
+    if: ${{ always() && (github.event.inputs.mode == 'full' || github.event.inputs.mode == 'runs') && github.event.inputs.expts != '[]' }}
     runs-on: ubuntu-latest
     timeout-minutes: 350
     strategy:
@@ -143,12 +232,16 @@ jobs:
       matrix:
         expt: ${{ fromJSON(github.event.inputs.expts || '[2,3]') }}
         temp: ${{ fromJSON(github.event.inputs.temps || '[10,25,40]') }}
-        variant: ${{ fromJSON(github.event.inputs.variants || '["default","vcv42"]') }}
+        variant: ${{ fromJSON(github.event.inputs.variants || '["default"]') }}
+    env:
+      CASE: e${{ matrix.expt }}-T${{ matrix.temp }}-${{ matrix.variant }}
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
+        continue-on-error: true
         with:
-          name: ck2-e${{ matrix.expt }}-T${{ matrix.temp }}-${{ matrix.variant }}
+          name: ck2-${{ env.CASE }}
           path: results/run
       - name: Da xong o chang truoc?
         id: st
@@ -158,21 +251,45 @@ jobs:
         with:
           release: R2024b
           cache: true
-      - name: Chang 3
-        if: steps.st.outputs.done != 'true'
+      - name: Chang 3 doan 1
+        if: ${{ !cancelled() && steps.st.outputs.done != 'true' }}
         uses: matlab-actions/run-command@v2
         with:
-          command: addpath('src/dfn'); addpath('src/dfn/aging'); ag_run(${{ matrix.expt }}, ${{ matrix.temp }}, 'results/run', struct('variant', '${{ matrix.variant }}', 'Jmax', ${{ github.event.inputs.jmax || 0 }}, 'budget_s', 5.1*3600));
+          command: addpath('src/dfn'); addpath('src/dfn/aging'); ag_run(${{ matrix.expt }}, ${{ matrix.temp }}, 'results/run', struct('variant', '${{ matrix.variant }}', 'Jmax', ${{ github.event.inputs.jmax || 0 }}, 'budget_s', 1.6*3600));
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: ${{ always() && hashFiles('results/run/checkpoint.mat') != '' }}
         with:
-          name: ck3-e${{ matrix.expt }}-T${{ matrix.temp }}-${{ matrix.variant }}
+          name: ck3-${{ env.CASE }}
           path: results/run
+          overwrite: true
+          retention-days: 30
+      - name: Chang 3 doan 2
+        if: ${{ !cancelled() && steps.st.outputs.done != 'true' }}
+        uses: matlab-actions/run-command@v2
+        with:
+          command: addpath('src/dfn'); addpath('src/dfn/aging'); ag_run(${{ matrix.expt }}, ${{ matrix.temp }}, 'results/run', struct('variant', '${{ matrix.variant }}', 'Jmax', ${{ github.event.inputs.jmax || 0 }}, 'budget_s', 1.6*3600));
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() && hashFiles('results/run/checkpoint.mat') != '' }}
+        with:
+          name: ck3-${{ env.CASE }}
+          path: results/run
+          overwrite: true
+          retention-days: 30
+      - name: Chang 3 doan 3
+        if: ${{ !cancelled() && steps.st.outputs.done != 'true' }}
+        uses: matlab-actions/run-command@v2
+        with:
+          command: addpath('src/dfn'); addpath('src/dfn/aging'); ag_run(${{ matrix.expt }}, ${{ matrix.temp }}, 'results/run', struct('variant', '${{ matrix.variant }}', 'Jmax', ${{ github.event.inputs.jmax || 0 }}, 'budget_s', 1.6*3600));
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() && hashFiles('results/run/checkpoint.mat') != '' }}
+        with:
+          name: ck3-${{ env.CASE }}
+          path: results/run
+          overwrite: true
           retention-days: 30
 
   jumpcheck:
-    needs: selftest
-    if: ${{ github.event.inputs.mode == 'full' && github.event.inputs.jumpcheck != '[]' }}
+    if: ${{ (github.event.inputs.mode == 'full' || github.event.inputs.mode == 'runs') && github.event.inputs.jumpcheck != '[]' }}
     runs-on: ubuntu-latest
     timeout-minutes: 350
     strategy:
@@ -180,6 +297,7 @@ jobs:
       max-parallel: 20
       matrix:
         expt: [2, 3]
+        temp: ${{ fromJSON(github.event.inputs.jc_temps || '[10,25,40]') }}
         jmax: ${{ fromJSON(github.event.inputs.jumpcheck || '[20,50]') }}
     steps:
       - uses: actions/checkout@v4
@@ -187,33 +305,32 @@ jobs:
         with:
           release: R2024b
           cache: true
-      - name: Set 1, 25 C, Jmax = ${{ matrix.jmax }}
+      - name: Expt ${{ matrix.expt }}, ${{ matrix.temp }} C, Jmax = ${{ matrix.jmax }}, 12 set
         uses: matlab-actions/run-command@v2
         with:
-          command: addpath('src/dfn'); addpath('src/dfn/aging'); ag_run(${{ matrix.expt }}, 25, 'results/jc', struct('Jmax', ${{ matrix.jmax }}, 'nsets', 1, 'budget_s', 5.4*3600));
+          command: addpath('src/dfn'); addpath('src/dfn/aging'); ag_run(${{ matrix.expt }}, ${{ matrix.temp }}, 'results/jc', struct('Jmax', ${{ matrix.jmax }}, 'nsets', 12, 'budget_s', 5.4*3600));
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: jc-e${{ matrix.expt }}-J${{ matrix.jmax }}
+          name: jc-e${{ matrix.expt }}-T${{ matrix.temp }}-J${{ matrix.jmax }}
           path: results/jc
           retention-days: 30
 
   report:
     needs: [run3, jumpcheck]
-    if: ${{ always() && github.event.inputs.mode == 'full' }}
+    if: ${{ always() && (github.event.inputs.mode == 'full' || github.event.inputs.mode == 'runs' || github.event.inputs.mode == 'report') }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          path: results/all
-          pattern: ck3-*
-      - uses: actions/download-artifact@v4
-        continue-on-error: true
-        with:
-          path: results/all
-          pattern: jc-*
+      - name: Lay ket qua (lan nay + report_runs)
+        run: |
+          for id in ${{ github.run_id }} ${{ github.event.inputs.report_runs }}; do
+            for p in 'ck3-*' 'jc-*'; do gh run download "$id" --repo "$GITHUB_REPOSITORY" -p "$p" -D "results/all/r$id" || true; done
+          done
+          find results/all -name status.txt -exec sh -c 'echo "$1: $(head -1 "$1")"' _ {} \;
       - uses: matlab-actions/setup-matlab@v2
         with:
           release: R2024b

@@ -18,6 +18,16 @@ par0 = ag_par(expt, opt.variant);
 Tamb = TdegC + 273.15; T25 = 298.15;
 if exist(ck, 'file')
     S = load(ck); S = S.S;
+    % checkpoint cua ban truoc 18/11/2026: them truong moi, doi dinh nghia SOH (GD-60)
+    if ~isfield(S.set, 'nback'), S.set.nback = 0; end
+    if ~isfield(S.set, 'Jcur'), S.set.Jcur = []; end
+    if ~isempty(S.rows) && isfield(S.rows, 'SOH_code_pct')
+        for ir = 1:numel(S.rows)
+            S.rows(ir).SOH_pct = 100*S.rows(ir).Qdis01_Ah/4.865;
+            S.rows(ir).SOH_code_pct = 100*S.rows(ir).Qdis01_Ah/S.Q0;
+        end
+        S.rows = cell2struct(struct2cell(S.rows), strrep(fieldnames(S.rows), 'SOH_code_pct', 'SOH_rpt0_pct'), 1);
+    end
     fprintf('ag_run: tiep tuc tu checkpoint: stage %d, set %d chu ky %d\n', S.stage, S.k, S.set.n);
 else
     S = struct();
@@ -36,6 +46,7 @@ wall0 = S.wall;
 lastck = toc(tic0);
 deadline = opt.budget_s;
 status = 'incomplete';
+try
 while true
     if toc(tic0) > deadline, break; end
     switch S.stage
@@ -62,7 +73,7 @@ while true
             if S.set.n >= opt.N
                 S.tsim = S.tsim + S.set.t; S.jump_err_max = max(S.jump_err_max, S.set.jump_err_max);
                 S.stage = 3;
-                fprintf('ag_run: xong set %d: %d chu ky mo phong, %d nhay; %.0f s tuong\n', S.k, S.set.nsim, S.set.njump, toc(tic0));
+                fprintf('ag_run: xong set %d: %d chu ky mo phong, %d nhay, %d lan lui; %.0f s tuong\n', S.k, S.set.nsim, S.set.njump, S.set.nback, toc(tic0));
             end
         case 3   % dry-out + RPT k
             [par, y, S] = dryout(par, y, S, sprintf('truoc RPT %d', S.k));
@@ -82,6 +93,12 @@ while true
         savec(); lastck = toc(tic0);
     end
 end
+catch err
+    % khong luu checkpoint (trang thai co the hong); ghi ket qua da co roi bao loi
+    fprintf('ag_run: LOI: %s\n', err.message);
+    write_outputs(S, outdir, 'error');
+    rethrow(err);
+end
 savec();
 write_outputs(S, outdir, status);
 fprintf('ag_run: Expt %d, %g C, %s: %s (%.0f s tuong lan nay)\n', expt, TdegC, opt.variant, status, toc(tic0));
@@ -93,7 +110,7 @@ fprintf('ag_run: Expt %d, %g C, %s: %s (%.0f s tuong lan nay)\n', expt, TdegC, o
 end
 
 function st = newset()
-st = struct('n', 0, 'nsim', 0, 'njump', 0, 't', 0, 'jump_err_max', 0, 'dry_done', false);
+st = struct('n', 0, 'nsim', 0, 'njump', 0, 't', 0, 'jump_err_max', 0, 'dry_done', false, 'Jcur', [], 'nback', 0);
 st.reasons = {};
 end
 
@@ -116,8 +133,9 @@ row.rpt = k;
 row.Qthr_Ah = inv.Qthr;
 row.t_h = S.tsim/3600;
 row.Qdis01_Ah = r.Qdis01;
-row.SOH_pct = 100*r.Qdis01/S.Q0;
-row.SOH_code_pct = 100*r.Qdis01/4.86491;           % dinh nghia cua code (cap_0 = 4.86491 Ah)
+row.SOH_pct = 100*r.Qdis01/4.865;                  % MAC DINH (nguoi dung chot 17/11/2026, GD-60):
+                                                   % chia cho 4.865 Ah co dinh (Li 2025, dung luong dau LG M50T)
+row.SOH_rpt0_pct = 100*r.Qdis01/S.Q0;              % phu: chuan hoa theo RPT0 cua chinh mo hinh
 row.LLI_pct = 100*(1 - (inv.part_n + inv.part_p)/p0);
 row.LAM_NE_pct = 100*(1 - inv.Cn/i0.Cn);
 row.LAM_PE_pct = 100*(1 - inv.Cp/i0.Cp);
