@@ -22,7 +22,7 @@ import casadi.*
 if nargin < 3, opt = struct(); end
 d = struct('N', 20, 'Imax', 2*par.Qnom, 'tf_min_h', 10/3600, 'tf_cap_h', 20, 'eps_cost', 1e-3, ...
     'name', 'rom_nmpc', 'codegen_dir', fullfile(pwd, 'c_generated_code'), 'max_iter', 60, ...
-    'num_stages', 2, 'num_steps', 2, 'lm', 1, 'newton_iter', 8);
+    'num_stages', 2, 'num_steps', 8, 'lm', 1, 'newton_iter', 8);
 fn = fieldnames(d);
 for i = 1:numel(fn), if ~isfield(opt, fn{i}), opt.(fn{i}) = d.(fn{i}); end, end
 nx = rom.nx; nX = nx + 2; iI = nx + 1; itf = nx + 2;

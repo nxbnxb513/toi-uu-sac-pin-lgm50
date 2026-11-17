@@ -104,7 +104,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [sweep]
+        variant: [base, sweep]
         k: [1]
     steps:
       - uses: actions/checkout@v4
