@@ -140,7 +140,7 @@ jobs:
       - name: Tom tat
         run: |
           ls results | head -100
-          for f in results/diag_*.md; do [ -f "$f" ] && { cat "$f"; echo; } >> "$GITHUB_STEP_SUMMARY"; done
+          for f in results/diag_*.md; do [ -f "$f" ] && { cat "$f"; echo; } >> "$GITHUB_STEP_SUMMARY"; done; true
       - uses: actions/upload-artifact@v4
         with:
           name: diag-all
