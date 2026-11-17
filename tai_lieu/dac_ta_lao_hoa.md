@@ -1,557 +1,377 @@
-# Đặc tả cài đặt mô hình lão hoá "5 coupled" (Li et al. 2025) cho LG M50T — theo đúng mã nguồn của tác giả
+# Đặc tả mô hình lão hoá "5 coupled" (Li et al. 2025) cho LG M50T — theo bài báo trước, bài gốc khi bài in sai, code khi bài không ghi
 
-> Mục đích: tài liệu này là đặc tả để cài lại trong MATLAB **đầy đủ** mô hình lão hoá "5 coupled" của
-> Li, Kirkaldy, Oehler, Marinescu, Offer, O'Kane, *Nat. Commun.* 16:2776 (2025), kế thừa O'Kane et al. 2022 (PCCP 24:7909).
-> Mọi phương trình ở đây được viết **theo đúng cái mã của tác giả thực sự tính**, không phải theo bản in (bản in có lỗi/thiếu).
-> QUY TẮC CỨNG: không cơ chế nào được bỏ hay đơn giản hoá. Chỗ nào mã khác bài báo đều được ghi rõ ở mục 12.
-> Văn xuôi tiếng Việt, tên ký hiệu/biến tiếng Anh.
+> Tài liệu này là đặc tả của mô hình lão hoá **đã cài** trong DFN MATLAB (`src/dfn/`, bật bằng `dfn_params(struct('aging', true))`).
+> Mô hình: Li, Kirkaldy, Oehler, Marinescu, Offer, O'Kane, *Nat. Commun.* 16:2776 (2025), kế thừa O'Kane et al. 2022 (PCCP 24:7909).
+> **Viết lại ngày 17/11/2026 theo quy tắc 2 của người dùng** (bản trước viết theo mã nguồn của tác giả).
+> Không cơ chế nào bị bỏ hay đơn giản hoá. Văn xuôi tiếng Việt, ký hiệu tiếng Anh.
 
-## 0. Nguồn và cách ghi nhãn
+## 0. Cách ghi nhãn
 
-| Nhãn | Nguồn | Ghi chú |
+Mỗi phương trình và mỗi tham số có **đúng một** nhãn:
+
+| Nhãn | Nghĩa | Ví dụ |
 |---|---|---|
-| **[P]** | Bài chính Li 2025 (`tai_lieu/Li2025_NatCommun.pdf`), "tr. N" = trang PDF | qua `tham_so/Li2025_tham_so.md` + `toan_van_trich_xuat/Li2025.txt` |
-| **[SI]** | Supplementary Information Li 2025, "SI tr. N" | qua ghi chú + `Li2025_SI.txt` |
-| **[Z]** | Zenodo 10.5281/zenodo.14995785, `Scripts_to_reproduce_paper.zip` → `Reproduce_Li2024/Fun_NC.py`, `Get_Input_files.ipynb`, `Run_long_Full_Exp1235.py`, `Reload_Exp2.ipynb`, `Reload_Exp3.ipynb` | CC BY 4.0. Đã tải, CHỈ ĐỌC, không chạy |
-| **[ZD]** | Zenodo 14995785, file zip 835 MB "Experiment Data, long simulation data…": chỉ lấy (bằng HTTP range) các file nhỏ: `SimSave/InputData/*/…csv` (file đầu vào thật của các lần chạy), log `.o`, `…Ageing_summary_only.mat`, `…xlsx` tóm tắt | số liệu, không phải hình |
-| **[SD]** | Zenodo 14995785, `Source_Data.zip` (`Fig.3.xlsx`, `Fig.4.xlsx`, `Fig.6.xlsx`) | bảng số nằm dưới các hình của bài |
-| **[PB]** | Fork PyBaMM của tác giả: `github.com/RuiheLi/PyBaMM`, nhánh **`GEM-2_NC`**, commit `dd80d4f792` (30/08/2024), `pybamm/version.py` = **`23.4.1`** | BSD-3. Đường dẫn file ghi tương đối so với `pybamm/` |
-| **GIẢ ĐỊNH** | không có trong bài lẫn mã | phải gắn cờ trong báo cáo |
+| **[BÀI]** — theo bài báo | Li 2025 (bài chính, SI) in, hoặc O'Kane 2022 / Kirkaldy 2024 in cho mục Li 2025 kế thừa / mô tả thí nghiệm | (S10) mạ lithium |
+| **[GỐC]** — theo bài gốc (bài in sai) | Li 2025 in sai rõ ràng; bài gốc mà nó trích dẫn (hoặc đại số trên chính các phương trình của nó) phân xử — xem `doi_chieu_tham_so.md` | số mũ SEI có F/(RT) |
+| **[CODE]** — theo code (bài không ghi) | không bài nào ghi; lấy từ mã nguồn của tác giả (Zenodo 14995785 + PyBaMM fork `GEM-2_NC`, định nghĩa ở `gia_dinh.md`) | t₀ = 3600 s trong luật Paris |
+| **[GĐ]** — giả định | không có trong bài lẫn mã, hoặc phải chọn giữa hai chỗ bài in mâu thuẫn; ghi mã GD ở `gia_dinh.md` | nồng độ khi cạn khô, trường hợp 3–5 |
 
-**Cách xác định phiên bản PyBaMM.** `readme.md` của [Z] không ghi phiên bản và không có `requirements`. Bằng chứng dùng để xác định:
-(i) script dùng bộ tham số `"Para_Set": "OKane2023"` và các tham số không có ở PyBaMM gốc (`"Negative electrode diffusivity activation energy [J.mol-1]"`, `"Initial electrolyte excessive amount ratio"`, …);
-(ii) đường dẫn trong script là `~/EnvPBGEM_NC/…` và thư mục `Reproduce_Li2024` được chèn cạnh thư mục `pybamm`;
-(iii) nhánh `GEM-2_NC` của fork chứa đúng thư mục `Reproduce_Li2024/` với cùng tên file, và `input/parameters/lithium_ion/OKane2023.py`;
-(iv) `Fun_NC.py` trong fork và trong Zenodo chỉ khác nhau ở cách ghép đường dẫn đọc file CSV thí nghiệm (48 dòng diff, không đụng tới mô hình).
-Kết luận: mô hình = **PyBaMM 23.4.1 đã sửa (nhánh GEM-2_NC)** + lớp bọc dry-out trong `Fun_NC.py`. Đây là suy luận từ bằng chứng trên, không phải lời khẳng định của tác giả.
+Mã GD tương ứng ở `tai_lieu/gia_dinh.md` (GD-50 … GD-62 cho phần lão hoá). Ký hiệu nguồn: [P] Li 2025 bài chính (tr. = trang PDF); [SI] Li 2025 SI; [OK] O'Kane 2022; [K24] Kirkaldy 2024; [S18] Single 2018; [vK] von Kolzenberg 2020; [Z] script Zenodo 14995785 (`Fun_NC.py`, `Get_Input_files.ipynb`, `Reload_Exp*.ipynb`); [ZD] file nhỏ trong zip dữ liệu 835 MB của cùng bản ghi (file đầu vào CSV, log, xlsx tóm tắt); [SD] `Source_Data.zip` (bảng số dưới các hình); [PB] PyBaMM fork `RuiheLi/PyBaMM` nhánh `GEM-2_NC` (v23.4.1). Mã nguồn chỉ đọc, không chạy.
 
-Các chỗ fork sửa so với PyBaMM 23.4.1 gốc (tìm bằng chú thích "Mark Ruihe"/"Mark Simon" trong mã): `a_typ` thay cho `a` trong đổi độ dày ↔ nồng độ SEI và trong porosity; trừ SEI ban đầu khỏi porosity; số hạng "spreading" của SEI trên vết nứt; `L_inner_crack_0 = L_inner_0`; offset 0.2 A/m² của OCP hysteresis; chia 3600 trong luật Paris; biến "dead lithium" riêng; E_act cho D_s và k_cr là tham số.
+**Thứ tự ưu tiên khi bài và code khác nhau:** bài in → (nếu in sai) bài gốc → (nếu bài không ghi) code. Những chỗ code khác bài được liệt kê ở mục 12 để người đọc thấy mô hình MATLAB **khác** lần chạy của tác giả ở đâu.
 
 ---
 
-## 1. Ba mô hình và tuỳ chọn mô hình (đúng như file đầu vào)
+## 1. Mô hình "5 coupled" — các cơ chế và tuỳ chọn
 
-Nguồn: [Z] `Get_Input_files.ipynb` (cell 9, 11, 14) và [ZD] `InputData/Full_Exp23_Paper_11_fine/*.csv`, `InputData/Full_Exp1235_NC/*.csv` (cột "Model option").
-
-| Tuỳ chọn PyBaMM | SEI only | SEI + Dry out | **5 coupled** |
+| Cơ chế | Có trong "5 coupled" | Nhãn | Ghi chú |
 |---|---|---|---|
-| `SEI` | interstitial-diffusion limited | interstitial-diffusion limited | interstitial-diffusion limited |
-| `SEI on cracks` | **true** | **true** | true |
-| `lithium plating` | none | none | partially reversible |
-| `lithium plating porosity change` | false | false | true |
-| `particle mechanics` | constant cracks (cả hai cực) | constant cracks | **("swelling and cracking", "swelling only")** = (âm, dương) |
-| `loss of active material` | none | none | stress-driven (cả hai cực) |
-| `SEI porosity change` | true | true | true |
-| `SEI film resistance` | distributed | distributed | distributed |
-| `open-circuit potential` | current sigmoid | current sigmoid | current sigmoid |
-| `contact resistance` | true | true | true |
-| `thermal` | lumped | lumped | lumped |
-| `stress-induced diffusion` (mặc định ngầm, xem 2.3) | **true** | **true** | **true** |
-| "Initial electrolyte excessive amount ratio" (lớp bọc dry-out) | 0.99 → dry-out TẮT | 1.0 → dry-out BẬT | 1.0 → dry-out BẬT |
+| SEI hai lớp, giới hạn bởi khuếch tán interstitial (cực âm) | có | [BÀI] [SI] Note 2 | dạng số mũ [GỐC], mục 3 |
+| SEI trên vết nứt (cực âm) | có | [BÀI] [SI] Note 4 (S20) | hệ số [GỐC], mục 6.2 |
+| Mạ lithium bán thuận nghịch + lithium chết (cực âm) | có | [BÀI] [SI] Note 3 | α [GỐC], mục 4 |
+| Ứng suất trong hạt (cả hai cực) | có | [BÀI] [SI] Note 4 (S14)–(S17) | đánh giá tại bề mặt [CODE], mục 5 |
+| Nứt hạt (luật Paris) | **chỉ cực âm** | [CODE] GD-52 | bài không cho k_cr cực dương; code: dương "swelling only" |
+| LAM do ứng suất | cả hai cực | [BÀI] [SI] Note 5 ("in either electrode") | dấu [GỐC], β/t₀ [CODE], mục 7 |
+| Đổi độ xốp do SEI + SEI vết nứt + Li mạ + Li chết | có | [BÀI] [SI] (S24)–(S25) | mục 8 |
+| Tiêu thụ dung môi + cạn khô (dry-out) có reservoir | có | [BÀI] [SI] Note 6, Table 4 | khoảng Δt [CODE], nồng độ [GĐ], mục 10 |
+| Điện trở màng SEI (phân bố theo x) | có | [BÀI] (S9) | |
+| Khuếch tán do ứng suất trong hạt | có | [CODE] GD-10 | bài không nhắc; đã có trong DFN |
+| Hysteresis OCP | cực dương | [BÀI] (S46)–(S47) | cực âm: một nhánh delithiation — quyết định người dùng GD-40 |
+| Nhiệt lumped | có | dạng 0D [CODE] GD-12 | đã có trong DFN |
 
-Hệ quả phải nhớ:
-- Cả ba mô hình đều có **SEI trên vết nứt**; ở hai mô hình đầu vết nứt không lớn (`l_cr = l_cr,0` hằng) nên diện tích SEI hiệu dụng = `S0·a_n` với `S0 = 2.908` (mục 5).
-- Trong "5 coupled": **vết nứt chỉ lan ở cực âm**; cực dương là "swelling only" (`l_cr,p ≡ 0`, không nứt, không SEI). LAM do ứng suất bật ở cả hai cực.
-- Dry-out bật/tắt bằng tỉ số điện giải dư: `< 1` → tắt; `≥ 1` → bật ([Z] `Run_P2_Excel`, đoạn "merge DryOut and Int_ElelyExces_Ratio").
+Mỗi biến lão hoá định nghĩa **tại từng nút x** của điện cực (không lấy trung bình theo x) — [CODE] (PyBaMM `x-average side reactions = false`); bài không nói.
 
 ---
 
-## 2. Khung DFN mà các cơ chế lão hoá gắn vào
+## 2. Ghép vào DFN
 
-Phần lõi DFN do agent khác cài; ở đây chỉ ghi những gì mô hình lão hoá **đòi hỏi** lõi phải có, và những điểm mã làm khác mặc định thông thường.
+### 2.1 Quy ước
 
-### 2.1 Quy ước dấu và miền
+- `j` [A/m²] mật độ dòng trên một đơn vị diện tích bề mặt hạt, **dương khi Li rời hạt** (anod). SEI và mạ là phản ứng khử ⇒ `j_SEI < 0`, `j_SEI,cr < 0`; `j_Li < 0` khi mạ, `> 0` khi hoà tan. (Quy ước dấu của DFN dự án; [SI] viết độ lớn.)
+- `δφ = φ_s − φ_e` tại nút x cực âm. `T` = nhiệt độ cell (lumped). `I > 0` khi xả, 1C = 5 A ([SI] Note 9) [BÀI].
 
-- Mỗi biến lão hoá được định nghĩa **tại từng nút x** của điện cực nêu tên (không lấy trung bình theo x): tuỳ chọn `x-average side reactions` = false (mặc định), `reaction_loc = "full electrode"` ([PB] `models/full_battery_models/lithium_ion/base_lithium_ion_model.py::set_sei_submodel`, `dfn.py`: `x_average = False`).
-- `j` [A/m²] = mật độ dòng giao diện trên một đơn vị diện tích bề mặt hạt, **dương khi dòng đi từ pha rắn sang điện giải** (oxy hoá / delithiation). SEI và mạ lithium là phản ứng khử ⇒ `j_SEI < 0`, `j_SEI,cr < 0`; biến mạ của PyBaMM là "dòng stripping" `j_pl`: `j_pl < 0` khi đang mạ, `> 0` khi đang hoà tan lại.
-- `δφ = φ_s − φ_e` [V] tại nút x của cực âm ("Negative electrode surface potential difference").
-- `i_app = I / A_cc`, `A_cc = L_y · L_z`; `I > 0` khi xả. C-rate tính theo **5 A** ("Nominal cell capacity [A.h]" = 5) ([PB] `OKane2023.py`).
-- `T` là một nhiệt độ duy nhất của cả cell (mô hình nhiệt lumped) dùng cho mọi nút.
-
-### 2.2 Cân bằng dòng giao diện (chỗ ghép chính)
-
-Tại mỗi nút x của **cực âm** ([PB] `models/submodels/interface/total_interfacial_current.py`, `base_interface.py::_get_standard_volumetric_current_density_variables`):
+### 2.2 Cân bằng dòng giao diện tại mỗi nút x cực âm
 
 ```
-a_n          = 3·eps_s_n / R_n                                   [1/m]   (eps_s_n là biến trạng thái, mục 7)
-S            = 1 + 2·l_cr·w_cr·rho_cr                            [-]     ("roughness ratio", mục 6)
-a_n·j_tot_n  = a_n·j_int_n + a_n·j_SEI + a_n·j_pl + a_n·(S − 1)·j_SEIcr      [A/m³]
-d(i_e)/dx    = a_n·j_tot_n ;   d(i_s)/dx = −a_n·j_tot_n
+a_n          = 3 eps_s,n / R_n                                         [BÀI] [SI] Note 2, (S9) Note 9
+S            = 1 + 2 l_cr w_cr rho_cr                                  [BÀI] (S8) Note 9
+j_tot        = j_int + j_SEI + (S − 1) j_SEI,cr + j_Li                 SEI, mạ: [BÀI] (S9) "total interfacial current";
+                                                                       cách ghép SEI vết nứt với diện tích (S − 1) a_n: [CODE] (GD-51)
+d i_e/dx     = a_n j_tot ;   d i_s/dx = −a_n j_tot                    [BÀI] SI Table 2
+−D_s ∂c_s/∂r |_R = j_int / F                                           chỉ dòng xen cài vào hạt: [CODE] (GD-51)
+eta_n        = φ_s − φ_e − U_n − ρ_SEI L_SEI j_tot                     [BÀI] (S9)
+j_int        = 2 j_0 sinh(F eta/(2RT))                                 [GỐC] GD-21
 ```
+Cực dương: không có phản ứng phụ ([BÀI]: các Note 2–3 chỉ cho cực âm), `a_p = 3 eps_s,p/R_p`.
 
-Tại cực dương: `a_p·j_tot_p = a_p·j_int_p` (không có phản ứng phụ), `a_p = 3·eps_s_p/R_p`.
+### 2.3 Điện giải khi độ xốp thay đổi
 
-- **Chỉ `j_int` đi vào hạt**: điều kiện biên khuếch tán pha rắn `−D_eff·∂c_s/∂r |_(r=R) = j_int / F` (không phải `j_tot`). Phần `j_SEI`, `j_SEIcr`, `j_pl` lấy Li⁺ từ điện giải và electron từ pha rắn ⇒ LLI tự sinh ra (mục 9), không cần phương trình riêng.
-- **Nguồn của điện giải**: `∂(eps·c_e)/∂t = −∂N_e/∂x + a·j_tot/F`, với `N_e = −eps^1.5·D_e·∂c_e/∂x + t_plus·i_e/F` ([PB] `electrolyte_diffusion/full_diffusion.py`). Biến trạng thái là **`eps·c_e`** (dạng bảo toàn) — bắt buộc, vì `eps_n` thay đổi theo thời gian và lớp bọc dry-out nhân trực tiếp vào `eps·c_e`.
-- **Quá thế màng SEI** ("distributed", [PB] `interface/kinetics/base_kinetics.py`): `j_tot_n` là **biến đại số** tại mỗi nút x của cực âm, thoả `j_tot_n − (tổng dòng thể tích)/a_n = 0`;
-  `eta_SEI = −rho_SEI · L_SEI · j_tot_n` [V], với `L_SEI = L_inner + L_outer` (chỉ SEI trên bề mặt gốc, KHÔNG gồm SEI trên vết nứt).
-- **Butler–Volmer chính** (đối xứng, α = 0.5, n_e = 1): `j_int = 2·j0·sinh( F·eta / (2·R·T) )`,
-  cực âm: `eta_n = δφ − U_n(c_surf) + eta_SEI = φ_s − φ_e − U_n − rho_SEI·L_SEI·j_tot_n`; cực dương: `eta_p = φ_s − φ_e − U_p`.
-- **Điện áp đầu cực**: `V = φ_s(x=L) − φ_s(x=0) − I·R_contact` ([PB] `electrode/base_electrode.py`), `R_contact = 0.0115 Ω`.
+`∂(ε c_e)/∂t = −∂N_e/∂x + a j_tot/F` — dạng bảo toàn **[CODE]** (PyBaMM `full_diffusion.py`; SI Table 2 in dạng ε không đổi). Cài bằng `ε ∂c_e/∂t = −∂N_e/∂x + a j_tot/F − c_e ∂ε/∂t`, với `∂ε/∂t` tính giải tích từ vế phải lão hoá (mục 8). Dạng này giữ lithium điện giải bảo toàn chính xác (GD-62).
 
-### 2.3 Những điểm của lõi DFN mà mã làm khác "DFN sách giáo khoa" (bắt buộc theo để tham số lão hoá còn nhất quán)
+### 2.4 Nhiệt
 
-1. **Khuếch tán do ứng suất trong hạt được BẬT** ở cả hai cực trong cả ba mô hình. Lý do: PyBaMM đặt mặc định `stress-induced diffusion = "true"` hễ `particle mechanics ≠ "none"` ([PB] `models/full_battery_models/base_battery_model.py`, dòng 324–336), và file đầu vào không ghi đè. Khi đó ([PB] `models/submodels/particle/base_particle.py::_get_effective_diffusivity`, Ai 2019 eq. 12):
-   ```
-   theta_M = Omega/(R·T) · 2·Omega·E / (9·(1 − nu))            [m³/mol]
-   D_eff(c, T) = D_s(c/c_max, T) · ( 1 + theta_M·(c − c_ref) ),   c_ref = 0
-   ```
-   với `c` là nồng độ **cục bộ** tại bán kính r. Giá trị (tự tính từ tham số của mã, 298.15 K): cực âm `theta_M = 1.846e-5` ⇒ hệ số nhân 1.02 … 1.53; **cực dương `theta_M = 6.566e-3` ⇒ hệ số nhân ≈ 85 … 322** (do `E_p = 375 GPa`). Bài báo KHÔNG nhắc tới số hạng này (mục 12, mâu thuẫn C1).
-2. `D_s` phụ thuộc stoichiometry và nhiệt độ (O'Regan 2022), Arrhenius với `E_act` là tham số: `D_s = D_ref(sto)·exp( E_Ds/R·(1/298.15 − 1/T) )` ([PB] `OKane2023.py::graphite_LGM50_diffusivity_ORegan2022`, `nmc_LGM50_diffusivity_ORegan2022`). Hệ số: [SI] Table 7 (đã chép ở `Li2025_tham_so.md` mục 5.5), đã đối chiếu trùng với mã.
-3. **OCP hysteresis "current sigmoid"** ([PB] `interface/open_circuit_potential/current_sigmoid_ocp.py`): với `J = i_app` [A/m²], `m = (1 + tanh(100·x))/2`:
-   cực dương `U_p = m(J + 0.2)·U_p,lith + (1 − m(J + 0.2))·U_p,delith`; cực âm `U_n = m(−(J + 0.2))·U_n,lith + (1 − m(−(J + 0.2)))·U_n,delith`.
-   Tức khi xả và khi nghỉ: dương dùng nhánh lithiation, âm dùng nhánh delithiation; khi sạc (J < −0.2) ngược lại. Bốn hàm OCP: [SI] Note 8 (S1)–(S4), trùng với mã (`*_ocp_OKane2023`). Stoichiometry bị kẹp trong `[tol, 1 − tol]`.
-4. Điện giải EC:EMC 3:7 Landesfeind–Gasteiger, bản "_Constant" ([PB] `OKane2023.py`), `c = c_e/1000` nếu `c_e < 4000`, `= 4` nếu `c_e > 4000` (đúng bằng 4000 thì mã cho 0 — lỗi vô hại):
-   ```
-   D_e   = 1.01e3·exp(1.01·c)·exp(−1.56e3/T)·exp(−4.87e2·c/T)·1e-10                                   [m²/s]
-   kappa = 0.1·0.521·(1 + (T − 228))·c·(1 − 1.06·sqrt(c) + 0.353·(1 − 3.59e-3·exp(1000/T))·c) / (1 + c⁴·1.48e-3·exp(1000/T))   [S/m]
-   t_plus= −12.8 − 6.12·c + 8.21e-2·T + 0.904·c² + 3.18e-2·c·T − 1.27e-4·T² + 1.75e-2·c³ − 3.12e-3·c²·T − 3.96e-5·c·T²
-   chi   = 25.7 − 45.1·c − 0.177·T + 1.94·c² + 0.295·c·T + 3.08e-4·T² + 0.259·c³ − 9.46e-3·c²·T − 4.54e-4·c·T²
-   ```
-   Lưu ý hai hệ số **khác bản in của [SI]**: 0.353 (bản in 0.8353) và −6.12 (bản in −0.612) — mục 12, C6.
-5. `j0` ([PB] `OKane2023.py`): `j0_n = 2.668·exp(4e4/R·(1/298.15 − 1/T))·(c_e/1000)^0.208·(c_surf/c_max)^0.792·(1 − c_surf/c_max)^0.208`; `j0_p = 5.028·exp(2.401e4/R·(1/298.15 − 1/T))·(c_e/1000)^0.57·(c_surf/c_max)^0.43·(1 − c_surf/c_max)^0.57`. `c_e` chia cho hằng 1000 mol/m³ ("Typical electrolyte concentration"), không phải trung bình ⟨c_e⟩.
-6. Bruggeman: điện giải 1.5 cả ba miền; pha rắn 0 ở hai điện cực ⇒ `sigma_eff = sigma_s` (không nhân `eps_s`).
-7. Entropy: mã chia 1000 (fit theo mV/K): `dU_p/dT = (0.04006·exp(−(x−0.2828)²/0.0009855) − 0.06656·exp(−(x−0.8032)²/0.02179))/1000`; `dU_n/dT = (−0.1112·x + 0.02914 + 0.3561·exp(−(x−0.08309)²/0.004616))/1000` [V/K] (hệ số cực âm lệch nhẹ so với [SI] (S6): −0.111, 0.02901, 0.3562, 0.08308, 0.004621).
-8. Lưới của các lần chạy trong bài: `[x_n, x_s, x_p, r_n, r_p] = [10, 10, 10, 100, 20]` cho Expt 2 (số liệu Fig. 2–5, Table 1–2) và `[10, 5, 5, 100, 20]` cho Expt 3 (Fig. 6); lưới hạt đều (không có "Exponential mesh stretch") ([ZD] cột "Mesh list"). Thể tích hữu hạn, `CasadiSolver` mặc định.
-
-### 2.4 Mô hình nhiệt lumped ([PB] `thermal/lumped.py`, `thermal/base_thermal.py`, `parameters/thermal_parameters.py`)
-
-```
-rho_cp_eff·dT/dt = Q_vol_av − h·A_cool/V_cell·(T − T_amb)
-Q = Q_ohm + Q_rxn + Q_rev                                         [W/m³], tại từng x
-Q_ohm = −i_s·dφ_s/dx − i_e·dφ_e/dx   (cộng i_app²/sigma_cc trong hai current collector)
-Q_rxn = a·j_int·eta ;  Q_rev = a·j_int·T·dU/dT      (chỉ phản ứng chính; SEI/plating không sinh nhiệt)
-Q_vol_av = ( ∫Q dx + Q_cn·L_cn + Q_cp·L_cp ) / (L_cn + L_n + L_s + L_p + L_cp)
-rho_cp_eff = Σ_k rho_k·cp_k(T)·L_k / Σ_k L_k      (k = cn, n, s, p, cp)
-```
-`h = 20 W/m²/K`, `A_cool = 5.31e-3 m²`, `V_cell = 2.42e-5 m³`; nhiệt do `R_contact` KHÔNG được tính. `T_amb` = nhiệt độ lão hoá (10/25/40 °C) trong ageing set, = 25 °C trong break-in và RPT; `T(0) = 298.15 K`; trạng thái T được nối tiếp giữa các đoạn.
-`cp_k(T)`: [SI] (S20)–(S23); trong mã `rho_dry` của cực âm = 1740 và của separator = 946 kg/m³ (bảng [SI] Table 6 in ngược hai số này), `rho_e = 1280`, `cp_e = 229`.
+Phản ứng phụ không sinh nhiệt: SI Table 3 chỉ có `q_r` của phản ứng chính — **[BÀI]**. Khi cạn khô làm giảm diện tích, nhiệt sinh trên thể tích điện cực còn lại vẫn chia cho `L_tot` như cũ, `V_cell`, `A_cool` không đổi — [CODE].
 
 ---
 
-## 3. Cơ chế 1 — SEI hai lớp, giới hạn bởi khuếch tán interstitial
+## 3. Cơ chế 1 — SEI hai lớp (Li 2025 SI Note 2)
 
-Nguồn: [PB] `models/submodels/interface/sei/sei_growth.py` (nhánh `"interstitial-diffusion limited"`), `sei/base_sei.py`; [SI] Note 2 (S2)–(S9), SI tr. 33–34.
-
-**Biến trạng thái** (tại mỗi nút x của cực âm): `L_inner(x,t)`, `L_outer(x,t)` [m].
+Biến trạng thái tại mỗi nút x cực âm: `L_inner`, `L_outer` [m].
 
 ```
-Arr_SEI = exp( E_SEI/R · (1/T_ref − 1/T) ),   T_ref = 298.15 K
-j_SEI   = − ( D_int · c_int · F / L_outer ) · exp( − F·δφ / (R·T) ) · Arr_SEI          [A/m²]   (< 0)
-j_inner = alpha · j_SEI ;   j_outer = (1 − alpha) · j_SEI ,   alpha = 0.5
-dL_inner/dt = − Vbar_inner · j_inner / (z_SEI · F)
-dL_outer/dt = − Vbar_outer · j_outer / (z_SEI · F)
-L_SEI = L_inner + L_outer
+j_SEI          = −(c_int D_int F / L_inner) · exp(−F (φ_s − φ_e)/(R T)) · Arr      (S2)
+Arr            = exp(E_SEI/(R T_ref) − E_SEI/(R T)),  T_ref = 298.15 K              (S5)
+j_SEI,inner    = α j_SEI ;  j_SEI,outer = (1 − α) j_SEI ,  α = 0.5                  (S3)-(S4)
+dL_inner/dt    = −j_SEI,inner V̄_SEI^inner/(z_SEI F)                                 (S6) vế 1
+dL_outer/dt    = −j_SEI,outer V̄_SEI^outer/(z_SEI F)                                 (S7) vế 1
+L_SEI          = L_inner + L_outer                                                  (S8)
+η_SEI          = ρ_SEI j_tot L_SEI                                                  (S9)
 ```
 
-Chi tiết phải theo đúng:
-- Số mũ là **`−F·δφ/(R·T)`** (có F/RT). `δφ = φ_s − φ_e` **không trừ** `eta_SEI` và không trừ thế cân bằng nào (`U_SEI` có trong `eta_SEI` của mã nhưng nhánh interstitial không dùng).
-- Mẫu số là **`L_outer`** (không phải `L_inner` như [SI] in). Vì `alpha = 0.5`, `Vbar_inner = Vbar_outer` và điều kiện đầu bằng nhau nên `L_inner ≡ L_outer ≡ L_SEI/2` mọi lúc, hai cách viết cho cùng kết quả số; nhưng cài thì dùng `L_outer`.
-- Gộp lại: `dL_inner/dt = dL_outer/dt = c_int·D_int·Vbar_SEI / (4·L_outer) · exp(−F·δφ/(R·T)) · Arr_SEI` (với `z_SEI = 2`, `alpha = 0.5`). [SI] (S6) in hệ số `1/(2·L)`; mã cho `1/(4·L_outer)` (mục 12, C3).
-- `T` trong `Arr_SEI` và trong số mũ là nhiệt độ cell (lumped).
-- `D_int` và `c_int` chỉ xuất hiện dưới dạng tích.
+| Mục | Nhãn | Căn cứ |
+|---|---|---|
+| Dạng (S2), (S3)–(S5), (S8), (S9); L_inner ở mẫu số | [BÀI] | [SI] tr. 33–34. (Code dùng L_outer; vì α = 0.5, V̄ bằng nhau, điều kiện đầu bằng nhau nên L_inner ≡ L_outer — doi_chieu S4.) |
+| Số mũ `−F(φ_s − φ_e)/(RT)` (bài in `−(φ_s − φ_e)`, sai thứ nguyên) | [GỐC] | [S18] pt. (5); [vK] pt. (18), (25) — doi_chieu S1 |
+| `φ_s − φ_e` **không** trừ η_SEI | [BÀI] | (S2) như in (doi_chieu S2) |
+| Hệ số mỗi lớp: gộp lại `dL/dt = c_int D_int V̄/(4 L) · e^{…}` (bài in vế 2 của (S6)/(S7) là `c_int/(2L)`) | [GỐC] | đại số trên (S2)+(S3)+vế 1 của (S6), z = 2 ([S18] pt. (1), SI Table SI-2) — doi_chieu S3 |
+| z_SEI = 2 | [BÀI] | [SI] Table 8 ([S18] cũng 2) |
+| T trong Arrhenius và số mũ = nhiệt độ cell | [CODE] | bài không nói T nào; DFN có một nhiệt độ |
 
-**Ghép vào DFN:** `a_n·j_SEI` cộng vào `a_n·j_tot_n` (mục 2.2); `L_SEI` vào `eta_SEI`; `L_SEI` vào porosity (mục 8); `L_SEI` vào tốc độ "chết" của lithium mạ (mục 4).
-
-**Sổ sách LLI do SEI** (biến chẩn đoán, [PB] `base_sei.py::_get_standard_concentration_variables`): dùng **`a_typ = 3·eps_s_n,0/R_n = 3.8396e5 1/m` (hằng)**, không dùng `a_n` hiện thời:
-```
-n_SEI(x)  = (L_inner/Vbar_inner + L_outer/Vbar_outer)·a_typ                        [mol SEI / m³ điện cực]
-Q_SEI     = z_SEI·( xavg(n_SEI) − (L_inner,0/Vbar_inner + L_outer,0/Vbar_outer)·a_typ )·L_n·L_y·L_z     [mol Li]
-```
-(`L_y` là bề rộng hiện thời, sau dry-out.) Đại lượng này chỉ dùng cho dry-out (mục 10) và báo cáo phân rã LLI; nó KHÔNG bằng đúng tích phân `−a_n·j_SEI/F` khi `eps_s_n` đã giảm do LAM (mục 12, C8).
-
-**Điều kiện đầu:** `L_inner(x,0) = L_outer(x,0) = L_SEI,0^layer` tính theo mục 11.2 (với "5 coupled": **9.2326e-9 m** mỗi lớp).
+Cài đặt: `src/dfn/dfn_side_reactions.m` (dòng), `src/dfn/dfn_aging_rhs.m` (độ dày).
 
 ---
 
-## 4. Cơ chế 2 — Mạ lithium bán thuận nghịch + lithium chết
+## 4. Cơ chế 2 — Mạ lithium bán thuận nghịch + lithium chết (Li 2025 SI Note 3)
 
-Nguồn: [PB] `interface/lithium_plating/plating.py`, `base_plating.py`, `parameters/lithium_ion_parameters.py` (dòng 112–113), `OKane2023.py` (`plating_exchange_current_density_OKane2020`, `stripping_exchange_current_density_OKane2020`, `SEI_limited_dead_lithium_OKane2022`); [SI] Note 3 (S10)–(S13), SI tr. 35.
-
-**Biến trạng thái** (tại mỗi nút x của cực âm): `c_Li(x,t)` — lithium mạ còn thuận nghịch; `c_dl(x,t)` — lithium chết; đơn vị [mol/m³ **thể tích điện cực**].
+Biến trạng thái tại mỗi nút x cực âm: `c_Li`, `c_dl` [mol/m³ điện cực].
 
 ```
-eta_pl   = δφ + eta_SEI = φ_s − φ_e − rho_SEI·L_SEI·j_tot_n                         [V]   (thế cân bằng Li/Li⁺ = 0 V)
-alpha_pl = 0.65  ("Lithium plating transfer coefficient");   alpha_st = 1 − alpha_pl = 0.35
-j_pl     = F·k_Li·[ c_Li·exp( alpha_st·F·eta_pl/(R·T) ) − c_e·exp( − alpha_pl·F·eta_pl/(R·T) ) ]      [A/m²]
-gamma    = gamma_0 · (L_inner,0 + L_outer,0) / L_SEI                                [1/s]
-dc_Li/dt = − a_n·j_pl / F − gamma·c_Li
-dc_dl/dt = + gamma·c_Li
+η_pl     = φ_s − φ_e − η_SEI                                                          (S10)
+j_Li     = F k_Li [ c_Li exp(α_a,Li F η_pl/(RT)) − c_e exp(−α_c,Li F η_pl/(RT)) ]       (S10)
+∂c_Li/∂t = −a_n j_Li/F − ∂c_dl/∂t                                                      (S11)
+∂c_dl/∂t = γ c_Li                                                                      (S12)
+γ        = γ_0 L_SEI,0 / L_SEI                                                         (S13)
 ```
 
-- `c_e` là nồng độ điện giải cục bộ tại nút x; `a_n = 3·eps_s_n/R_n` hiện thời (nhân với `j_pl`, không nhân với roughness — mạ chỉ trên bề mặt gốc).
-- Không có Arrhenius cho `k_Li` và `gamma_0`.
-- `L_inner,0 + L_outer,0` trong `gamma` là tổng độ dày đầu **đã ghi đè** theo mục 11.2.
-- Nhãn "α_a,Li = 0.65" ở [SI] Table 8 là nhãn sai: 0.65 là hệ số của nhánh **mạ (cathodic)**, nhánh hoà tan (anodic) là 0.35 — đúng như O'Kane 2022 (α_a = 0.35, α_c = 0.65).
-
-**Ghép vào DFN:** `a_n·j_pl` cộng vào `a_n·j_tot_n`; `c_Li`, `c_dl` vào porosity (mục 8) qua "độ dày" `L_pl = c_Li·Vbar_Li/a_typ`, `L_dl = c_dl·Vbar_Li/a_typ`.
-
-**Sổ sách:** `Q_pl = xavg(c_Li + c_dl)·L_n·L_y·L_z` [mol Li] ("Loss of lithium to lithium plating"); `Q_dl = xavg(c_dl)·L_n·L_y·L_z`.
-
-**Điều kiện đầu:** `c_Li = 0`, `c_dl = 0`.
+| Mục | Nhãn | Căn cứ |
+|---|---|---|
+| (S10)–(S13), c_e cục bộ, a_n hiện thời | [BÀI] | [SI] tr. 35 |
+| α_a,Li = 0.35 (hoà tan), α_c,Li = 0.65 (mạ); bài ghi "α_a,Li = 0.65" ở Table 8 | [GỐC] | [OK] bảng tham số: α_a = 0.35, α_c = 0.65 — doi_chieu P1 |
+| Không Arrhenius cho k_Li, γ_0 | [BÀI] | (S10)–(S13) không có |
+| L_SEI,0 trong γ = tổng độ dày ban đầu thực dùng (mục 11.2) | [CODE] | giá trị L_SEI,0 theo GD-02 |
+| c_Li(0) = 0 | [BÀI] | [SI] Table 8 |
 
 ---
 
-## 5. Cơ chế 3a — Ứng suất trong hạt (cả hai cực)
-
-Nguồn: [PB] `particle_mechanics/base_mechanics.py::_get_mechanical_results` (Ai 2019 eq. 7–10); [SI] Note 4 (S14)–(S17).
-
-Mã KHÔNG dùng phân bố ứng suất theo r in ở (S14)–(S17); chỉ dùng giá trị **tại bề mặt hạt**, tại mỗi nút x:
+## 5. Cơ chế 3a — Ứng suất trong hạt (Li 2025 SI Note 4, (S14)–(S17))
 
 ```
-c_rav(x)      = (3/R³)·∫_0^R c_s(r,x)·r² dr                  (trung bình thể tích của hạt)
-sigma_r_surf  = 0
-sigma_t_surf  = Omega·E / (3·(1 − nu)) · ( c_rav − c_surf )                         [Pa]
-sigma_h_surf  = ( sigma_r_surf + 2·sigma_t_surf ) / 3 = (2/3)·sigma_t_surf           [Pa]
+σ_r = 2ΩE/(1 − ν) · [c_avg(R) − c_avg(r)]                         (S14)
+σ_t = ΩE/(1 − ν) · [2 c_avg(R) + c_avg(r) − c̄/3]                  (S15)
+c_avg(r) = 1/(3 r³) ∫_0^r c̄ r² dr ,   c̄ = c − c_ref                (S17)
+σ_h = (σ_r + 2σ_t)/3                                               (S22)
 ```
+Tại bề mặt hạt (r = R): `σ_r = 0`, `σ_t = ΩE/(3(1 − ν)) · (c_rav − c_surf)` với `c_rav = (3/R³)∫_0^R c r² dr` là trung bình thể tích; `σ_h = (2/3)σ_t`.
 
-- Dấu: `sigma_t_surf > 0` (kéo) khi `c_rav > c_surf`, tức khi hạt đang **nhả lithium**: cực âm khi XẢ, cực dương khi SẠC.
-- `c_ref` không ảnh hưởng tới ứng suất (chỉ vào chuyển vị và `theta_M`).
-- Hệ số: cực âm `Omega·E/(3(1−nu)) = 2.2143e4 Pa/(mol/m³)`; cực dương `1.9531e6 Pa/(mol/m³)` (tự tính từ tham số).
-- Mã còn tính độ dày cell thay đổi (hàm `t_change`) — chỉ là đầu ra, không hồi tiếp; không cần cho lão hoá.
+| Mục | Nhãn | Căn cứ |
+|---|---|---|
+| (S14), (S15), (S17), (S22) và hệ số Ω, E, ν, c_ref = 0 | [BÀI] | [SI] tr. 36, Table 6. Thay r = R vào (S15) với c_avg của (S17) cho đúng biểu thức bề mặt ở trên (tự kiểm đại số) |
+| Đánh giá ứng suất **tại bề mặt hạt** cho luật nứt và LAM | [CODE] | bài không ghi vị trí; code dùng giá trị bề mặt (GD-63) |
+| c_rav tính qua trạng thái `x_av` (trung bình thể tích của hạt rời rạc, dx_av/dt = −3 j_int/(R F c_max), bất biến tuyến tính của rời rạc thể tích hữu hạn) | [GĐ] (lựa chọn số học) | giống hệt Σθ·V_shell/ΣV_shell; selftest kiểm lệch < 10⁻⁶; tránh hàng Jacobian dày (GD-63) |
 
 ---
 
-## 6. Cơ chế 3b — Vết nứt (luật Paris) và SEI trên vết nứt
+## 6. Cơ chế 3b — Nứt hạt và SEI trên vết nứt
 
-Nguồn: [PB] `particle_mechanics/crack_propagation.py`, `base_mechanics.py::_get_standard_surface_variables`, `sei/sei_growth.py` (cracks=True), `sei/base_sei.py`; [SI] Note 4 (S18)–(S20), SI tr. 36–37.
+### 6.1 Nứt (luật Paris) — chỉ cực âm
 
-### 6.1 Vết nứt — chỉ cực âm
-
-**Biến trạng thái** (mỗi nút x của cực âm): `l_cr(x,t)` [m].
+Biến trạng thái: `l_cr` [m] tại mỗi nút x cực âm.
 
 ```
-K          = sigma_t_surf · b_cr · sqrt( pi·l_cr )        nếu sigma_t_surf ≥ 0 ;   K = 0 nếu sigma_t_surf < 0     [Pa·m^0.5]
-dl_cr/dt   = k_cr · K^m_cr / t_0 ,     t_0 = 3600 s (viết cứng trong mã: "/ 3600 # divide by 3600 to replace t0_cr")
-S          = 1 + 2·l_cr·w_cr·rho_cr                       ("roughness ratio"; w_cr hằng)
-a_cr       = (S − 1)·a_n                                   [1/m]   (đại số, KHÔNG có ODE riêng cho a_cr)
+dl_cr/dt = (k_cr/t_0) · (σ_t b_cr √(π l_cr))^{m_cr}   khi σ_t > 0 ; = 0 khi σ_t ≤ 0          (S18)
+a_cr     = 2 l_cr w_cr ρ_cr a_n = (S − 1) a_n                                               (S8), (S25)
 ```
 
-- `k_cr`: đơn vị `m / (Pa·m^0.5)^m_cr` cho mỗi `t_0` (chú thích trong `OKane2023.py::graphite_cracking_rate_Ai2020`). Trong các lần chạy của bài, `"Negative electrode cracking rate"` bị ghi đè bằng **hằng số 5.29e-25** (không còn hàm Arrhenius; `"Negative cracking growth activation energy"` = 0 nên dù sao cũng không phụ thuộc T).
-- Cực dương: `l_cr,p ≡ 0`, `S_p ≡ 1` ("swelling only"). Các tham số nứt của cực dương ở [SI] Table 9 không được dùng.
-- Sự kiện dừng: `max(l_cr) ≥ R_n`.
-- **Điều kiện đầu:** `l_cr(x,0) = l_cr,0 = 2e-8 m` ⇒ `S0 = 1 + 2·2e-8·1.5e-8·3.18e15 = 2.908`.
+| Mục | Nhãn | Căn cứ |
+|---|---|---|
+| (S18), σ_t > 0 | [BÀI] | [SI] tr. 36 |
+| t_0 = 3600 s (bài: "time for one cycle", không cho giá trị) | [CODE] | `crack_propagation.py` "/ 3600" (GD-53) |
+| k_cr = 5.29×10⁻²⁵, hằng số, không Arrhenius (bài không in đơn vị) | [BÀI] giá trị (Table 3); đơn vị [CODE] `m/(Pa·m^0.5)^m_cr` | GD-53 |
+| Diện tích vết nứt theo (S8)/(S25) `2 l w ρ a_n`; **không** dùng (S19) `da_cr/dt = a ρ w/t_0 · dl/dt` | [BÀI] | (S19) sai thứ nguyên (thừa 1/t_0, thiếu hệ số 2 so với (S8), (S25), (S27) của chính bài) |
+| Cực dương không nứt | [CODE] | Table 9 có tham số nứt cực dương nhưng Table 3 chỉ fit k_cr cực âm; code "swelling only" (GD-52) |
+| Sự kiện dừng `l_cr ≥ R_n` | [CODE] | |
+| l_cr(0) = 2×10⁻⁸ m, w_cr = 1.5×10⁻⁸ m, ρ_cr = 3.18×10¹⁵ m⁻², b_cr = 1.12, m_cr = 2.2 | [BÀI] | [SI] Table 9 |
 
-### 6.2 SEI trên vết nứt — cực âm
+### 6.2 SEI trên vết nứt
 
-**Biến trạng thái** (mỗi nút x của cực âm): `L_inner_cr(x,t)`, `L_outer_cr(x,t)` [m] (độ dày SEI trên bề mặt vết nứt).
+Biến trạng thái: `L_inner,cr`, `L_outer,cr` [m] tại mỗi nút x cực âm.
 
 ```
-j_SEIcr      = − ( D_int·c_int·F / L_outer_cr )·exp( − F·δφ/(R·T) )·Arr_SEI          [A/m² diện tích vết nứt]
-dL_inner_cr/dt = − Vbar_inner·alpha·j_SEIcr/(z_SEI·F)        − (dl_cr/dt)/l_cr · L_inner_cr
-dL_outer_cr/dt = − Vbar_outer·(1 − alpha)·j_SEIcr/(z_SEI·F)  − (dl_cr/dt)/l_cr · L_outer_cr
+j_SEI,cr        = −(c_int D_int F / L_inner,cr) · exp(−F(φ_s − φ_e)/(RT)) · Arr
+dL_inner,cr/dt  = −α j_SEI,cr V̄/(z F) − (dl_cr/dt) L_inner,cr / l_cr
+dL_outer,cr/dt  = −(1 − α) j_SEI,cr V̄/(z F) − (dl_cr/dt) L_outer,cr / l_cr                  (S20)
 ```
 
-- Số hạng thứ hai ("spreading") dàn SEI cũ ra diện tích nứt mới; bằng 0 khi vết nứt không lan (hai mô hình đầu).
-- Dòng thể tích ghép vào DFN: **`a_n·(S − 1)·j_SEIcr`** [A/m³].
-- Sổ sách: `n_SEIcr(x) = (L_inner_cr/Vbar_inner + L_outer_cr/Vbar_outer)·a_typ·(S − 1)`;
-  `Q_SEIcr = z_SEI·( xavg(n_SEIcr) − (L_inner_cr,0/Vbar_inner + L_outer_cr,0/Vbar_outer)·a_typ·(S0 − 1) )·L_n·L_y·L_z` [mol Li].
-- **Điều kiện đầu:** `L_inner_cr,0 = L_inner,0`, `L_outer_cr,0 = L_outer,0` ([PB] `lithium_ion_parameters.py` dòng 432–433; PyBaMM gốc dùng `L_0/10000`).
+| Mục | Nhãn | Căn cứ |
+|---|---|---|
+| Cùng mô hình SEI trên vết nứt ("apply the same SEI growth model on the cracks"); số hạng "lan rộng" `−(∂l_cr/∂t)L/l_cr` | [BÀI] | [SI] tr. 37 |
+| Số mũ F/(RT), hệ số 1/4 mỗi lớp (bài in `c_int/(2 L_SEI,cr)`) | [GỐC] | như mục 3 (doi_chieu S1, S3) |
+| Tách hai lớp trên vết nứt | [CODE] | (S20) viết một độ dày; code giữ hai lớp như bề mặt — không đổi kết quả vì α = 0.5 |
+| Điều kiện đầu `L_inner,cr(0) = L_outer,cr(0) = L_SEI,0` mỗi lớp | [BÀI] | (S7) Note 9 |
+| Ghép dòng `a_n (S − 1) j_SEI,cr` vào j_tot; LLI | [CODE] | GD-51 |
+| Số hạng "lan rộng" giữ thể tích SEI trên vết nứt: d[(S − 1)L_cr]/dt chỉ còn phần tăng trưởng | (hệ quả đại số) | |
 
 ---
 
-## 7. Cơ chế 4 — Mất vật liệu hoạt tính do ứng suất (cả hai cực)
+## 7. Cơ chế 4 — LAM do ứng suất (cả hai cực) (Li 2025 SI Note 5)
 
-Nguồn: [PB] `active_material/loss_active_material.py`, `base_active_material.py`; [SI] Note 5 (S21)–(S22), SI tr. 38.
-
-**Biến trạng thái** (mỗi nút x của **từng** điện cực k = n, p): `eps_s_k(x,t)` [-].
+Biến trạng thái: `eps_s,n` (mỗi nút cực âm), `eps_s,p` (mỗi nút cực dương).
 
 ```
-sigma_h      = max( (2/3)·sigma_t_surf , 0 )                                  (nén không gây LAM)
-d(eps_s_k)/dt = − beta_k · ( sigma_h / sigma_c_k )^m2_k                        [1/s]
-a_k(x,t)     = 3·eps_s_k / R_k
+∂eps_s/∂t = −(β/t_0) (σ_h/σ_c)^{m_2}   khi σ_h > 0 ; = 0 khi σ_h ≤ 0          (S21), (S22)
+a_k = 3 eps_s,k / R_k
 ```
 
-- `beta` có đơn vị **1/s và dùng trực tiếp** (không chia `t_0`); "ứng suất thuỷ tĩnh nhỏ nhất" trong mã bị đặt bằng 0.
-- **LAM → `eps_s` và `a`:** `eps_s_k` giảm; nồng độ `c_s` trong các hạt còn lại **không đổi** ⇒ lithium nằm trong phần vật liệu bị mất rời khỏi kho lithium (LLI do LAM). `a_k` giảm theo ⇒ cùng một dòng thể tích thì mật độ dòng `j` trên bề mặt hạt còn lại tăng ⇒ gradient nồng độ và ứng suất tăng (hồi tiếp dương). `sigma_eff` không đổi (Bruggeman pha rắn = 0). **Porosity KHÔNG tăng** khi `eps_s` giảm (vật liệu mất được coi là pha trơ, vẫn chiếm chỗ).
-- Dung lượng điện cực: `C_k = xavg(eps_s_k)·L_k·A_cc·c_max_k·F/3600` [Ah] (A_cc hiện thời).
-- Sổ sách LLI do LAM (ODE chẩn đoán trong mã): `d(LLI_LAM_k)/dt = − c_s_av_k · L_k·A_cc · xavg( d eps_s_k/dt )` [mol/s], `c_s_av_k` = trung bình theo r và x.
-- **Điều kiện đầu:** `eps_s_n = 0.75`, `eps_s_p = 0.665`.
-- Với giá trị fit: `beta_p = 2.98e-18 1/s` ⇒ LAM cực dương do ứng suất ≈ 0 (đầu ra của mã: `LAM_to_Crack_PE ≈ 2e-14 %` sau 9.5 kAh, [ZD] xlsx tóm tắt). LAM_PE của mô hình hoàn toàn do dry-out (mục 10). Vẫn phải cài số hạng này cho cực dương.
+| Mục | Nhãn | Căn cứ |
+|---|---|---|
+| (S21) dạng luỹ thừa, σ_h > 0, cả hai cực | [BÀI] | [SI] tr. 38 |
+| **Dấu giảm** (bài in `∂ε_a/∂t = +β/t_0(…)`) | [GỐC] | [OK] tr. 10–11: (22) ước lượng "the decrease in the accessible volume fraction" |
+| β [1/s] dùng trực tiếp (t_0 ≡ 1 s): bài in β/t_0 nhưng không cho t_0, và Table 3 ghi β đơn vị 1/s | [CODE] | `loss_active_material.py` (GD-53) |
+| σ_h tại bề mặt (mục 5) | [CODE] | GD-63 |
+| β_n = 2.84×10⁻⁹, β_p = 2.98×10⁻¹⁸ 1/s; m_2 = 2; σ_c = 60 / 375 MPa | [BÀI] | Table 3; SI Table 9 |
+| LAM → a = 3ε_s/R | [BÀI] | định nghĩa a ở Note 2, Note 9 |
+| Nồng độ Li trong hạt còn lại không đổi ⇒ Li trong phần vật liệu mất thành LLI; độ xốp **không** tăng khi ε_s giảm; σ_s hiệu dụng không đổi (Bruggeman pha rắn 0) | [CODE] | `base_active_material.py`; (S24) chỉ có lớp lắng đọng |
 
 ---
 
-## 8. Hồi tiếp porosity (bít lỗ rỗng)
-
-Nguồn: [PB] `porosity/reaction_driven_porosity.py` (đã bị fork sửa); bài báo và O'Kane 2022 không in phương trình này.
-
-Porosity cực âm là **hàm đại số** của các biến trạng thái (không có ODE riêng), tại mỗi nút x:
+## 8. Độ xốp cực âm (Li 2025 SI Note 6, (S24)–(S25))
 
 ```
-L_pl = c_Li·Vbar_Li / a_typ ;      L_dl = c_dl·Vbar_Li / a_typ                      [m]
-L_tot = (L_SEI − L_SEI,0) + L_pl + L_dl + (L_SEIcr − L_SEIcr,0)·(S − 1)             [m]
-eps_n(x,t) = eps_n,0 − a_typ · L_tot
+∂ε_n/∂t   = −∂(L_total a_n)/∂t                                                        (S24)
+L_total   = L_SEI + 2 l_cr w_cr ρ_cr L_SEI,cr + c_Li V̄_Li/a_n + c_dl V̄_Li/a_n             (S25)
+⇒ ε_n(t)  = ε_n,0 − [ (L_SEI + (S − 1) L_SEI,cr) a_n + (c_Li + c_dl) V̄_Li ]_0^t
 ```
+`L_SEI,cr = L_inner,cr + L_outer,cr`; `a_n` hiện thời. Màng ngăn, cực dương: độ xốp không đổi ("pore volume change can only occur in the negative electrode").
 
-với `L_SEI = L_inner + L_outer`, `L_SEIcr = L_inner_cr + L_outer_cr`, `L_SEI,0 = L_inner,0 + L_outer,0`, `L_SEIcr,0 = 2·L_inner_cr,0`, **`a_typ = 3·eps_s_n,0/R_n` hằng** (không giảm theo LAM), `S` hiện thời.
-Separator và cực dương: porosity hằng (0.47 và 0.335).
-
-- Ghép vào DFN: `eps_n` vào `eps^1.5` của `D_e`, `kappa`; vào `c_e = (eps·c_e)/eps` (porosity giảm ⇒ `c_e` cục bộ tăng, vì trạng thái là `eps·c_e`).
-- Sự kiện dừng: `min(eps_n) ≤ 0`.
-- Lưu ý: số hạng nứt dùng `(S − 1)` hiện thời nhân với **độ tăng** độ dày, nên khi vết nứt lan mà SEI trên nứt mỏng đi (spreading) thì thể tích vẫn nhất quán gần đúng; đây là đúng như mã, không sửa.
+| Mục | Nhãn | Căn cứ |
+|---|---|---|
+| (S24)–(S25) với a_n hiện thời | [BÀI] | [SI] tr. 40. **Code khác:** dùng `a_typ = 3ε_s,n,0/R_n` hằng (mục 12, D2). Khác nhau chỉ khi LAM_NE do ứng suất ≠ 0 (cỡ 1–3 % của a_n) |
+| ε_n,0 (BOL) | [CODE] | GD-02 (mục 11.2) |
+| V̄_Li = 1.3×10⁻⁵ m³/mol (Li chết cùng V̄) | [BÀI] | Table 8; (S25) "same as that of active lithium" |
+| Sự kiện dừng ε_n ≤ 0 | [CODE] | |
 
 ---
 
-## 9. Sổ sách lithium tuần hoàn (LLI) — mã làm gì
+## 9. Sổ sách lithium và chỉ số
 
-Không có phương trình "n_Li" riêng. Lượng lithium tuần hoàn là đại lượng dẫn xuất ([PB] `base_lithium_ion_model.py`):
+Mô hình MATLAB có thêm các **biến sổ sách** (không hồi tiếp): `n_SEI`, `n_SEI,cr` [mol/m³] (tích phân `−a_n j_SEI/F`, `−(S−1) a_n j_SEI,cr/F`), `n_LAM,n`, `n_LAM,p` [mol/m²] (tích phân `−Σ_x (∂ε_s/∂t) c_rav dx`), `Q_thr` = ∫|I|dt [Ah]. Hàm `dfn_li_inventory.m` cộng:
 
 ```
-n_Li_particles = Σ_(k=n,p)  L_k·A_cc · xavg( eps_s_k · ravg(c_s_k) )                 [mol]
+Li_tổng = A Σ_x [ε_s,n c̄_n dx] + A Σ_x [ε_s,p c̄_p dx] + A Σ_x [ε_e c_e dx]
+        + A Σ_x [(n_SEI + n_SEI,cr + c_Li + c_dl) dx] + A (n_LAM,n + n_LAM,p)
+        (+ Li⁺ trong reservoir + Li trong phần điện cực đã khô, mục 10)
 ```
+Tổng này **bất biến chính xác** của hệ bán rời rạc (mỗi số hạng thay đổi đúng bằng dòng chảy vào số hạng khác); selftest kiểm ≤ 10⁻⁶ tương đối qua cả chu kỳ, kể cả khi ép mạ (k_Li × 1000).
 
-Nó giảm theo bốn đường, tất cả đã nằm trong các phương trình trên:
-1. **Phản ứng phụ** (SEI, SEI trên nứt, mạ ròng): vì hạt chỉ nhận `j_int = j_tot − j_SEI − j_pl − (S−1)·j_SEIcr`, khi sạc cực âm nhận ít lithium hơn lượng cực dương nhả ra. Lithium mạ thuận nghịch quay lại hạt khi `j_pl > 0`.
-2. **LAM do ứng suất**: `eps_s` giảm ở `c_s` cố định (mục 7).
-3. **Dry-out**: `A_cc` giảm ⇒ lithium trong phần điện cực bị "khô" của CẢ HAI cực bị loại (mục 10).
-4. Lithium trong điện giải được bảo toàn riêng (`eps·c_e`, mục 10).
-
-Chỉ số báo cáo ([Z] `Get_SOH_LLI_LAM`), lấy tại **cuối bước xả 0.1C** của mỗi RPT:
-`LLI% = (1 − n_Li_particles/n_Li_particles[RPT0])·100`; `LAM_k% = (1 − C_k/C_k[RPT0])·100`; `SOH% = Q_dis,0.1C / 4.86491 · 100`;
-`LLI do LAM = LLI − LLI_SEI − LLI_SEIcr − LLI_plating`; `LAM do dry-out = (1 − L_y/L_y,0)·100`; `LAM do ứng suất = LAM − LAM do dry-out`.
+Chỉ số tại RPT (lấy ở **cuối bước xả 0.1C**) — [CODE] (`Get_SOH_LLI_LAM`), trừ ghi chú:
+- `LLI = 1 − n_Li,hạt / n_Li,hạt(RPT0)`; `LAM_k = 1 − C_k/C_k(RPT0)`, `C_k = A Σ ε_s dx c_max F/3600`.
+- `SOH = Q_xả,0.1C / Q_xả,0.1C(RPT0)` — [GĐ] GD-60 (code chia cho 4.86491 Ah; với V_cv = 4.116 V dung lượng RPT0 của mô hình khác 4.86491, nên chuẩn hoá theo RPT0 của chính mô hình, như thực nghiệm). Báo cáo ghi cả cách của code (`SOH_code_pct`).
+- `R_0.1s = (V_1 − V_2)/(I_2 − I_1)`, xung GITT thứ 12, V_2 tại 0.1 s sau khi đặt dòng — [BÀI] [SI] (S1) Note 1. (Code lấy mẫu đầu tiên của bước xả, tức bước nhảy tức thời.)
+- Phân rã LLI: SEI, SEI vết nứt, mạ còn lại, chết, LAM, cạn khô, điện giải — từ sổ sách (không suy ra bằng hiệu số như code).
 
 ---
 
-## 10. Cơ chế 5 — Tiêu thụ dung môi / dry-out (lớp bọc ngoài bộ giải)
+## 10. Cơ chế 5 — Tiêu thụ dung môi / cạn khô (Li 2025 SI Note 6, (S26)–(S43), Table 4)
 
-Nguồn: [Z] `Fun_NC.py::Initialize_mdic_dry`, `Cal_new_con_Update`, `Run_Model_Base_On_Last_Solution(_RPT)`, `Run_P2_Excel`; [SI] Note 6 (S23)–(S43), Table 4, SI tr. 39–43.
+Lớp bọc ngoài bộ giải (bài: "coding wrapper … over a time interval Δt"). Biến: `V_res`, `c_e,res`, `c_EC,res` (reservoir), `A_cell` (diện tích điện cực), `c_EC` (jelly roll), và `c_e(x)` của DFN. Cài: `src/dfn/dfn_dryout_update.m`.
 
-Đây KHÔNG phải ODE; là một phép cập nhật rời rạc giữa các **đoạn mô phỏng**. Một đoạn = (break-in + RPT đầu) hoặc (một ageing set trọn vẹn) hoặc (một RPT). Vì `Update cycles for ageing = Ageing cycles between RPT`, phép cập nhật chạy **một lần trước mỗi ageing set và một lần trước mỗi RPT** (không phải mỗi chu kỳ).
-
-**Trạng thái của lớp bọc:** `V_tot` (điện giải toàn cell) [m³], `V_JR` (điện giải trong jelly roll) [m³], `L_y` (bề rộng điện cực hiệu dụng) [m], `c_e_res`, `c_EC_res` (nồng độ Li⁺ và EC trong reservoir), `c_EC_JR`.
-
-**Khởi tạo** (`Initialize_mdic_dry`):
+Sau mỗi khoảng (đầu khoảng: trạng thái y₀, cuối: y₁, cùng A):
 ```
-V_pore,0 = ( L_n·eps_n,0 + L_s·eps_sep + L_p·eps_p )·L_y,0·L_z
-V_JR  = V_pore,0 ;    V_tot = R_exc · V_pore,0          (R_exc = "Initial electrolyte excessive amount ratio" = 1.0 ⇒ KHÔNG có reservoir)
-c_e_res = 1000 ;  c_EC_res = 4541 ;  c_EC_JR = 4541 mol/m³
+V_e        = V_pore(y₀)                                                   (S34)
+dV_pore    = V_pore(y₁) − V_pore(y₀) = d ∫ ε_n A dx                         (S26)
+dV_EC      = −2 V̄_EC · d ∫ (L_SEI + 2 l w ρ L_SEI,cr)/V̄_SEI · a_n A dx      (S27)-(S30)
+dV_need    = dV_pore − dV_EC                                               (S31)
+Trường hợp (Table 4):
+ 1  dV_need > 0, V_res ≥ dV_need:      dV_add = dV_need, dV_sq = 0, R_dry = 1
+ 2  dV_need > 0, V_res < dV_need:      dV_add = V_res,   dV_sq = 0, R_dry < 1 (cạn khô)
+ 3  dV_need = 0:                        không trao đổi
+ 4  dV_need < 0, đã khô (A < A_max):    thấm ướt lại, R_dry > 1
+ 5  dV_need < 0, A = A_max:             dV_sq = −dV_need (ép ra reservoir), R_dry = 1
+dV_e       = dV_EC + dV_add − dV_sq ;  V_e(t+dt) = V_e + dV_e ;  dV_res = −dV_add + dV_sq    (S32)-(S36)
+R_dry      = V_e(t+dt) / V_pore(t+dt) ;  A_cell ← R_dry A_cell                               (S37)-(S38)
+c_e,res, c_EC,res, c_e^avg, c_EC theo (S39)-(S42);  c_e(x) ← c_e(x) · c_e^avg(t+dt)/c_e^avg(t)   (S43)
 ```
-Với "5 coupled": `V_pore,0 = 5.2362 mL` (log của tác giả in đúng "Initial electrolyte amount is 5.236163896909271 mL", [ZD]).
 
-**Cập nhật sau mỗi đoạn** (`Cal_new_con_Update`), dùng nghiệm của đoạn vừa chạy ("đầu" = thời điểm đầu đoạn, "cuối" = cuối đoạn):
-```
-dLLI      = [Q_SEI(cuối) − Q_SEI(đầu)] + [Q_SEIcr(cuối) − Q_SEIcr(đầu)]                [mol Li]
-V_pore_new= ( L_n·xavg(eps_n)(cuối) + L_s·eps_sep + L_p·eps_p )·L_y·L_z               (L_y hiện thời)
-dV_pore   = V_JR − V_pore_new                       (dùng V_JR cũ, không dùng thể tích lỗ rỗng đầu đoạn)
-V_EC      = dLLI · Vbar_EC                           (1 mol EC cho 1 mol Li; lithium chết/mạ KHÔNG tiêu thụ EC)
-V_need    = V_EC − dV_pore
-V_tot_new = V_tot − V_EC
-```
-Phân nhánh:
-- **(A) `V_need < 0`** — lỗ rỗng co nhanh hơn lượng EC mất ("squeezed"): `V_squeeze = −V_need`; `V_JR_new = V_pore_new`; `L_y` giữ nguyên; `Ratio_CeLi = 1`; reservoir nhận thêm: `c_e_res_new = (V_res·c_e_res + V_squeeze·xavg(c_e)(cuối)) / (V_res + V_squeeze)`, tương tự cho EC với `c_EC_JR`; `V_res = V_tot − V_JR` (cũ).
-- **(B) `V_need ≥ 0`:**
-  - (B1) `V_tot > V_JR` và `V_tot − V_JR ≥ V_need`: `V_add = V_need`; `V_JR_new = V_pore_new`; `R_dry = 1`.
-  - (B2) `V_tot > V_JR` nhưng reservoir không đủ: `V_add = V_tot − V_JR`; `V_JR_new = V_tot_new`; `R_dry = V_JR_new / V_pore_new`.
-  - (B3) `V_tot ≤ V_JR` (hết reservoir): `V_add = 0`; `V_JR_new = V_tot_new`; `R_dry = V_JR_new / V_pore_new`.
-  - Sau đó: `n_Li_e` = "Total lithium in electrolyte [mol]" cuối đoạn `= L_x·A_cc·xavg(eps·c_e)`;
-    `Ratio_CeLi = (n_Li_e + V_add·c_e_res) / n_Li_e / R_dry` ;
-    `Ratio_CeEC = ( V_JR·c_EC_JR − [Q_SEI(cuối) − Q_SEI(đầu)] + V_add·c_EC_res ) / V_JR_new / c_EC_JR` (mã chỉ trừ phần SEI bề mặt, không trừ SEI trên nứt);
-    **`L_y_new = R_dry · L_y`** ; `c_e_res`, `c_EC_res` giữ nguyên.
+| Mục | Nhãn | Căn cứ |
+|---|---|---|
+| (S24)–(S38), (S39)–(S40), (S42)–(S43), 5 trường hợp | [BÀI] | [SI] tr. 39–43, Table 4 tr. 21 |
+| dV_EC gồm cả SEI trên vết nứt, a_n hiện thời | [BÀI] | (S27)–(S30). **Code khác:** chỉ trừ SEI bề mặt khỏi c_EC (mục 12, D3) |
+| EC: 1 mol EC / 1 mol Li (2 EC / 1 phân tử SEI, z_SEI = 2); mạ/Li chết không tiêu thụ EC | [BÀI] | (S23), (S27) |
+| Nồng độ Li⁺ ở trường hợp 3–5: dùng **(S41)** (Li⁺ cô đặc khi thể tích EC mất), không dùng các ô "c_e không đổi" của Table 4 | [GĐ] GD-55 | Table 4 mâu thuẫn với (S41) ở trường hợp 3–5; chỉ (S41) bảo toàn Li⁺. Đọc `c_e^avg(t)·V_e(t)` = lượng Li⁺ trong jelly roll lúc cập nhật, `c_e^avg(t)` = trung bình theo thể tích lỗ ⇒ (S43) bảo toàn Li chính xác |
+| Trường hợp 4: A không vượt A_max; phần thể tích dư ép ra reservoir | [GĐ] GD-56 | bài không nói |
+| Khoảng Δt: một lần trước mỗi ageing set và một lần trước mỗi RPT | [CODE] GD-54 | bài không cho Δt; code `Update cycles for ageing = Ageing cycles between RPT` |
+| R_exc = 1.0 ⇒ V_res(0) = (R_exc − 1)·V_pore(0) = 0 (không có reservoir) | giá trị [BÀI] Table 8; định nghĩa [CODE] GD-54 | bài in "Initial excessive electrolyte amount 1.0" không định nghĩa |
+| c_EC chỉ theo dõi, không hồi tiếp | [BÀI] | SEI interstitial không có c_EC; tính chất điện giải không phụ thuộc EC |
+| Li trong phần điện cực bị khô (cả hai cực, hạt + SEI + mạ + LAM) chuyển vào sổ "cạn khô" | (sổ sách) | LAM_NE = LAM_PE do cạn khô ([P] tr. 6) |
+| c_EC,0 = 4541, c_e,res,0 = 1000, c_EC,res,0 = 4541 mol/m³, V̄_EC = 6.667×10⁻⁵ | [BÀI] | SI Table 6, 8 |
 
-**Áp vào đoạn kế tiếp** (`Run_Model_Base_On_Last_Solution`):
-1. Mọi biến trạng thái của mô hình lấy từ trạng thái cuối đoạn trước.
-2. **`eps·c_e` tại mọi nút (âm, separator, dương) nhân với `Ratio_CeLi`.**
-3. Tham số `"Electrode width [m]"` = `L_y_new` ⇒ `A_cc` giảm ⇒ với cùng dòng I, `i_app = I/A_cc` tăng; dung lượng CẢ HAI điện cực giảm cùng tỉ lệ (**LAM_NE = LAM_PE do dry-out**), lithium trong phần điện cực mất cũng mất theo.
-4. `c_EC_JR ← c_EC_JR·Ratio_CeEC` (ghi vào "Bulk solvent concentration"/"EC initial concentration"). **Nồng độ EC không hồi tiếp vào bất kỳ phương trình nào** (SEI interstitial không dùng nồng độ dung môi; tính chất điện giải không phụ thuộc EC) — chỉ để theo dõi.
-5. `T_amb` đặt theo loại đoạn.
-
-Ghi chú đúng-như-mã: ở nhánh (A) lithium bị ép ra reservoir được cộng vào reservoir nhưng **không bị trừ** khỏi jelly roll (`Ratio_CeLi = 1`); đây là hành vi của mã, giữ nguyên và gắn cờ (C9). Với `R_exc = 1.0`, lần cập nhật đầu thường rơi vào (A) (log in "Electrolyte is being squeezed out"), các lần sau vào (B2)/(B3).
-
-Số đối chiếu ([ZD] `5_Re_0_Full_Exp1235_NC_Case_5_5.xlsx`, Expt 2, 25 °C, cuối mô phỏng 9.489 kAh): `V_tot = V_JR = 4.7839 mL`, `L_y = 1.49746 m` (từ 1.58 m) ⇒ LAM do dry-out 5.224 %.
+Khác code (mục 12, D3–D5): nhánh "ép ra" của code không trừ Li⁺ khỏi jelly roll (ở đây trừ, theo (S39), (S41)); code không có thấm ướt lại (trường hợp 4).
 
 ---
 
-## 11. Tham số
+## 11. Tham số ("5 coupled", nhất quán với Li 2025 Table 3)
 
-### 11.1 Ba bộ tham số fit — [P] Table 3 (tr. 8), đối chiếu với file đầu vào [ZD]
+### 11.1 Tham số fit — Li 2025 Table 3, cột "5 coupled" — [BÀI]
 
-| Tham số | Đơn vị | SEI only | SEI + Dry out | **5 coupled** | Giá trị trong CSV đầu vào [ZD] |
-|---|---|---|---|---|---|
-| `D_int` (Inner SEI lithium interstitial diffusivity) | m²/s | 2.36e-18 | 1.2e-18 | **9.81e-19** | 2.35555e-18 / 1.2e-18 / 9.81e-19 |
-| `Vbar_SEI` (inner = outer) | m³/mol | 4e-5 | 6.74e-5 | **5.22e-5** | trùng |
-| `E_SEI` (SEI growth activation energy) | J/mol | 1e4 | 1e4 | **5e3** | trùng |
-| `gamma_0` (Dead lithium decay constant) | 1/s | – | – | **1e-7** | (hai mô hình đầu ghi 1e-6 nhưng không dùng) |
-| `k_Li` (Lithium plating kinetic rate constant) | m/s | – | – | **1e-10** | (1e-9, không dùng) |
-| `beta_p` (Positive LAM proportional term) | 1/s | – | – | **2.98e-18** | (3e-7, không dùng) |
-| `beta_n` (Negative LAM proportional term) | 1/s | – | – | **2.84e-9** | (3e-7, không dùng) |
-| `k_cr_n` (Negative electrode cracking rate) | m/(Pa·m^0.5)^m_cr mỗi t_0 = 3600 s | – | – | **5.29e-25** | (1e-20, không dùng vì constant cracks) |
-| `E_Ds_n` (Negative diffusivity activation energy) | J/mol | 6e4 | 6e4 | **2e4** | trùng |
-| `R_exc` (electrolyte excess ratio) | – | 0.99 (tắt) | 1.0 | **1.0** | trùng |
-
-Các trường hợp tác giả chọn làm "best fit": Expt 2 — thư mục `Full_Exp23_Paper_11_fine` case 4/13/22 (10/25/40 °C; `E_SEI = 5e3`, `E_Ds_n = 2e4`), `SEI_Exp23_Paper_11_fine` và `SEI_Dry_Exp23_Paper_11_fine` case 9/18/27 (`1e4`, `6e4`) ([Z] `Reload_Exp2.ipynb`); Expt 3 — `Full_Exp1235_NC`, `SEI_Exp1235_NC`, `SEI_Dry_Exp1235_NC` case 7/8/9 ([Z] `Reload_Exp3.ipynb`).
-
-**Bộ phải dùng cho mô hình "5 coupled":** cột **"5 coupled"** nguyên vẹn, và nó chỉ tự nhất quán khi đi cùng TẤT CẢ các thứ sau (không trộn với cột khác, không trộn với DFN Chen 2020):
-(a) tuỳ chọn mô hình cột "5 coupled" ở mục 1 (kể cả stress-induced diffusion bật);
-(b) `E_Ds_n = 2e4`, `E_Ds_p = 1.2e4 J/mol`;
-(c) `L_inner,0 = L_outer,0 = L_inner_cr,0 = L_outer_cr,0 = 9.2326e-9 m` và `eps_n,0 = 0.234965` (mục 11.2);
-(d) bộ BOL `OKane2023.py` (O'Regan 2022 + OCP mới hai nhánh + hysteresis sigmoid + điện giải Landesfeind + `c_max`, stoichiometry mới);
-(e) `R_contact = 0.0115 Ω`, `h = 20 W/m²/K`, `R_exc = 1.0`;
-(f) toàn bộ tham số giữ nguyên ở 11.3.
-
-### 11.2 Độ dày SEI ban đầu và porosity cực âm ban đầu — mã ghi đè cho từng `Vbar_SEI`
-
-Nguồn: [Z] `Fun_NC.py::Overwrite_Initial_L_SEI_0_Neg_Porosity` (gọi ở cuối `Para_init`, sau khi mọi tham số đã cập nhật); [SI] Note 9 (S7)–(S11).
-
-```
-dQ        = (5.0 − 4.86491)·3600 C            (mất dung lượng do formation, 0.13509 Ah)
-a_typ     = 3·0.75/5.86e-6 = 3.83959e5 1/m ;   S0 = 2.908 ;   A = 1.58·0.065 = 0.1027 m² ;  F = 96485.3
-L_SEI_init = dQ·Vbar_SEI / ( z_SEI·F·A·L_n·a_typ·S0 )
-eps_n,0   = 0.25 − L_SEI_init·S0·a_typ
-L_inner,0 = L_outer,0 = L_SEI_init/2 + 2.5e-9                      (cộng thêm 2.5 nm mỗi lớp — có trong mã, KHÔNG có trong [SI])
-```
-
-| Mô hình | `Vbar_SEI` | `L_SEI_init` [m] | `L_inner,0 = L_outer,0` [m] | `eps_n,0` | `V_pore,0` [mL] |
-|---|---|---|---|---|---|
-| SEI only | 4e-5 | 1.03182e-8 | 7.65911e-9 | 0.238479 | 5.26691 |
-| SEI + Dry out | 6.74e-5 | 1.73862e-8 | 1.119311e-8 | 0.230587 | 5.19786 |
-| **5 coupled** | 5.22e-5 | 1.34653e-8 | **9.23265e-9** | **0.234965** | 5.23616 |
-| (ví dụ của [SI], mặc định của `OKane2023.py`) | 9.585e-5 | 2.47251e-8 | 1.48625e-8 (mặc định file: 1.23625e-8) | 0.222393 | 5.12616 |
-
-Kiểm chứng: log của tác giả in "Initial outer SEI thickness … 9.23e-09 … porosity 0.235" và "5.236163896909271 mL" cho "5 coupled"; "1.12e-08 … 0.231", "5.197856896775573 mL" cho SEI + Dry out ([ZD] `…pbs.o9805112.5`, `…pbs.o9805113.5`). Giá trị 1.23625e-8 m ở [SI] Table 8 là mặc định của file tham số (ứng với `Vbar_SEI = 9.585e-5`, không cộng 2.5 nm), **không phải** giá trị dùng trong ba mô hình.
-SEI trên vết nứt ban đầu dùng cùng độ dày. Độ dày đầu thật (kể cả +2.5 nm) cũng là `L_SEI,0` trong `gamma` (mục 4) và trong porosity (mục 8).
-
-### 11.3 Tham số lão hoá giữ nguyên (bộ "5 coupled")
-
-| Ký hiệu | Tên tham số PyBaMM | Giá trị | Đơn vị | Nguồn |
-|---|---|---|---|---|
-| `z_SEI` | Ratio of lithium moles to SEI moles | 2 | – | [SI] Table 8 (SI tr. 26); [PB] `OKane2023.py` |
-| `c_int` | Lithium interstitial reference concentration | 15 | mol/m³ | [SI] Table 8; [PB] |
-| `rho_SEI` | SEI resistivity | 2e5 | Ω·m | [SI] Table 8; [PB] |
-| `alpha` | Inner SEI reaction proportion | 0.5 | – | [SI] Table 8; [PB] |
-| `T_ref` | Reference temperature | 298.15 | K | [PB] |
-| `alpha_pl` | Lithium plating transfer coefficient (nhánh mạ) | 0.65 (⇒ `alpha_st` = 0.35) | – | [SI] Table 8 (nhãn sai); [PB] `lithium_ion_parameters.py` dòng 112–113 |
-| `c_Li,0` | Initial plated lithium concentration | 0 | mol/m³ | [SI] Table 8; [PB] |
-| `Vbar_Li` | Lithium metal partial molar volume | 1.3e-5 | m³/mol | [SI] Table 8; [PB] |
-| `Vbar_EC` | EC partial molar volume | 6.667e-5 | m³/mol | [SI] Table 8; [PB] |
-| `c_e_res,0`, `c_EC_res,0`, `c_EC_JR,0` | reservoir / jelly roll | 1000, 4541, 4541 | mol/m³ | [SI] Table 8; [Z] `Get_Input_files.ipynb` |
-| `m2` (n, p) | LAM constant exponential term | 2, 2 | – | [SI] Table 9 (SI tr. 27); [PB] |
-| `sigma_c` (n, p) | critical stress | 60e6, 375e6 | Pa | [SI] Table 9; [PB] |
-| `b_cr` (n) | Paris' law constant b | 1.12 | – | [SI] Table 9; [PB] |
-| `m_cr` (n) | Paris' law constant m | 2.2 | – | [SI] Table 9; [PB] |
-| `rho_cr` (n) | number of cracks per unit area | 3.18e15 | 1/m² | [SI] Table 9; [PB] |
-| `l_cr,0` (n) | initial crack length | 2e-8 | m | [SI] Table 9; [PB] |
-| `w_cr` (n) | initial crack width (hằng) | 1.5e-8 | m | [SI] Table 9; [PB] |
-| `t_0` | chu kỳ quy đổi của luật Paris | 3600 | s | [PB] `crack_propagation.py` (viết cứng) |
-| `E_cr` (n) | Negative cracking growth activation energy | 0 (và bị vô hiệu vì `k_cr` là hằng) | J/mol | [ZD] CSV |
-| `Omega` (n, p) | partial molar volume | 3.1e-6, 1.25e-5 | m³/mol | [SI] Table 6; [PB] |
-| `E` (n, p) | Young's modulus | 15e9, 375e9 | Pa | [SI] Table 6; [PB] |
-| `nu` (n, p) | Poisson's ratio | 0.3, 0.2 | – | [SI] Table 6; [PB] |
-| `c_ref` (n, p) | reference concentration for free of deformation | 0, 0 | mol/m³ | [SI] Table 6; [PB] |
-| `E_Ds_p` | Positive electrode diffusivity activation energy | 1.2e4 | J/mol | [SI] Table 7; [ZD] CSV |
-| `R_contact` | Contact resistance | 0.0115 | Ω | [SI] Table 6; [PB] (mặc định file) |
-| `h` | Total heat transfer coefficient | 20 | W/m²/K | [SI] Table 6; [PB] (mặc định file) |
-
-Tham số có trong file nhưng **không được dùng** bởi các tuỳ chọn đã chọn (không cần cài): SEI open-circuit potential, SEI kinetic rate constant, EC diffusivity, Outer SEI solvent diffusivity, Inner SEI electron conductivity, reaction-driven LAM factor (= 0), mọi tham số nứt của cực dương, hàm `volume change`.
-
-### 11.4 Tham số BOL liên quan (bộ `OKane2023.py`) — chỉ liệt kê những gì mô hình lão hoá đọc
-
-`L_n = 85.2e-6`, `L_s = 12e-6`, `L_p = 75.6e-6 m`; `L_y,0 = 1.58 m`, `L_z = 0.065 m`; `R_n = 5.86e-6`, `R_p = 5.22e-6 m`; `eps_s_n,0 = 0.75`, `eps_s_p,0 = 0.665`; `eps_sep = 0.47`, `eps_p = 0.335`; `c_max_n = 32544`, `c_max_p = 52787 mol/m³`; `c_s_n(0) = 28543`, `c_s_p(0) = 12727 mol/m³` (100 % SOC); `c_e(0) = 1000 mol/m³`; `sigma_n = 215 S/m`, `sigma_p = 0.8473·exp(3500/R·(1/298.15 − 1/T))`; ngưỡng điện áp trong thí nghiệm 2.5–4.2 V. Nguồn: [SI] Table 6 (SI tr. 23–24) và [PB] `OKane2023.py::get_parameter_values` (đã đối chiếu, trùng).
-
----
-
-## 12. Giải quyết các mục "KHÔNG RÕ" và các chỗ mã khác bài báo
-
-### 12.1 Các mục của `Li2025_tham_so.md` (mục 9 và mục 10 của file đó)
-
-| # | Vấn đề | Mã thực sự làm gì | Nguồn |
+| Tham số | Giá trị | Đơn vị | Trong code `par.ag` / `par` |
 |---|---|---|---|
-| 1 | Số mũ SEI không có F/(RT); có trừ `eta_SEI` không | `exp(−F·(φ_s − φ_e)/(R·T))`; KHÔNG trừ `eta_SEI`, không trừ thế cân bằng; mẫu số `L_outer`; cùng dạng cho SEI trên nứt | [PB] `sei_growth.py` |
-| 2 | [SI] Table 12 in sai nhãn | Mã không in lại bảng này. Notebook [Z] `Reload_Exp3.ipynb` in MPE/RMSE điện áp theo thứ tự (10, 25, 40 °C) × mô hình, trùng [SI] Table 10–11. Cách đọc "ba khối = 10/25/40 °C, trong khối = SEI only / SEI + Dry out / 5 coupled" vẫn là **suy luận** (khớp với câu "10.58 % ở 40 °C" của [P] tr. 5) | — |
-| 3 | `L_SEI,0`, `eps_n,0` thực dùng | Ghi đè theo `Vbar_SEI`, cộng 2.5 nm mỗi lớp — bảng ở 11.2 | [Z] `Overwrite_Initial_L_SEI_0_Neg_Porosity` |
-| 4 | `alpha_a,Li = 0.65` | 0.65 là hệ số nhánh mạ; nhánh hoà tan = 0.35 (nhãn bảng sai, giá trị không đổi so với O'Kane 2022) | [PB] `lithium_ion_parameters.py`, `plating.py` |
-| 5 | Đơn vị `beta`, `k_cr`, giá trị `t_0` | `beta` [1/s] dùng trực tiếp; `t_0 = 3600 s` chỉ trong luật Paris; `k_cr` [m/(Pa·m^0.5)^m_cr] | [PB] `loss_active_material.py`, `crack_propagation.py`, `OKane2023.py` |
-| 6 | `beta_p` nhỏ hơn 9 bậc | Đúng; LAM_PE do ứng suất ≈ 2e-14 %; LAM_PE = dry-out | [ZD] xlsx tóm tắt |
-| 7 | "0.3C/1C" là sạc hay xả | Sạc 0.3C, xả 1C | [Z] `Initialize_exp_text` |
-| 8, 9, 18 | lỗi trích dẫn/đánh số trong [SI] | Không liên quan tới mã | — |
-| 10 | Tiền tố của `D_e` | `1010·…·1e-10` | [PB] `OKane2023.py` |
-| 11 | `(1 + (T − 228))` trong `kappa` | Đúng như in: `p1·(1 + (T − p2))`, `p1 = 0.521`, `p2 = 228`. Nhưng hệ số trước ngoặc thứ hai là **0.353** (không phải 0.8353), và trong `t_plus` là **−6.12·c** (không phải −0.612·c) | [PB] `OKane2023.py` |
-| 12 | Đơn vị `dU/dT` | Hàm fit theo mV/K rồi chia 1000 ⇒ V/K | [PB] `OKane2023.py` |
-| 13 | `E_p = 375 GPa` | Giữ nguyên; hệ quả lớn nhất là hệ số khuếch tán do ứng suất ×85–322 ở cực dương (2.3) | [PB] |
-| 14 | Tham số nứt gắn nhãn lẫn lộn | Chỉ cực âm nứt; tham số nứt cực dương không dùng | [ZD] CSV "Model option" |
-| 15 | `R_contact`, `h` | 0.0115 Ω, 20 W/m²/K là mặc định trong file tham số của tác giả (chỉnh tay; bài không nêu nguồn) | [PB] `OKane2023.py` |
-| 16 | Số RPT của Expt 3 | Mô phỏng: 13 RPT (RPT0 sau break-in + 12), cho cả Expt 2 và 3 | [Z] `Get_tot_cyc`; [ZD] `.mat` |
-| 17 | Không dùng tối ưu hoá | Đúng (quét lưới/LHS) | [Z] `Get_Input_files.ipynb` |
-| (10.5) | "Initial excessive electrolyte amount = 1.0" | `R_exc = V_tot/V_pore,0`; 1.0 = không có reservoir; `< 1` tắt dry-out | [Z] `Run_P2_Excel`, `Initialize_mdic_dry` |
+| D_int | 9.81×10⁻¹⁹ | m²/s | `ag.D_int` |
+| V̄_SEI (inner = outer) | 5.22×10⁻⁵ | m³/mol | `sei.V` |
+| E_SEI | 5×10³ | J/mol | `ag.E_SEI` |
+| γ_0 | 1×10⁻⁷ | 1/s | `ag.gamma0` |
+| k_Li | 1×10⁻¹⁰ | m/s | `ag.k_Li` |
+| β_pos | 2.98×10⁻¹⁸ | 1/s | `ag.beta_p` |
+| β_neg | 2.84×10⁻⁹ | 1/s | `ag.beta_n` |
+| k_cr (cực âm) | 5.29×10⁻²⁵ | (không in; [CODE] m/(Pa·m^0.5)^m_cr mỗi t_0) | `ag.k_cr` |
+| E_act D_s,n | 2×10⁴ | J/mol | `neg.Ds.E` (GD-01) |
 
-### 12.2 Các mục của `OKane2022_tham_so.md`
+Cả chín giá trị dùng **cùng một cột** ("5 coupled"); không trộn cột khác.
 
-| Vấn đề | Mã thực sự làm gì | Nguồn |
-|---|---|---|
-| Phương trình porosity | Đại số: `eps_n = eps_n,0 − a_typ·L_tot` (mục 8) | [PB] `reaction_driven_porosity.py` |
-| LLI → `n_Li` | Không có phương trình riêng; LLI sinh ra từ cân bằng dòng (mục 2.2, 9) | [PB] |
-| LAM → `a` | `a = 3·eps_s/R` với `eps_s` là trạng thái (mục 7) | [PB] `base_active_material.py` |
-| Diện tích vết nứt → SEI/LLI | `a_cr = (S − 1)·a`; dòng thể tích `a·(S − 1)·j_SEIcr` (mục 6) | [PB] `base_interface.py` |
-| (S13) thiếu ½ | Không dùng (mô hình solvent-diffusion đã bị thay). Trong PyBaMM, dòng SEI tổng được chia theo `alpha` | [PB] `sei_growth.py` |
-| (17b), (18) dạng `sigma_t`, hệ số `1/(3r³)` | Mã chỉ dùng giá trị bề mặt `sigma_t_surf = Omega·E/(3(1−nu))·(c_rav − c_surf)` với `c_rav` là trung bình thể tích (3/R³) | [PB] `base_mechanics.py` |
-| (20) `da_cr/dt`, vị trí `t_0` | Không có ODE cho `a_cr`; `dl_cr/dt = k_cr·K^m/3600` | [PB] `crack_propagation.py` |
-| (22) dấu của LAM | `d eps_s/dt = −beta·(…)^m2` (giảm) | [PB] `loss_active_material.py` |
-| `l_cr,0 = 2e-5 m` > bán kính hạt | Trong mã: `l_cr,0 = 2e-8 m`, `w_cr = 1.5e-8 m` | [PB] `OKane2023.py` |
-| Đơn vị `k_cr`, `beta` | như #5 ở trên | — |
-| Arrhenius cho `k_Li`, `gamma_0`, `k_cr`, `beta` | Không có (riêng `k_cr` có tham số `E_cr` nhưng = 0 và bị ghi đè bằng hằng) | [PB], [ZD] |
-| Số điểm lưới | `[10,10,10,100,20]` (Expt 2), `[10,5,5,100,20]` (Expt 3) | [ZD] |
-| `E_k±`, điều kiện biên/điện áp đầu cực | Xem 2.3 (5) và 2.2; `E_j0`: 4e4 (âm), 2.401e4 (dương) J/mol | [PB] `OKane2023.py` |
+### 11.2 Độ dày SEI ban đầu và ε_n,0 — [CODE] (GD-02)
 
-### 12.3 Chỗ mã MÂU THUẪN hoặc bổ sung so với bài báo (phải nêu trong báo cáo)
+Bài tự mâu thuẫn ((S7) phụ thuộc V̄_SEI, Table 8 ghi 1.23625×10⁻⁸ m "unchanged"; doi_chieu S5, chưa nguồn gốc nào phân xử). Dùng cách của code: (S7) với V̄_SEI = 5.22×10⁻⁵, ΔQ = 0.135 Ah ([BÀI] Note 9, GD-19), cộng 2.5 nm mỗi lớp: `L_SEI,0 = 9.228×10⁻⁹ m` mỗi lớp (bề mặt và vết nứt), `ε_n,0 = 0.23498` (ε không tính phần 2.5 nm). Tuỳ chọn `sei_init = 'paper'` cho biến thể như in.
 
-- **C1.** Khuếch tán do ứng suất trong hạt bật ngầm ở cả hai cực (2.3 mục 1); bài và SI không nhắc. Ảnh hưởng mạnh tới gradient nồng độ ⇒ ứng suất ⇒ LAM và nứt, và tới `D_s` hiệu dụng của cực dương.
-- **C2.** SEI trên vết nứt có mặt cả trong "SEI only" và "SEI + Dry out" (vết nứt hằng, diện tích ×2.908); tên mô hình trong bài không thể hiện.
-- **C3.** Tốc độ tăng độ dày: mã `c_int·D_int·Vbar/(4·L_outer)·exp(…)`; [SI] (S6)/(S7) in `c_int/(2·L)`; mẫu số trong mã là `L_outer` cho cả hai lớp.
-- **C4.** Độ dày SEI ban đầu cộng thêm 2.5 nm mỗi lớp và phụ thuộc `Vbar_SEI`; [SI] Table 8 ghi 1.23625e-8 m "unchanged".
-- **C5.** Cực dương không nứt ("swelling only"); [SI] Table 9 vẫn liệt kê tham số nứt cực dương.
-- **C6.** Hệ số điện giải: 0.353 và −6.12 trong mã; 0.8353 và −0.612 trong [SI] (S14), (S15).
-- **C7.** `a_typ` (hằng, BOL) được dùng trong porosity và sổ sách SEI/mạ, trong khi dòng thể tích dùng `a_n` hiện thời; [SI] (S24)–(S25) viết với `a_n`.
-- **C8.** Hệ quả của C7: `Q_SEI` (dùng cho dry-out) không trùng hẳn với tích phân dòng SEI khi đã có LAM.
-- **C9.** Dry-out: (i) EC tiêu thụ tính 1 EC/1 Li cho SEI + SEI trên nứt, nhưng `Ratio_CeEC` chỉ trừ phần SEI bề mặt; (ii) nhánh "squeeze" không trừ Li⁺ khỏi jelly roll; (iii) cập nhật mỗi ageing set, không phải mỗi bước thời gian `dt` như [SI] mô tả; (iv) EC không hồi tiếp vào động học.
-- **C10.** `k_cr` âm cực là hằng số (không Arrhenius); `t_0 = 3600 s` viết cứng.
-- **C11.** Số chu kỳ mỗi ageing set: mã [Z] `Get_tot_cyc` ghi 516 (Expt 2) và 514 (Expt 3); file kết quả [ZD] của lần chạy `Full_Exp1235_NC` ghi 514 cho cả hai; thí nghiệm là 515 (Kirkaldy 2024 Table 1).
-- **C12.** `rho_dry` của cực âm/separator trong hàm nhiệt dung (1740/946) ngược với [SI] Table 6 (946/1740); hệ số `dU_n/dT` lệch nhẹ.
+### 11.3 Tham số giữ nguyên — [BÀI] SI Table 6, 8, 9 (trừ ghi chú)
 
-### 12.4 Còn phải GIẢ ĐỊNH / chưa xác định được
+| Ký hiệu | Giá trị | Đơn vị | Nhãn |
+|---|---|---|---|
+| z_SEI | 2 | – | [BÀI] Table 8 |
+| c_int | 15 | mol/m³ | [BÀI] Table 8 |
+| ρ_SEI | 2×10⁵ | Ω·m | [BÀI] Table 8 |
+| α (inner) | 0.5 | – | [BÀI] Table 8 |
+| α_a,Li / α_c,Li | 0.35 / 0.65 | – | [GỐC] O'Kane 2022 (Table 8 nhãn sai) |
+| c_Li,0 | 0 | mol/m³ | [BÀI] Table 8 |
+| V̄_Li | 1.3×10⁻⁵ | m³/mol | [BÀI] Table 8 |
+| V̄_EC | 6.667×10⁻⁵ | m³/mol | [BÀI] Table 8 |
+| c_e,res,0; c_EC,res,0; c_EC,0 | 1000; 4541; 4541 | mol/m³ | [BÀI] Table 6, 8 |
+| R_exc | 1.0 | – | [BÀI] giá trị, [CODE] định nghĩa |
+| m_2 (n, p) | 2, 2 | – | [BÀI] Table 9 |
+| σ_c (n, p) | 60, 375 | MPa | [BÀI] Table 9 |
+| b_cr, m_cr, ρ_cr, l_cr,0, w_cr (n) | 1.12, 2.2, 3.18×10¹⁵ m⁻², 2×10⁻⁸ m, 1.5×10⁻⁸ m | | [BÀI] Table 9 |
+| t_0 (Paris) | 3600 | s | [CODE] GD-53 |
+| t_0 (LAM) | (β dùng trực tiếp) | | [CODE] GD-53 |
+| Ω, E, ν, c_ref (n; p) | 3.1×10⁻⁶, 15 GPa, 0.3, 0; 1.25×10⁻⁵, 375 GPa, 0.2, 0 | | [BÀI] Table 6 |
+| T_ref | 298.15 | K | [BÀI] (S5) |
 
-1. Cách đọc [SI] Table 12 (suy luận).
-2. Sai số/bước thời gian của bộ giải (PyBaMM `CasadiSolver` chế độ mặc định) — bản MATLAB dùng bộ giải khác nên chỉ so được ở mức sai số số học; số "0.1 s" của điện trở (mục 13.3).
-3. Số chu kỳ chính xác mỗi ageing set của lần chạy cho Fig. 2–5 (514/515/516; C11) — ảnh hưởng < 0.4 % charge throughput.
-4. Điều kiện nhiệt của thí nghiệm thật (base-cooling Peltier) được tác giả thay bằng `h = 20`, `A_cool = 5.31e-3` chỉnh tay.
-5. Toàn bộ mục 15 (silicon).
-6. Bộ tham số không duy nhất (không tối ưu hoá); `k_Li`, `gamma_0` chỉ bị ràng buộc bởi dữ liệu sạc 0.3C ⇒ dùng cho dòng sạc lớn là ngoại suy.
-7. Chưa đọc: peer-review file, preprint arXiv:2311.05482, phần còn lại của file zip 835 MB (chỉ lấy file nhỏ).
+Các tham số BOL của DFN (Table 6, 7, Note 8–11): như `gia_dinh.md` và `dfn_params.m` (không đổi ở bước C).
 
 ---
 
-## 13. Giao thức thí nghiệm và giao thức mô phỏng
+## 12. Chỗ mô hình MATLAB khác lần chạy của tác giả (code) — phải nêu trong báo cáo
 
-### 13.1 Thí nghiệm (Kirkaldy 2024, Table 1–6, tr. 2–4; [SI] Table 5, SI tr. 22, 31)
+| # | Mục | MATLAB (nhãn) | Code của tác giả |
+|---|---|---|---|
+| D1 | Hệ số tăng SEI, số mũ | như code ([GỐC] trùng code) | như nhau |
+| D2 | Độ xốp | a_n hiện thời ([BÀI] (S24)) | a_typ hằng |
+| D3 | dV_EC, c_EC | gồm SEI vết nứt ([BÀI]) | c_EC chỉ trừ SEI bề mặt |
+| D4 | Nồng độ khi ép ra / cân bằng | (S39)–(S43), bảo toàn Li⁺ ([BÀI] + GD-55) | Ratio_CeLi = 1 khi ép ra (Li⁺ theo phần ép ra không bị trừ) |
+| D5 | Thấm ướt lại (trường hợp 4) | có ([BÀI]) | không có |
+| D6 | R_0.1s | V tại 0.1 s ([BÀI] (S1)) | mẫu đầu tiên của bước xả |
+| D7 | Số chu kỳ mỗi set | 515 ([BÀI] SI Table 5, [K24]) | 516 (`Get_tot_cyc`, Expt 2) / 514 |
+| D8 | GITT trong RPT | 25 xung ([BÀI] Note 1) | 24 xung |
+| D9 | Ngưỡng sạc / CV | V_cv = 4.116 V (GD-43, người dùng quyết định; biến thể `vcv42` = 4.2 V) | 4.2 V |
+| D10 | OCP cực âm | một nhánh delithiation (GD-40) | hysteresis (S46)–(S47) |
+| D11 | SOH | chuẩn hoá theo RPT0 của mô hình (GD-60) | chia 4.86491 Ah |
+| D12 | Chuẩn bị trước chu kỳ (sau RPT) | theo [K24] (Expt 2: nghỉ 1 h, xả 1C 730 mAh, nghỉ 3 h; Expt 3: nghỉ 4 h) | Expt 2: xả 8.756838 phút, nghỉ 3 h; Expt 3: nghỉ 1 h |
+| D13 | Điện giải, j₀, D_e, χ… | bộ "approved" (GD-03, 04, 18, 21, 22) | trùng (trừ chữ số dU_n/dT, GD-08b) |
+| D14 | Bộ giải | ode15s, lưới như code (GD-57), nhảy chu kỳ (GD-58) | CasadiSolver, từng chu kỳ |
 
-Cell LG M50T; SOC định nghĩa theo 4.865 Ah; 1C = 5 A; 2.5–4.2 V; RPT luôn ở 25 °C; base-cooling.
+---
 
-| | Expt 2 (**70–85 %**) — dùng để fit | Expt 3 (**85–100 %**) — dùng để validate |
+## 13. Giao thức
+
+### 13.1 Thí nghiệm — [BÀI] [K24] Table 1–6; [SI] Table 5, Note 1
+
+Như bản trước (giữ nguyên): Expt 2 (70–85 %): [xả 1C 730 mAh → sạc CC 0.3C 730 mAh] × 515 mỗi set; Expt 3 (85–100 %): [xả 1C 730 mAh → sạc CC 0.3C tới 4.2 V → CV tới C/100] × 515; 10/25/40 °C; RPT ở 25 °C; 2.5–4.2 V; 1C = 5 A.
+
+### 13.2 Giao thức mô phỏng đã cài (`src/dfn/aging/ag_run.m`, `ag_rpt.m`, `ag_cycle.m`)
+
+| Bước | Nội dung | Nhãn |
 |---|---|---|
-| Nhiệt độ | 10, 25, 40 °C | 10, 25, 40 °C |
-| Số cell | 2 / 2 / 2 (cell A,B / C,D / E,F) | 3 / 3 / 3 (A,B,C / D,E,F / G,H,I) |
-| Chuẩn bị | CCCV sạc 0.3C → 4.2 V tới C/100; nghỉ 1 h; xả 1C 730 mAh; nghỉ 3 h | CCCV sạc; nghỉ 4 h |
-| Vòng lặp | [xả 1C 730 mAh → sạc CC 0.3C 730 mAh] × 515 (không có CV) | [xả 1C 730 mAh → sạc CC 0.3C tới 4.2 V → CV 4.2 V tới C/100] × 515 |
-| RPT dài (sau set chẵn) | 0.1C xả–sạc; 0.5C xả–sạc; GITT 0.5C 25 xung × 200 mAh nghỉ 1 h; GITT 0.5C 5 xung × 1000 mAh; trước mỗi phần: CCCV 0.3C/4.2 V/C/100 + nghỉ 1 h | như bên |
-| RPT ngắn (sau set lẻ) | 0.1C xả–sạc; pulse-under-load nền C/2 và 1C | như bên |
+| Trạng thái đầu | 100 % SOC (c_s = 28543 / 12727 mol/m³), 25 °C, mọi biến lão hoá BOL | [BÀI] Table 6, 8, 9; L_SEI,0 [CODE] |
+| Break-in | xả 0.5C tới 4.0 V → CCCV 0.3C → nghỉ 1 h | [CODE] (bài chỉ mô tả break-in thí nghiệm 5 chu kỳ 0.2C, không nói mô phỏng) |
+| RPT (25 °C) | 0.1C xả–sạc; 0.5C xả–sạc × 2; GITT 0.5C 25 xung × 200 mAh, nghỉ 1 h | [BÀI] Note 1 |
+| — trong RPT | nghỉ 3 h sau mỗi lần xả, 1 h sau sạc 0.1C, 3 h trước GITT; nạp lại CCCV 0.3C | [CODE] GD-59 |
+| — đầu RPT | Expt 2: CCCV 0.3C + nghỉ 1 h; Expt 3: nghỉ 1 h | [CODE] |
+| Chuẩn bị trước set | Expt 2: nghỉ 1 h, xả 1C 730 mAh, nghỉ 3 h; Expt 3: nghỉ 4 h | [BÀI] [K24] |
+| Ageing set | 515 chu ky như 13.1 ở T_amb = 10/25/40 °C; CV/ngưỡng ở V_cv | số chu kỳ [BÀI]; V_cv GD-43 |
+| Số set / RPT | 12 set, 13 RPT | [CODE] (thí nghiệm có 10–12 set tuỳ cell) |
+| CCCV | CC tới V_cv rồi CV tới C/100 = 0.05 A | [BÀI] (C/100); V_cv GD-43 |
+| Cạn khô | cập nhật trước mỗi set và mỗi RPT | [CODE] GD-54 |
 
-### 13.2 Giao thức mà mã mô phỏng ([Z] `Initialize_exp_text`, `Get_tot_cyc`, `Run_P2_Excel`; `V_max = 4.2`, `V_min = 2.5`)
+### 13.3 So sánh
 
-- **Break-in + RPT0** (`T_amb = 25 °C`, bắt đầu từ `c_s` ở 100 % SOC): xả 0.5C tới 4.0 V → sạc 0.3C tới 4.2 V → giữ 4.2 V tới C/100 → nghỉ 1 h → **xả 0.1C tới 2.5 V** → nghỉ 3 h → sạc 0.1C tới 4.2 V → giữ 4.2 V tới C/100 → nghỉ 1 h → [xả 0.5C tới 2.5 V → nghỉ 3 h → sạc 0.5C tới 4.2 V → giữ tới C/100] × 2 → nghỉ 3 h → **GITT**: [nghỉ 5 phút → nghỉ 1.2 s → xả C/2 trong 4.8 phút hoặc tới 2.5 V (lấy mẫu 0.1 s) → nghỉ 1 h] × 24 → nạp lại: sạc 0.3C tới 4.2 V, giữ tới C/100, nghỉ 1 h → bước chỉnh trước lão hoá.
-- **Chỉnh trước lão hoá:** Expt 2: xả 1C trong `0.15·60·4.86491/5 = 8.756838` phút (hoặc tới 2.5 V), nghỉ 3 h. Expt 3: nghỉ 1 h.
-- **Ageing set** (`T_amb` = 10/25/40 °C):
-  Expt 2: [xả 1C trong 8.756838 phút hoặc tới 2.5 V → sạc 0.3C trong `0.5·60·4.86491/5 = 29.18946` phút hoặc tới 4.2 V] × 516 (xem C11).
-  Expt 3: [xả 1C trong 8.756838 phút hoặc tới 2.5 V → sạc 0.3C tới 4.2 V → giữ 4.2 V tới C/100] × 514.
-  (1C = 5 A ⇒ mỗi nửa chu kỳ 0.729737 Ah = 15 % của 4.86491 Ah.)
-- **RPT k** (`T_amb = 25 °C`): Expt 2 (cần nạp đầy trước): sạc 0.3C tới 4.2 V → giữ tới C/100 → nghỉ 1 h → nghỉ 10 s → rồi như RPT0 từ "xả 0.1C" trở đi. Expt 3 (đã đầy): nghỉ 10 s ×2 → nghỉ 1 h → nghỉ 10 s → như trên. Sau đó GITT 24 xung, nạp lại, bước chỉnh.
-- Tổng: 12 ageing set, 13 RPT. RPT rút gọn so với thí nghiệm: chỉ 0.1C, 0.5C (lặp hai lần để giữ charge throughput) và GITT 25 xung ([SI] tr. 31).
-- Charge throughput = ∫|I| dt cộng dồn qua mọi đoạn (kể cả RPT).
-- Thứ tự mỗi vòng: [cập nhật dry-out] → ageing set → [cập nhật dry-out] → RPT.
-
-### 13.3 Cách tính các chỉ số so sánh
-
-- `SOH = Q_dis(0.1C)/4.86491·100` [%] ([Z] `Get_SOH_LLI_LAM`, `cap_0 = 4.86491`).
-- `R_0.1s` [mΩ] ([Z] `Get_0p1s_R0`): lấy phần tử chỉ số 12 (đếm từ 0) trong 24 xung GITT, tức xung thứ 13, ≈ 50 % SOC (thí nghiệm: "xung thứ 12, ≈ 52 % SOC"): `(mean(V của 9 mẫu áp chót của bước nghỉ 1.2 s) − V tại mẫu ĐẦU của bước xả C/2) / I · 1000`. Trong mô hình không có điện dung lớp kép nên đây là bước nhảy tức thời, không phải đúng 0.1 s.
-- LLI, LAM_NE, LAM_PE: mục 9; thí nghiệm lấy từ OCV-fitting ([SI] Note 12).
-- `MPE = mean(|exp − model|/|exp|)·100` trên lưới charge throughput của thí nghiệm (nội suy tuyến tính mô hình), bỏ các điểm `exp = 0`; `MPE_tot = 0.5·MPE_SOH + 0.125·(MPE_LLI + MPE_LAMNE + MPE_LAMPE + MPE_Res)` ([Z] `mean_percentage_error`, `Reload_Exp2.ipynb::Calculate_MPE_re`; [P] eq. 1, tr. 8).
+MPE = mean(|exp − mô hình|/|exp|) trên các RPT thực nghiệm (nội suy tuyến tính mô hình theo charge throughput, bỏ điểm exp = 0); `MPE_tot = MPE_SOH/2 + (MPE_Res + MPE_LLI + MPE_LAMNE + MPE_LAMPE)/8` — [BÀI] [P] pt. (1); cách nội suy [CODE] (`Calculate_MPE_re`). Thực nghiệm = trung bình các cell theo chỉ số RPT của `data/derived/D_kirkaldy_per_cell_rpt.csv` (Kirkaldy 2024). Đường mô hình của tác giả chỉ dùng cho Expt 2 (Source Data Fig. 3–4); Fig. 6 gắn nhãn sai nên không dùng.
 
 ---
 
@@ -586,6 +406,8 @@ Cell LG M50T; SOC định nghĩa theo 4.865 Ah; 1C = 5 A; 2.5–4.2 V; RPT luôn
 Expt 3, "5 coupled", cuối mô phỏng, ba nhiệt độ 10/25/40 °C ([Z] `Reload_Exp3.ipynb`, đầu ra in): LAM_NE do ứng suất = 3.007 / 2.075 / 1.667 %; LAM do dry-out = 7.059 / 6.725 / 7.166 %.
 
 ### 14.3 Chuỗi số theo RPT: thí nghiệm (trung bình cell) và mô hình "5 coupled" của tác giả
+
+> **Lưu ý (17/11/2026):** dữ liệu nguồn Fig. 6 ([SD] `Fig.6.xlsx`, Expt 3) bị gắn nhãn sai; các bảng Expt 3 dưới đây chỉ để tham khảo. Kiểm chứng ở bước C dùng số liệu từng cell của Kirkaldy 2024 (`data/derived/D_kirkaldy_per_cell_rpt.csv`) cho cả Expt 2 và 3, và chỉ dùng đường mô hình của tác giả cho Expt 2 (Fig. 3–4).
 
 Nguồn: [SD] `Fig.3.xlsx`, `Fig.4.xlsx` (Expt 2), `Fig.6.xlsx` (Expt 3) — cột "Exp avg" và cột "5 coupled"; cột mô hình trùng với [ZD] `…Ageing_summary_only.mat` (Expt 2: `Full_Exp23_Paper_11_fine` case 4/13/22; Expt 3: `Full_Exp1235_NC` case 7/8/9). `Q_thr` = charge throughput. Bản MATLAB cần tái hiện các cột **mô hình** (cùng tham số, cùng giao thức); cột thí nghiệm để tính MPE.
 
@@ -814,27 +636,47 @@ R_0.1s thực nghiệm [mΩ] (Q_thr [kAh] → R): 0.000 → 26.89; 0.755 → 27.
 
 ---
 
-## 15. Tổng hợp biến trạng thái và thứ tự tính (để cài)
+## 15. Biến trạng thái, file cài đặt, phương pháp số
 
-| Biến | Miền | Đơn vị | Phương trình | Điều kiện đầu ("5 coupled") |
+### 15.1 Biến trạng thái thêm vào DFN (sau Q; chỉ khi `aging = true`; `src/dfn/dfn_mesh.m`)
+
+| Biến | Miền | Đơn vị | Phương trình | BOL |
 |---|---|---|---|---|
-| `L_inner`, `L_outer` | mỗi nút x cực âm | m | mục 3 | 9.23265e-9 |
-| `L_inner_cr`, `L_outer_cr` | mỗi nút x cực âm | m | mục 6.2 | 9.23265e-9 |
-| `c_Li`, `c_dl` | mỗi nút x cực âm | mol/m³ | mục 4 | 0, 0 |
-| `l_cr` | mỗi nút x cực âm | m | mục 6.1 | 2e-8 |
-| `eps_s_n` | mỗi nút x cực âm | – | mục 7 | 0.75 |
-| `eps_s_p` | mỗi nút x cực dương | – | mục 7 | 0.665 |
-| `j_tot_n` (đại số) | mỗi nút x cực âm | A/m² | mục 2.2 | 0 |
-| `eps·c_e` | mọi nút x | mol/m³ | mục 2.2 | `eps_0·1000` |
-| `T` | toàn cell | K | mục 2.4 | 298.15 |
-| `LLI_LAM_n`, `LLI_LAM_p` (chẩn đoán) | toàn cell | mol | mục 7 | 0 |
-| lớp bọc: `V_tot`, `V_JR`, `L_y`, `c_e_res`, `c_EC_res`, `c_EC_JR` | toàn cell, rời rạc | m³, m³, m, mol/m³ | mục 10 | 5.23616e-6, 5.23616e-6, 1.58, 1000, 4541, 4541 |
+| `Lin`, `Lout` | nút x cực âm | m | mục 3 | 9.228×10⁻⁹ (GD-02) |
+| `Lcin`, `Lcout` | nút x cực âm | m | mục 6.2 | 9.228×10⁻⁹ |
+| `cLi`, `cdl` | nút x cực âm | mol/m³ | mục 4 | 0, 0 |
+| `lcr` | nút x cực âm | m | mục 6.1 | 2×10⁻⁸ |
+| `epsn`, `epsp` | nút x mỗi cực | – | mục 7 | 0.75, 0.665 |
+| `xavn`, `xavp` | nút x mỗi cực | – | mục 5 (bất biến số học) | trung bình θ của hạt |
+| `nSEI`, `nSEIcr` | nút x cực âm | mol/m³ | mục 9 (sổ sách) | 0 |
+| `nLAMn`, `nLAMp`, `Qthr` | toàn cell | mol/m², Ah | mục 9 (sổ sách) | 0 |
+| lớp bọc cạn khô: `V_res, c_e,res, c_EC,res, A, c_EC` | toàn cell, rời rạc | | mục 10 | V_res = 0, A = 0.1027 m² |
 
-Đại lượng đại số dẫn xuất tại mỗi nút x cực âm: `S`, `a_n`, `eps_n`, `eta_SEI`, `sigma_t_surf`, `sigma_h`.
+Mặc định `aging = false`: vector trạng thái, vế phải và mọi kết quả **không đổi** so với trước bước C (selftest mục 1 kiểm: bật lão hoá với mọi tốc độ = 0 cho đúng vế phải DFN, lệch < 10⁻⁹). Ứng dụng khác (`src/nmpc`, `src/ekf`) không bị ảnh hưởng (GD-50).
 
-Thứ tự tính vế phải tại một thời điểm (mỗi nút x): (1) `a_k = 3·eps_s_k/R_k`, `S`, `eps_n` từ trạng thái; (2) `c_e = (eps·c_e)/eps`; (3) giải hệ đại số DFN cho `φ_s`, `φ_e`, `j_tot_n` với `j_int`, `j_SEI`, `j_SEIcr`, `j_pl` là hàm của `δφ`, `j_tot_n`, `c_surf`, `c_e`, `T` và các trạng thái lão hoá; (4) `c_rav`, `c_surf` → `sigma_t_surf`, `sigma_h`; (5) vế phải của các ODE lão hoá; (6) nhiệt. Sau mỗi đoạn: mục 10.
+### 15.2 File
 
-Kiểm tra bảo toàn nên có trong bản MATLAB: tổng lithium `n_Li_particles + n_Li_e + Q_SEI* + Q_SEIcr* + Q_pl + LLI_LAM_n + LLI_LAM_p` không đổi trong một đoạn (với `Q_SEI*`, `Q_SEIcr*` tính bằng tích phân `−a_n·j/F` chứ không bằng công thức `a_typ`, xem C8), và chỉ nhảy tại lúc cập nhật dry-out.
+| File | Vai trò |
+|---|---|
+| `src/dfn/dfn_params.m` | `par.aging.on`, `par.ag` (mọi tham số mục 11, có nhãn) |
+| `src/dfn/dfn_mesh.m` | chỉ số, sai số tuyệt đối, JPattern của trạng thái lão hoá |
+| `src/dfn/dfn_aging_state.m` | a_n, a_p, S, ε_n, R_film từ trạng thái |
+| `src/dfn/dfn_side_reactions.m` | j_SEI, j_SEI,cr, j_Li |
+| `src/dfn/dfn_aging_rhs.m` | vế phải lão hoá, ∂ε_n/∂t |
+| `src/dfn/dfn_rhs.m` | ghép (j_int = j_tot − j_side; ε c_e bảo toàn) |
+| `src/dfn/dfn_dryout_init.m`, `dfn_dryout_update.m`, `dfn_set_area.m` | cạn khô (mục 10) |
+| `src/dfn/dfn_li_inventory.m` | sổ sách Li, dung lượng điện cực |
+| `src/dfn/dfn_aging_init.m`, `dfn_aging_extend.m`, `dfn_aging_sync_xav.m` | trạng thái BOL; chuyển trạng thái không lão hoá sang có lão hoá |
+| `src/dfn/dfn_perm_loss.m` | **mất Li vĩnh viễn của một lần sạc + xả về** (SEI + SEI vết nứt + Li chết + Li trong vật liệu mất do LAM; Li mạ thuận nghịch còn lại báo riêng) cho lưới so sánh |
+| `src/dfn/aging/ag_*.m` | giao thức Expt 2/3, RPT, nhảy chu kỳ, checkpoint, báo cáo, tự kiểm tra |
+| `.github/workflows/aging.yml` | CI: selftest, 12 job (2 thí nghiệm × 3 nhiệt độ × 2 biến thể V_cv) × tối đa 3 chặng 5 h, kiểm chứng nhảy chu kỳ, báo cáo |
+
+### 15.3 Phương pháp số (không phải đơn giản hoá mô hình)
+
+- **Nhảy chu kỳ (cycle jumping), GD-58.** Trong một ageing set mọi chu kỳ giống nhau và trạng thái lão hoá đổi chậm. Sau 3 chu kỳ đầu, lặp: mô phỏng đủ 2 chu kỳ (a, b), Δ = y_b − y_a (mọi trạng thái vi phân, cùng pha chu kỳ), ngoại suy y ← y_b + J·Δ với J ≤ J_max (mặc định 20); trạng thái đại số khởi tạo nhất quán lại. Hai chu kỳ cuối của set luôn mô phỏng đủ. Bất biến tuyến tính (Li trong điện giải, SEI, mạ, Li chết, x_av, Q_thr) được ngoại suy chính xác; tích ε_s·c̄ (Li trong hạt khi có LAM) sai bậc hai — sai lệch bảo toàn Li của mỗi bước nhảy được ghi lại. Kiểm chứng: set 1 ở 25 °C với J_max = 0 (từng chu kỳ), 20 và 50, so RPT 1 (workflow `aging.yml`, job `jumpcheck`).
+- **c_rav qua bất biến** `x_av` (mục 5) và **JPattern bỏ các hàng sổ sách và T × độ xốp** (GD-63): tránh các hàng Jacobian dày làm số màu của Jacobian sai phân tăng vọt; nghiệm không đổi (chỉ Newton của ode15s xấp xỉ hơn).
+- **Chặn số học**: số mũ ≤ 60 trong exp, độ dày trong mẫu số ≥ 10⁻¹⁴ m — chỉ để tránh tràn số khi Newton thử điểm xa; không hoạt động trong vùng vật lý.
+- **Checkpoint**: `ag_run` lưu trạng thái mỗi 15 phút và sau mỗi RPT; CI nối tối đa 3 chặng × 5.1 h cho mỗi trường hợp.
 
 ---
 
