@@ -106,7 +106,7 @@ Quy tắc công bằng:
 - Bộ tối ưu khởi đầu từ đường CCCV.
 - Trường hợp không có cách sạc an toàn nào trong ngân sách thời gian thì ghi "không thể sạc an toàn trong thời gian này", không bỏ qua.
 - Lão hoá = lithium mất vĩnh viễn (SEI + lithium chết), đo sau khi sạc rồi xả về SOC đầu vùng. Lithium mạ tạm thời chỉ thống kê.
-- **Chờ người dùng xác nhận:** khi k > 1, có cho CCCV nghỉ đến cùng tổng thời gian k·T_CCCV trước khi chấm hay không (SEI vẫn lớn khi pin nằm yên).
+- **Người dùng chốt (17/11/2026): KHÔNG cho CCCV nghỉ thêm.** Mỗi cách sạc được chấm ngay khi sạc xong (rồi xả về SOC đầu vùng, giống nhau cho mọi cách). Cách nào sạc lâu hơn thì tự chịu phần SEI tăng thêm theo thời gian.
 
 **Thiết kế so sánh do người dùng chốt (17/11/2026)**
 
