@@ -18,9 +18,11 @@ on:
         description: "bien the so hoc NMPC (base | s4n12 | lm10 | s4lm10)"
         default: base
 
+# Nhom rieng cho moi lan bam Run workflow (chay song song, khong dung cham lan chay
+# cu dang xep hang 44068312720 thuoc nhom cu 'nmpc-refs/heads/main').
 concurrency:
-  group: nmpc-${{ github.ref }}
-  cancel-in-progress: true
+  group: nmpc2-${{ github.event_name == 'push' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'push' }}
 
 jobs:
   # ---- Buoc E: kiem tra thanh phan + so sanh ROM voi DFN -------------------
@@ -105,7 +107,7 @@ jobs:
       fail-fast: false
       matrix:
         variant: [base]
-        k: [1]
+        k: [2]
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-acados
