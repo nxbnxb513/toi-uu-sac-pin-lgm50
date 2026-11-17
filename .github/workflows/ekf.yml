@@ -52,16 +52,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # Dot chon cau hinh 2 (18/11/2026): tieu chi dat truoc trong tai_lieu/bo_uoc_luong_ekf.md muc 6.1
         include:
-          - {temp: 25, crate: 1,   noise: lab,     socerr: 0.1,  scen: mismatch, over: ''}
-          - {temp: 10, crate: 1,   noise: bms_off, socerr: 0.1,  scen: mismatch, over: ''}
-          - {temp: 25, crate: 0.5, noise: bms,     socerr: -0.1, scen: mismatch, over: ''}
-          - {temp: 25, crate: 1,   noise: lab,     socerr: 0.1,  scen: nominal,  over: ''}
-          - {temp: 25, crate: 1,   noise: lab,     socerr: 0.1,  scen: nominal,  over: 'n_iter=1'}
-          - {temp: 25, crate: 1,   noise: lab,     socerr: 0.1,  scen: mismatch, over: 'P0.rf=0.2;P0.lli=0.05'}
-          - {temp: 25, crate: 1,   noise: lab,     socerr: 0.1,  scen: mismatch, over: 'q1h.rf=0.02;sV_model=0.01'}
-          - {temp: 25, crate: 1,   noise: lab,     socerr: 0.1,  scen: mismatch, over: 't_hold=600'}
-          - {temp: 25, crate: 0.5, noise: bms,     socerr: -0.1, scen: mismatch, over: 't_hold=600'}
+          - {temp: 25, crate: 0.5, noise: bms    , socerr: -0.1, scen: mismatch, over: 'P0.rf=0.2;P0.lli=0.05'}
+          - {temp: 10, crate: 1  , noise: bms_off, socerr: 0.1 , scen: mismatch, over: 'P0.rf=0.2;P0.lli=0.05'}
+          - {temp: 25, crate: 1  , noise: lab    , socerr: 0.1 , scen: mismatch, over: 'P0.rf=0.2;P0.lli=0.05;t_hold=600'}
+          - {temp: 25, crate: 0.5, noise: bms    , socerr: -0.1, scen: mismatch, over: 'P0.rf=0.2;P0.lli=0.05;t_hold=600'}
+          - {temp: 10, crate: 1  , noise: bms_off, socerr: 0.1 , scen: mismatch, over: 'P0.rf=0.2;P0.lli=0.05;t_hold=600'}
+          - {temp: 25, crate: 1  , noise: lab    , socerr: 0.1 , scen: mismatch, over: 't_hold=1e6'}
+          - {temp: 25, crate: 0.5, noise: bms    , socerr: -0.1, scen: mismatch, over: 't_hold=1e6'}
+          - {temp: 10, crate: 1  , noise: bms_off, socerr: 0.1 , scen: mismatch, over: 't_hold=1e6'}
+          - {temp: 25, crate: 1  , noise: lab    , socerr: 0.1 , scen: mismatch, over: 't_hold=1e6;P0.rf=0.2;P0.lli=0.05'}
+          - {temp: 25, crate: 0.5, noise: bms    , socerr: -0.1, scen: mismatch, over: 't_hold=1e6;P0.rf=0.2;P0.lli=0.05'}
+          - {temp: 10, crate: 1  , noise: bms_off, socerr: 0.1 , scen: mismatch, over: 't_hold=1e6;P0.rf=0.2;P0.lli=0.05'}
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-acados

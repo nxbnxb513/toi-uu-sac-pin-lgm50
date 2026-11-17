@@ -51,6 +51,16 @@ KQ_SELFTEST
 
 ## 6. Phép thử với pin "thật" là DFN đầy đủ
 
+### 6.1. Tiêu chí chọn cấu hình (đặt TRƯỚC khi xem kết quả đợt chọn 2, 18/11/2026)
+
+So các cấu hình trên cùng ba trường hợp khó (pin lệch tham số `mismatch`): lab 25 °C 1C sai SOC +10 %; bms 25 °C 0.5C sai SOC −10 %; bms_off 10 °C 1C sai SOC +10 %. Cùng chuỗi nhiễu cho mọi cấu hình. Chỉ xét sau 600 s (bỏ giai đoạn hội tụ đầu). Xếp theo thứ tự ưu tiên; chênh lệch nhỏ hơn ngưỡng ghi trong ngoặc coi là hoà và xét tiêu chí sau:
+
+1. **Ước cao η_Li lớn nhất** (η_ước − η_thật > 0, phía nguy hiểm), lấy trường hợp xấu nhất trong ba (hoà nếu < 1 mV).
+2. **Độ nhất quán một phía của η_Li**: tỷ lệ thời gian η_thật ≥ η_ước − 3σ, trường hợp xấu nhất (hoà nếu < 5 điểm %).
+3. **SOC RMSE**, trường hợp xấu nhất (hoà nếu < 0.1 điểm %).
+4. **Trạng thái lão hoá**: sai lệch R_film/R_film,BOL và LLI cuối lần sạc.
+5. Không được dừng giữa chừng (bộ giải thất bại).
+
 KQ_THU
 
 ## 7. Giao diện cho vòng kín NMPC (ghi chú tích hợp)
