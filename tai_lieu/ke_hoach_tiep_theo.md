@@ -224,3 +224,8 @@ Với mỗi trường hợp (vùng sạc × mức dòng CCCV × nhiệt độ m�
 - **Chưa có kết quả chạy thử NMPC nào.** Việc dở dang lúc dừng: nối `plant_run` (dòng cuối của luồng: "Now wire it into plant_run"). Kiểm tra `git diff cf85569 -- src/nmpc` không còn gì dang dở trước khi chạy.
 - Việc tiếp: chạy `nmpc.yml` (workflow_dispatch, chế độ pilot), đọc log, báo bảng kết quả vào `tai_lieu/ket_qua_pilot_nmpc.md`.
 - Lượt NMPC cũ 44068312720 nằm chờ rất lâu; người dùng có thể huỷ trong tab Actions.
+
+## Quyết định người dùng (17/11/2026, tối)
+
+- Điện áp sạc: coi 4.116 V (V_cv mặc định) **tương đương 4.2 V**. Sạc lên 4.116 V được coi như đã đạt 4.2 V của giao thức thí nghiệm. Kiểm chứng lão hoá (Expt 2/3) chạy với V_cv = 4.116 V; biến thể 4.2 V không cần thiết.
+- Ba điểm GD-55 (nồng độ sau khi cạn), GD-56 (thấm lại) và GD-60 (cách chuẩn hoá SOH): người dùng chưa quyết, đã được giải thích; giữ nguyên lựa chọn hiện tại cho tới khi có quyết định.
