@@ -70,6 +70,18 @@ for soc = [0.05 0.5 0.95]
         assert(abs(nsR - nsD) < 1e-9*nsD && abs(neR - neD) < 1e-9*neD, 'anh xa khong bao toan lithium');
     end
 end
+% 6. OCP cua ROM trung DFN mac dinh khi sac va khi xa (logic nhanh / hysteresis)
+y = dfn_state_soc(par, 0.5, 298.15); err = 0;
+for I = [-10 -1 -0.01 0 0.01 5]
+    ctl = struct('mode', 'I', 'value', I, 'Tamb', 298.15);
+    yc = dfn_consistent_init(0, y, par, ctl);
+    [~, a] = dfn_rhs(0, yc, par, ctl);
+    xn = min(max(a.thsn, 1e-8), 1 - 1e-8); xp = min(max(a.thsp, 1e-8), 1 - 1e-8);
+    [Un, Up] = rom_ocp(par, xn, xp, I/par.A, a.T);
+    err = max([err; abs(Un - a.Un); abs(Up - a.Up)]);
+end
+p('\n- 6. rom_ocp so voi aux.Un, aux.Up cua dfn_rhs (I = -10 ... 5 A): lech lon nhat %.2e V\n', err);
+assert(err < 1e-12, 'OCP cua ROM khac logic OCP cua DFN mac dinh');
 fclose(fid);
 fprintf('\nROM UNIT TESTS: DAT\n');
 

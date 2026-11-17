@@ -43,12 +43,7 @@ thsn = vertcat(thsn{:}); thsp = vertcat(thsp{:});
 xsn = clamp01(thsn); xsp = clamp01(thsp);
 
 % ---- OCP hai nhanh + hysteresis "current sigmoid" (giong dfn_rhs.m) ------
-m = 0.5*(1 + tanh(par.hys.k*(iapp + par.hys.offset)));
-[Unl, Und, dUn] = dfn_ocp_neg(xsn);
-[Upl, Upd, dUp] = dfn_ocp_pos(xsp);
-dUn = dUn*par.dUdT_scale/1e-3; dUp = dUp*par.dUdT_scale/1e-3;
-Un = (1 - m)*Unl + m*Und + (T - par.Tref)*dUn;
-Up = m*Upl + (1 - m)*Upd + (T - par.Tref)*dUp;
+[Un, Up, dUn, dUp] = rom_ocp(par, xsn, xsp, iapp, T);   % cung logic voi dfn_rhs.m (kiem tra trong rom_unit_tests.m)
 
 % ---- khuech tan trong hat -----------------------------------------------
 dth = cell(Nn + Np, 1);

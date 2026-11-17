@@ -34,7 +34,7 @@ jobs:
       matrix:
         temp: [25, 10]
         dir: [charge, discharge]
-        cfg: [A, B, C, D]
+        cfg: [D]   # so sanh A-D: lan chay 44045657657 (tai_lieu/mo_hinh_rut_gon.md muc 2)
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-acados
@@ -104,7 +104,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [tol, tols16]
+        variant: [base]
         k: [1]
     steps:
       - uses: actions/checkout@v4
