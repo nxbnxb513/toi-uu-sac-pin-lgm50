@@ -1,0 +1,780 @@
+{
+ "n_members_fetched_from_big_zip": 278,
+ "bytes_fetched_members": 522905,
+ "dm_files_with_extra_columns_ignored": [
+  "SimSave/InputData/Expt 5 - Standard Cycle Aging (Control)/DMA Output/cell A/Expt 5 - DM data from OCV-fitting for cell A.csv"
+ ],
+ "exp_series_whose_cell_temperature_differs_from_panel_temperature": [
+  "Fig.6|b|exp_sample1 -> Expt 3 cell C (10 degC nominal), panel = 25.0 degC",
+  "Fig.6|c|exp_sample1 -> Expt 3 cell E (25 degC nominal), panel = 40.0 degC",
+  "Fig.6|c|exp_sample2 -> Expt 3 cell F (25 degC nominal), panel = 40.0 degC",
+  "Fig.6|h|exp_sample1 -> Expt 3 cell C (10 degC nominal), panel = 25.0 degC",
+  "Fig.6|i|exp_sample1 -> Expt 3 cell E (25 degC nominal), panel = 40.0 degC",
+  "Fig.6|i|exp_sample2 -> Expt 3 cell F (25 degC nominal), panel = 40.0 degC",
+  "Fig.6|k|exp_sample1 -> Expt 3 cell C (10 degC nominal), panel = 25.0 degC",
+  "Fig.6|l|exp_sample1 -> Expt 3 cell E (25 degC nominal), panel = 40.0 degC",
+  "Fig.6|l|exp_sample2 -> Expt 3 cell F (25 degC nominal), panel = 40.0 degC",
+  "Fig.6|n|exp_sample1 -> Expt 3 cell C (10 degC nominal), panel = 25.0 degC",
+  "Fig.6|o|exp_sample1 -> Expt 3 cell E (25 degC nominal), panel = 40.0 degC",
+  "Fig.6|o|exp_sample2 -> Expt 3 cell F (25 degC nominal), panel = 40.0 degC"
+ ],
+ "panel_to_experiment_matching": {
+  "Fig.3|a": [
+   {
+    "series": "exp_sample1",
+    "expt": "2,2",
+    "T_nominal_degC": 10,
+    "cell": "A",
+    "match_fraction": 1.0
+   },
+   {
+    "series": "exp_sample2",
+    "expt": "2,2",
+    "T_nominal_degC": 10,
+    "cell": "B",
+    "match_fraction": 1.0
+   }
+  ],
+  "Fig.3|d": [
+   {
+    "series": "exp_sample1",
+    "expt": "2,2",
+    "T_nominal_degC": 10,
+    "cell": "A",
+    "match_fraction": 1.0
+   },
+   {
+    "series": "exp_sample2",
+    "expt": "2,2",
+    "T_nominal_degC": 10,
+    "cell": "B",
+    "match_fraction": 1.0
+   }
+  ],
+  "Fig.3|b": [
+   {
+    "series": "exp_sample1",
+    "expt": "2,2",
+    "T_nominal_degC": 25,
+    "cell": "C",
+    "match_fraction": 1.0
+   },
+   {
+    "series": "exp_sample2",
+    "expt": "2,2",
+    "T_nominal_degC": 25,
+    "cell": "D",
+    "match_fraction": 1.0
+   }
+  ],
+  "Fig.3|e": [
+   {
+    "series": "exp_sample1",
+    "expt": "2,2",
+    "T_nominal_degC": 25,
+    "cell": "C",
+    "match_fraction": 1.0
+   },
+   {
+    "series": "exp_sample2",
+    "expt": "2,2",
+    "T_nominal_degC": 25,
+    "cell": "D",
+    "match_fraction": 1.0
+   }
+  ],
+  "Fig.3|c": [
+   {
+    "series": "exp_sample1",
+    "expt": "2,2",
+    "T_nominal_degC": 40,
+    "cell": "E",
+    "match_fraction": 1.0
+   },
+   {
+    "series": "exp_sample2",
+    "expt": "2,2",
+    "T_nominal_degC": 40,
+    "cell": "F",
+    "match_fraction": 1.0
+   }
+  ],
+  "Fig.3|f": [
+   {
+    "series": "exp_sample1",
+    "expt": "2,2",
+    "T_nominal_degC": 40,
+    "cell": "E",
+    "match_fraction": 1.0
+   },
+   {
+    "series": "exp_sample2",
+    "expt": "2,2",
+    "T_nominal_degC": 40,
+    "cell": "F",
+    "match_fraction": 1.0
+   }
+  ],
+  "Fig.4|a": [
+   {
+    "series": "exp_sample1",
+    "expt": "2,2",
+    "T_nominal_degC": 10,
+    "cell": "A",
+    "match_fraction": 1.0
+   },
+   {
+    "series": "exp_sample2",
+    "expt": "2,2",
+    "T_nominal_degC": 10,
+    "cell": "B",
+    "match_fraction": 1.0
+   }
+  ],
+  "Fig.4|b": [
+   {
+    "series": "exp_sample1",
+    "expt": "2,2",
+    "T_nominal_degC": 25,
+    "cell": "C",
+    "match_fraction": 1.0
+   },
+   {
+    "series": "exp_sample2",
+    "expt": "2,2",
+    "T_nominal_degC": 25,
+    "cell": "D",
+    "match_fraction": 1.0
+   }
+  ],
+  "Fig.4|c": [
+   {
+    "series": "exp_sample1",
+    "expt": "2,2",
+    "T_nominal_degC": 40,
+    "cell": "E",
+    "match_fraction": 1.0
+   },
+   {
+    "series": "exp_sample2",
+    "expt": "2,2",
+    "T_nominal_degC": 40,
+    "cell": "F",
+    "match_fraction": 1.0
+   }
+  ],
+  "Fig.4|d": [
+   {
+    "series": "exp_sample1",
+    "expt": "2,2",
+    "T_nominal_degC": 10,
+    "cell": "A",
+    "match_fraction": 1.0
+   },
+   {
+    "series": "exp_sample2",
+    "expt": "2,2",
+    "T_nominal_degC": 10,
+    "cell": "B",
+    "match_fraction": 1.0
+   }
+  ],
+  "Fig.4|e": [
+   {
+    "series": "exp_sample1",
+    "expt": "2,2",
+    "T_nominal_degC": 25,
+    "cell": "C",
+    "match_fraction": 1.0
+   },
+   {
+    "series": "exp_sample2",
+    "expt": "2,2",
+    "T_nominal_degC": 25,
+    "cell": "D",
+    "match_fraction": 1.0
+   }
+  ],
+  "Fig.4|f": [
+   {
+    "series": "exp_sample1",
+    "expt": "2,2",
+    "T_nominal_degC": 40,
+    "cell": "E",
+    "match_fraction": 1.0
+   },
+   {
+    "series": "exp_sample2",
+    "expt": "2,2",
+    "T_nominal_degC": 40,
+    "cell": "F",
+    "match_fraction": 1.0
+   }
+  ],
+  "Fig.4|g": [
+   {
+    "series": "exp_sample1",
+    "expt": "2,2",
+    "T_nominal_degC": 10,
+    "cell": "A",
+    "match_fraction": 1.0
+   },
+   {
+    "series": "exp_sample2",
+    "expt": "2,2",
+    "T_nominal_degC": 10,
+    "cell": "B",
+    "match_fraction": 1.0
+   }
+  ],
+  "Fig.4|h": [
+   {
+    "series": "exp_sample1",
+    "expt": "2,2",
+    "T_nominal_degC": 25,
+    "cell": "C",
+    "match_fraction": 1.0
+   },
+   {
+    "series": "exp_sample2",
+    "expt": "2,2",
+    "T_nominal_degC": 25,
+    "cell": "D",
+    "match_fraction": 1.0
+   }
+  ],
+  "Fig.4|i": [
+   {
+    "series": "exp_sample1",
+    "expt": "2,2",
+    "T_nominal_degC": 40,
+    "cell": "E",
+    "match_fraction": 1.0
+   },
+   {
+    "series": "exp_sample2",
+    "expt": "2,2",
+    "T_nominal_degC": 40,
+    "cell": "F",
+    "match_fraction": 1.0
+   }
+  ],
+  "Fig.6|a": [
+   {
+    "series": "exp_sample1",
+    "expt": "3",
+    "T_nominal_degC": 10,
+    "cell": "A",
+    "match_fraction": 1.0
+   },
+   {
+    "series": "exp_sample2",
+    "expt": "3",
+    "T_nominal_degC": 10,
+    "cell": "B",
+    "match_fraction": 1.0
+   }
+  ],
+  "Fig.6|b": [
+   {
+    "series": "exp_sample1",
+    "expt": "3",
+    "T_nominal_degC": 10,
+    "cell": "C",
+    "match_fraction": 1.0
+   },
+   {
+    "series": "exp_sample2",
+    "expt": "3",
+    "T_nominal_degC": 25,
+    "cell": "D",
+    "match_fraction": 1.0
+   }
+  ],
+  "Fig.6|c": [
+   {
+    "series": "exp_sample1",
+    "expt": "3",
+    "T_nominal_degC": 25,
+    "cell": "E",
+    "match_fraction": 1.0
+   },
+   {
+    "series": "exp_sample2",
+    "expt": "3",
+    "T_nominal_degC": 25,
+    "cell": "F",
+    "match_fraction": 1.0
+   }
+  ],
+  "Fig.6|g": [
+   {
+    "series": "exp_sample1",
+    "expt": "3",
+    "T_nominal_degC": 10,
+    "cell": "A",
+    "match_fraction": 1.0
+   },
+   {
+    "series": "exp_sample2",
+    "expt": "3",
+    "T_nominal_degC": 10,
+    "cell": "B",
+    "match_fraction": 1.0
+   }
+  ],
+  "Fig.6|h": [
+   {
+    "series": "exp_sample1",
+    "expt": "3",
+    "T_nominal_degC": 10,
+    "cell": "C",
+    "match_fraction": 1.0
+   },
+   {
+    "series": "exp_sample2",
+    "expt": "3",
+    "T_nominal_degC": 25,
+    "cell": "D",
+    "match_fraction": 1.0
+   }
+  ],
+  "Fig.6|i": [
+   {
+    "series": "exp_sample1",
+    "expt": "3",
+    "T_nominal_degC": 25,
+    "cell": "E",
+    "match_fraction": 1.0
+   },
+   {
+    "series": "exp_sample2",
+    "expt": "3",
+    "T_nominal_degC": 25,
+    "cell": "F",
+    "match_fraction": 1.0
+   }
+  ],
+  "Fig.6|j": [
+   {
+    "series": "exp_sample1",
+    "expt": "3",
+    "T_nominal_degC": 10,
+    "cell": "A",
+    "match_fraction": 1.0
+   },
+   {
+    "series": "exp_sample2",
+    "expt": "3",
+    "T_nominal_degC": 10,
+    "cell": "B",
+    "match_fraction": 1.0
+   }
+  ],
+  "Fig.6|k": [
+   {
+    "series": "exp_sample1",
+    "expt": "3",
+    "T_nominal_degC": 10,
+    "cell": "C",
+    "match_fraction": 1.0
+   },
+   {
+    "series": "exp_sample2",
+    "expt": "3",
+    "T_nominal_degC": 25,
+    "cell": "D",
+    "match_fraction": 1.0
+   }
+  ],
+  "Fig.6|l": [
+   {
+    "series": "exp_sample1",
+    "expt": "3",
+    "T_nominal_degC": 25,
+    "cell": "E",
+    "match_fraction": 1.0
+   },
+   {
+    "series": "exp_sample2",
+    "expt": "3",
+    "T_nominal_degC": 25,
+    "cell": "F",
+    "match_fraction": 1.0
+   }
+  ],
+  "Fig.6|m": [
+   {
+    "series": "exp_sample1",
+    "expt": "3",
+    "T_nominal_degC": 10,
+    "cell": "A",
+    "match_fraction": 1.0
+   },
+   {
+    "series": "exp_sample2",
+    "expt": "3",
+    "T_nominal_degC": 10,
+    "cell": "B",
+    "match_fraction": 1.0
+   }
+  ],
+  "Fig.6|n": [
+   {
+    "series": "exp_sample1",
+    "expt": "3",
+    "T_nominal_degC": 10,
+    "cell": "C",
+    "match_fraction": 1.0
+   },
+   {
+    "series": "exp_sample2",
+    "expt": "3",
+    "T_nominal_degC": 25,
+    "cell": "D",
+    "match_fraction": 1.0
+   }
+  ],
+  "Fig.6|o": [
+   {
+    "series": "exp_sample1",
+    "expt": "3",
+    "T_nominal_degC": 25,
+    "cell": "E",
+    "match_fraction": 1.0
+   },
+   {
+    "series": "exp_sample2",
+    "expt": "3",
+    "T_nominal_degC": 25,
+    "cell": "F",
+    "match_fraction": 1.0
+   }
+  ],
+  "Supplementary Figure 7|a": [
+   {
+    "series": "exp_cell_K",
+    "expt": "1",
+    "T_nominal_degC": 40,
+    "cell": "K",
+    "match_fraction": 1.0
+   },
+   {
+    "series": "exp_cell_L",
+    "expt": "1",
+    "T_nominal_degC": 40,
+    "cell": "L",
+    "match_fraction": 1.0
+   },
+   {
+    "series": "exp_cell_M",
+    "expt": "1",
+    "T_nominal_degC": 40,
+    "cell": "M",
+    "match_fraction": 1.0
+   }
+  ],
+  "Supplementary Figure 7|b": [
+   {
+    "series": "exp_cell_K",
+    "expt": "1",
+    "T_nominal_degC": 40,
+    "cell": "K",
+    "match_fraction": 1.0
+   },
+   {
+    "series": "exp_cell_L",
+    "expt": "1",
+    "T_nominal_degC": 40,
+    "cell": "L",
+    "match_fraction": 1.0
+   },
+   {
+    "series": "exp_cell_M",
+    "expt": "1",
+    "T_nominal_degC": 40,
+    "cell": "M",
+    "match_fraction": 1.0
+   }
+  ],
+  "Supplementary Figure 7|c": [
+   {
+    "series": "exp_cell_K",
+    "expt": "1",
+    "T_nominal_degC": 40,
+    "cell": "K",
+    "match_fraction": 1.0
+   },
+   {
+    "series": "exp_cell_L",
+    "expt": "1",
+    "T_nominal_degC": 40,
+    "cell": "L",
+    "match_fraction": 1.0
+   },
+   {
+    "series": "exp_cell_M",
+    "expt": "1",
+    "T_nominal_degC": 40,
+    "cell": "M",
+    "match_fraction": 1.0
+   }
+  ],
+  "Supplementary Figure 7|d": [
+   {
+    "series": "exp_cell_K",
+    "expt": "1",
+    "T_nominal_degC": 40,
+    "cell": "K",
+    "match_fraction": 1.0
+   },
+   {
+    "series": "exp_cell_L",
+    "expt": "1",
+    "T_nominal_degC": 40,
+    "cell": "L",
+    "match_fraction": 1.0
+   },
+   {
+    "series": "exp_cell_M",
+    "expt": "1",
+    "T_nominal_degC": 40,
+    "cell": "M",
+    "match_fraction": 1.0
+   }
+  ],
+  "Supplementary Figure 7|e": [
+   {
+    "series": "exp_cell_K",
+    "expt": "1",
+    "T_nominal_degC": 40,
+    "cell": "K",
+    "match_fraction": 1.0
+   },
+   {
+    "series": "exp_cell_L",
+    "expt": "1",
+    "T_nominal_degC": 40,
+    "cell": "L",
+    "match_fraction": 1.0
+   },
+   {
+    "series": "exp_cell_M",
+    "expt": "1",
+    "T_nominal_degC": 40,
+    "cell": "M",
+    "match_fraction": 1.0
+   }
+  ],
+  "Supplementary Figure 7|f": [
+   {
+    "series": "exp_cell_F",
+    "expt": "5",
+    "T_nominal_degC": 40,
+    "cell": "F",
+    "match_fraction": 1.0
+   },
+   {
+    "series": "exp_cell_G",
+    "expt": "5",
+    "T_nominal_degC": 40,
+    "cell": "G",
+    "match_fraction": 1.0
+   },
+   {
+    "series": "exp_cell_H",
+    "expt": "5",
+    "T_nominal_degC": 40,
+    "cell": "H",
+    "match_fraction": 1.0
+   }
+  ],
+  "Supplementary Figure 7|g": [
+   {
+    "series": "exp_cell_F",
+    "expt": "5",
+    "T_nominal_degC": 40,
+    "cell": "F",
+    "match_fraction": 1.0
+   },
+   {
+    "series": "exp_cell_G",
+    "expt": "5",
+    "T_nominal_degC": 40,
+    "cell": "G",
+    "match_fraction": 1.0
+   },
+   {
+    "series": "exp_cell_H",
+    "expt": "5",
+    "T_nominal_degC": 40,
+    "cell": "H",
+    "match_fraction": 1.0
+   }
+  ],
+  "Supplementary Figure 7|h": [
+   {
+    "series": "exp_cell_F",
+    "expt": "5",
+    "T_nominal_degC": 40,
+    "cell": "F",
+    "match_fraction": 1.0
+   },
+   {
+    "series": "exp_cell_G",
+    "expt": "5",
+    "T_nominal_degC": 40,
+    "cell": "G",
+    "match_fraction": 1.0
+   },
+   {
+    "series": "exp_cell_H",
+    "expt": "5",
+    "T_nominal_degC": 40,
+    "cell": "H",
+    "match_fraction": 1.0
+   }
+  ],
+  "Supplementary Figure 7|i": [
+   {
+    "series": "exp_cell_F",
+    "expt": "5",
+    "T_nominal_degC": 40,
+    "cell": "F",
+    "match_fraction": 1.0
+   },
+   {
+    "series": "exp_cell_G",
+    "expt": "5",
+    "T_nominal_degC": 40,
+    "cell": "G",
+    "match_fraction": 1.0
+   },
+   {
+    "series": "exp_cell_H",
+    "expt": "5",
+    "T_nominal_degC": 40,
+    "cell": "H",
+    "match_fraction": 1.0
+   }
+  ],
+  "Supplementary Figure 7|j": [
+   {
+    "series": "exp_cell_F",
+    "expt": "5",
+    "T_nominal_degC": 40,
+    "cell": "F",
+    "match_fraction": 1.0
+   },
+   {
+    "series": "exp_cell_G",
+    "expt": "5",
+    "T_nominal_degC": 40,
+    "cell": "G",
+    "match_fraction": 1.0
+   },
+   {
+    "series": "exp_cell_H",
+    "expt": "5",
+    "T_nominal_degC": 40,
+    "cell": "H",
+    "match_fraction": 1.0
+   }
+  ]
+ },
+ "fig_ageing_rows": 3045,
+ "fig_ageing_series_counts": {
+  "Fig.3|exp_avg": 60,
+  "Fig.3|exp_sample1": 60,
+  "Fig.3|exp_sample2": 60,
+  "Fig.3|model_5_coupled": 78,
+  "Fig.3|model_SEI_dry_out": 78,
+  "Fig.3|model_SEI_only": 78,
+  "Fig.4|exp_avg": 117,
+  "Fig.4|exp_sample1": 117,
+  "Fig.4|exp_sample2": 117,
+  "Fig.4|model_5_coupled": 117,
+  "Fig.4|model_SEI_dry_out": 117,
+  "Fig.4|model_SEI_only": 117,
+  "Fig.6|exp_avg": 154,
+  "Fig.6|exp_sample1": 154,
+  "Fig.6|exp_sample2": 158,
+  "Fig.6|model_5_coupled": 195,
+  "Fig.6|model_SEI_dry_out": 195,
+  "Fig.6|model_SEI_only": 195,
+  "Supplementary Figure 7|exp_avg": 122,
+  "Supplementary Figure 7|exp_cell_F": 72,
+  "Supplementary Figure 7|exp_cell_G": 72,
+  "Supplementary Figure 7|exp_cell_H": 72,
+  "Supplementary Figure 7|exp_cell_K": 50,
+  "Supplementary Figure 7|exp_cell_L": 50,
+  "Supplementary Figure 7|exp_cell_M": 50,
+  "Supplementary Figure 7|model_5_coupled": 130,
+  "Supplementary Figure 7|model_SEI_dry_out": 130,
+  "Supplementary Figure 7|model_SEI_only": 130
+ },
+ "dUdT_suppl_fig10": {
+  "negative": {
+   "n": 1000,
+   "plotted_min": -0.08206,
+   "plotted_max": 0.3760341098943539,
+   "printed_function_min": -0.08199000000000001,
+   "printed_function_max": 0.37602213492867165,
+   "rmse_plotted_vs_printed": 4.6033439112078816e-05,
+   "rmse_plotted_vs_printed_times_1e-3": 0.11837194461169082,
+   "median_ratio_plotted_over_printed": 0.999946605305262
+  },
+  "positive": {
+   "n": 1000,
+   "plotted_min": -0.06655951808897578,
+   "plotted_max": 0.0400502342758326,
+   "printed_function_min": -0.06655951808897578,
+   "printed_function_max": 0.0400502342758326,
+   "rmse_plotted_vs_printed": 9.749761974053447e-18,
+   "rmse_plotted_vs_printed_times_1e-3": 0.0296150041950509,
+   "median_ratio_plotted_over_printed": 1.0
+  }
+ },
+ "model_input_cases": {
+  "n_cases": 27,
+  "columns": [
+   "Scan No",
+   "Exp No.",
+   "Ageing temperature",
+   "Mesh list",
+   "Inner SEI lithium interstitial diffusivity [m2.s-1]",
+   "Dead lithium decay constant [s-1]",
+   "Lithium plating kinetic rate constant [m.s-1]",
+   "Negative electrode LAM constant proportional term [s-1]",
+   "Positive electrode LAM constant proportional term [s-1]",
+   "Negative electrode cracking rate",
+   "Outer SEI partial molar volume [m3.mol-1]",
+   "SEI growth activation energy [J.mol-1]",
+   "Negative cracking growth activation energy [J.mol-1]",
+   "Negative electrode diffusivity activation energy [J.mol-1]",
+   "Positive electrode diffusivity activation energy [J.mol-1]",
+   "Contact resistance [Ohm]",
+   "Total heat transfer coefficient [W.m-2.K-1]",
+   "Initial electrolyte excessive amount ratio",
+   "Cycles within RPT",
+   "RPT temperature",
+   "Para_Set",
+   "Model option",
+   "Current solvent concentration in the reservoir [mol.m-3]",
+   "Current electrolyte concentration in the reservoir [mol.m-3]",
+   "Ratio of Li-ion concentration change in electrolyte consider solvent consumption",
+   "EC initial concentration in electrolyte [mol.m-3]",
+   "Typical EC concentration in electrolyte [mol.m-3]",
+   "Y or N",
+   "Error Tot%",
+   "Error SOH %",
+   "Error LLI %",
+   "Error LAM NE %",
+   "Error LAM PE %",
+   "Error Res %",
+   "Error ageT %",
+   "Punish",
+   "Error"
+  ]
+ }
+}

@@ -1,0 +1,41 @@
+Expt,Expt long name,SoC range,Cell,Temp,Rig,Channel,Age sets,special_channel,special_label
+5,Expt 5 - Standard Cycle Aging (Control),0-100,A,10,2,CC4,15,,
+5,Expt 5 - Standard Cycle Aging (Control),0-100,B,10,2,CC5,15,,
+5,Expt 5 - Standard Cycle Aging (Control),0-100,C,10,2,CC6,15,,
+5,Expt 5 - Standard Cycle Aging (Control),0-100,D,25,2,CC7,15,,
+5,Expt 5 - Standard Cycle Aging (Control),0-100,E,25,2,CC8,15,,
+5,Expt 5 - Standard Cycle Aging (Control),0-100,F,40,5,CE6,15,,
+5,Expt 5 - Standard Cycle Aging (Control),0-100,G,40,5,CE7,15,,
+5,Expt 5 - Standard Cycle Aging (Control),0-100,H,40,5,CE8,15,,
+4,Expt 4 - Drive Cycle Aging (Control),drivecycle,A,10,2,CC1,9,,
+4,Expt 4 - Drive Cycle Aging (Control),drivecycle,B,10,2,CC2,9,,
+4,Expt 4 - Drive Cycle Aging (Control),drivecycle,C,10,2,CC3,9,,
+4,Expt 4 - Drive Cycle Aging (Control),drivecycle,D,25,5,CE1,9,,
+4,Expt 4 - Drive Cycle Aging (Control),drivecycle,E,25,5,CE2,9,,
+4,Expt 4 - Drive Cycle Aging (Control),drivecycle,F,40,5,CE3,9,,
+4,Expt 4 - Drive Cycle Aging (Control),drivecycle,G,40,5,CE4,9,,
+4,Expt 4 - Drive Cycle Aging (Control),drivecycle,H,40,5,CE5,9,,
+3,Expt 3 - Cathode Degradation and Li-Plating,85-100,A,10,1,CB6,10,CD6,
+3,Expt 3 - Cathode Degradation and Li-Plating,85-100,B,10,1,CB7,10,CD7,
+3,Expt 3 - Cathode Degradation and Li-Plating,85-100,C,10,1,CB8,10,CD8,
+3,Expt 3 - Cathode Degradation and Li-Plating,85-100,D,25,3,CA6,11,,
+3,Expt 3 - Cathode Degradation and Li-Plating,85-100,E,25,3,CA7,11,,
+3,Expt 3 - Cathode Degradation and Li-Plating,85-100,F,25,3,CA8,11,,
+3,Expt 3 - Cathode Degradation and Li-Plating,85-100,G,40,6,CF6,11,,
+3,Expt 3 - Cathode Degradation and Li-Plating,85-100,H,40,6,CF7,12,,
+3,Expt 3 - Cathode Degradation and Li-Plating,85-100,I,40,6,CF8,12,,
+"2,2","Expt 2,2 - C-based Degradation 2",70-85,A,10,1,CB4,12,,BoL - RPT0_slow
+"2,2","Expt 2,2 - C-based Degradation 2",70-85,B,10,1,CB5,12,,BoL - RPT0_slow
+"2,2","Expt 2,2 - C-based Degradation 2",70-85,C,25,3,CA4,12,,BoL - RPT0_slow
+"2,2","Expt 2,2 - C-based Degradation 2",70-85,D,25,3,CA5,12,,BoL - RPT0_slow
+"2,2","Expt 2,2 - C-based Degradation 2",70-85,E,40,6,CF4,12,,BoL - RPT0_slow
+"2,2","Expt 2,2 - C-based Degradation 2",70-85,F,40,6,CF5,12,,BoL - RPT0_slow
+1,Expt 1 - Si-based Degradation,0-30,A,10,1,CB1,14,CD1,
+1,Expt 1 - Si-based Degradation,0-30,B,10,1,CB2,14,CD2,
+1,Expt 1 - Si-based Degradation,0-30,J,10,1,CB3,10,,BoL - RPT0_slow
+1,Expt 1 - Si-based Degradation,0-30,D,25,3,CA1,13,,
+1,Expt 1 - Si-based Degradation,0-30,E,25,3,CA2,14,,
+1,Expt 1 - Si-based Degradation,0-30,F,25,3,CA3,14,,
+1,Expt 1 - Si-based Degradation,0-30,K,40,6,CF1,10,,BoL - RPT0_slow
+1,Expt 1 - Si-based Degradation,0-30,L,40,6,CF2,10,,BoL - RPT0_slow
+1,Expt 1 - Si-based Degradation,0-30,M,40,6,CF3,10,,BoL - RPT0_slow

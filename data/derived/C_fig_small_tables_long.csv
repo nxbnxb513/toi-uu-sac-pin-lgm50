@@ -1,0 +1,979 @@
+figure,panel,column,row,value
+Supplementary Figure 13,a,E_act_SEI,0,500
+Supplementary Figure 13,a,E_act_SEI,1,5000
+Supplementary Figure 13,a,E_act_SEI,2,50000
+Supplementary Figure 13,a,E_act_SEI,3,500
+Supplementary Figure 13,a,E_act_SEI,4,5000
+Supplementary Figure 13,a,E_act_SEI,5,50000
+Supplementary Figure 13,a,E_act_SEI,6,500
+Supplementary Figure 13,a,E_act_SEI,7,5000
+Supplementary Figure 13,a,E_act_SEI,8,50000
+Supplementary Figure 13,a,E_act_Dn,0,20000
+Supplementary Figure 13,a,E_act_Dn,1,20000
+Supplementary Figure 13,a,E_act_Dn,2,20000
+Supplementary Figure 13,a,E_act_Dn,3,40000
+Supplementary Figure 13,a,E_act_Dn,4,40000
+Supplementary Figure 13,a,E_act_Dn,5,40000
+Supplementary Figure 13,a,E_act_Dn,6,60000
+Supplementary Figure 13,a,E_act_Dn,7,60000
+Supplementary Figure 13,a,E_act_Dn,8,60000
+Supplementary Figure 13,a,Dependency_Type_SEI_only,0,3
+Supplementary Figure 13,a,Dependency_Type_SEI_only,1,2
+Supplementary Figure 13,a,Dependency_Type_SEI_only,2,1
+Supplementary Figure 13,a,Dependency_Type_SEI_only,3,3
+Supplementary Figure 13,a,Dependency_Type_SEI_only,4,2
+Supplementary Figure 13,a,Dependency_Type_SEI_only,5,1
+Supplementary Figure 13,a,Dependency_Type_SEI_only,6,3
+Supplementary Figure 13,a,Dependency_Type_SEI_only,7,3
+Supplementary Figure 13,a,Dependency_Type_SEI_only,8,1
+Supplementary Figure 13,b,E_act_SEI,0,500
+Supplementary Figure 13,b,E_act_SEI,1,5000
+Supplementary Figure 13,b,E_act_SEI,2,50000
+Supplementary Figure 13,b,E_act_SEI,3,500
+Supplementary Figure 13,b,E_act_SEI,4,5000
+Supplementary Figure 13,b,E_act_SEI,5,50000
+Supplementary Figure 13,b,E_act_SEI,6,500
+Supplementary Figure 13,b,E_act_SEI,7,5000
+Supplementary Figure 13,b,E_act_SEI,8,50000
+Supplementary Figure 13,b,E_act_Dn,0,20000
+Supplementary Figure 13,b,E_act_Dn,1,20000
+Supplementary Figure 13,b,E_act_Dn,2,20000
+Supplementary Figure 13,b,E_act_Dn,3,40000
+Supplementary Figure 13,b,E_act_Dn,4,40000
+Supplementary Figure 13,b,E_act_Dn,5,40000
+Supplementary Figure 13,b,E_act_Dn,6,60000
+Supplementary Figure 13,b,E_act_Dn,7,60000
+Supplementary Figure 13,b,E_act_Dn,8,60000
+Supplementary Figure 13,b,Dependency_Type_SEI_Dry_out,0,3
+Supplementary Figure 13,b,Dependency_Type_SEI_Dry_out,1,2
+Supplementary Figure 13,b,Dependency_Type_SEI_Dry_out,2,1
+Supplementary Figure 13,b,Dependency_Type_SEI_Dry_out,3,3
+Supplementary Figure 13,b,Dependency_Type_SEI_Dry_out,4,2
+Supplementary Figure 13,b,Dependency_Type_SEI_Dry_out,5,1
+Supplementary Figure 13,b,Dependency_Type_SEI_Dry_out,6,3
+Supplementary Figure 13,b,Dependency_Type_SEI_Dry_out,7,3
+Supplementary Figure 13,b,Dependency_Type_SEI_Dry_out,8,2
+Supplementary Figure 13,c,E_act_SEI,0,500
+Supplementary Figure 13,c,E_act_SEI,1,5000
+Supplementary Figure 13,c,E_act_SEI,2,50000
+Supplementary Figure 13,c,E_act_SEI,3,500
+Supplementary Figure 13,c,E_act_SEI,4,5000
+Supplementary Figure 13,c,E_act_SEI,5,50000
+Supplementary Figure 13,c,E_act_SEI,6,500
+Supplementary Figure 13,c,E_act_SEI,7,5000
+Supplementary Figure 13,c,E_act_SEI,8,50000
+Supplementary Figure 13,c,E_act_Dn,0,20000
+Supplementary Figure 13,c,E_act_Dn,1,20000
+Supplementary Figure 13,c,E_act_Dn,2,20000
+Supplementary Figure 13,c,E_act_Dn,3,40000
+Supplementary Figure 13,c,E_act_Dn,4,40000
+Supplementary Figure 13,c,E_act_Dn,5,40000
+Supplementary Figure 13,c,E_act_Dn,6,60000
+Supplementary Figure 13,c,E_act_Dn,7,60000
+Supplementary Figure 13,c,E_act_Dn,8,60000
+Supplementary Figure 13,c,Dependency_Type_5_coupled,0,3
+Supplementary Figure 13,c,Dependency_Type_5_coupled,1,2
+Supplementary Figure 13,c,Dependency_Type_5_coupled,2,1
+Supplementary Figure 13,c,Dependency_Type_5_coupled,3,3
+Supplementary Figure 13,c,Dependency_Type_5_coupled,4,3
+Supplementary Figure 13,c,Dependency_Type_5_coupled,5,2
+Supplementary Figure 13,c,Dependency_Type_5_coupled,6,3
+Supplementary Figure 13,c,Dependency_Type_5_coupled,7,3
+Supplementary Figure 13,c,Dependency_Type_5_coupled,8,2
+Supplementary Figure 15,a,RPT_number_MPE_SEI only,0,0
+Supplementary Figure 15,a,RPT_number_MPE_SEI only,1,1
+Supplementary Figure 15,a,RPT_number_MPE_SEI only,2,2
+Supplementary Figure 15,a,RPT_number_MPE_SEI only,3,3
+Supplementary Figure 15,a,RPT_number_MPE_SEI only,4,4
+Supplementary Figure 15,a,RPT_number_MPE_SEI only,5,5
+Supplementary Figure 15,a,RPT_number_MPE_SEI only,6,6
+Supplementary Figure 15,a,RPT_number_MPE_SEI only,7,7
+Supplementary Figure 15,a,RPT_number_MPE_SEI only,8,8
+Supplementary Figure 15,a,RPT_number_MPE_SEI only,9,9
+Supplementary Figure 15,a,RPT_number_MPE_SEI only,10,10
+Supplementary Figure 15,a,MPE_SEI only,0,0.402564
+Supplementary Figure 15,a,MPE_SEI only,1,0.886252
+Supplementary Figure 15,a,MPE_SEI only,2,1.86388
+Supplementary Figure 15,a,MPE_SEI only,3,2.28883
+Supplementary Figure 15,a,MPE_SEI only,4,2.51445
+Supplementary Figure 15,a,MPE_SEI only,5,2.75514
+Supplementary Figure 15,a,MPE_SEI only,6,2.82865
+Supplementary Figure 15,a,MPE_SEI only,7,3.18131
+Supplementary Figure 15,a,MPE_SEI only,8,4.34738
+Supplementary Figure 15,a,MPE_SEI only,9,5.38826
+Supplementary Figure 15,a,MPE_SEI only,10,4.30256
+Supplementary Figure 15,a,RPT_number_MPE_SEI + Dry out,0,0
+Supplementary Figure 15,a,RPT_number_MPE_SEI + Dry out,1,1
+Supplementary Figure 15,a,RPT_number_MPE_SEI + Dry out,2,2
+Supplementary Figure 15,a,RPT_number_MPE_SEI + Dry out,3,3
+Supplementary Figure 15,a,RPT_number_MPE_SEI + Dry out,4,4
+Supplementary Figure 15,a,RPT_number_MPE_SEI + Dry out,5,5
+Supplementary Figure 15,a,RPT_number_MPE_SEI + Dry out,6,6
+Supplementary Figure 15,a,RPT_number_MPE_SEI + Dry out,7,7
+Supplementary Figure 15,a,RPT_number_MPE_SEI + Dry out,8,8
+Supplementary Figure 15,a,RPT_number_MPE_SEI + Dry out,9,9
+Supplementary Figure 15,a,RPT_number_MPE_SEI + Dry out,10,10
+Supplementary Figure 15,a,MPE_SEI + Dry out,0,0.392357
+Supplementary Figure 15,a,MPE_SEI + Dry out,1,0.894755
+Supplementary Figure 15,a,MPE_SEI + Dry out,2,1.82205
+Supplementary Figure 15,a,MPE_SEI + Dry out,3,2.20028
+Supplementary Figure 15,a,MPE_SEI + Dry out,4,2.38192
+Supplementary Figure 15,a,MPE_SEI + Dry out,5,2.58106
+Supplementary Figure 15,a,MPE_SEI + Dry out,6,2.61745
+Supplementary Figure 15,a,MPE_SEI + Dry out,7,2.93332
+Supplementary Figure 15,a,MPE_SEI + Dry out,8,4.06528
+Supplementary Figure 15,a,MPE_SEI + Dry out,9,5.07907
+Supplementary Figure 15,a,MPE_SEI + Dry out,10,3.96045
+Supplementary Figure 15,a,RPT_number_MPE_5 coupled,0,0
+Supplementary Figure 15,a,RPT_number_MPE_5 coupled,1,1
+Supplementary Figure 15,a,RPT_number_MPE_5 coupled,2,2
+Supplementary Figure 15,a,RPT_number_MPE_5 coupled,3,3
+Supplementary Figure 15,a,RPT_number_MPE_5 coupled,4,4
+Supplementary Figure 15,a,RPT_number_MPE_5 coupled,5,5
+Supplementary Figure 15,a,RPT_number_MPE_5 coupled,6,6
+Supplementary Figure 15,a,RPT_number_MPE_5 coupled,7,7
+Supplementary Figure 15,a,RPT_number_MPE_5 coupled,8,8
+Supplementary Figure 15,a,RPT_number_MPE_5 coupled,9,9
+Supplementary Figure 15,a,RPT_number_MPE_5 coupled,10,10
+Supplementary Figure 15,a,MPE_5 coupled,0,0.400729
+Supplementary Figure 15,a,MPE_5 coupled,1,0.839173
+Supplementary Figure 15,a,MPE_5 coupled,2,1.70126
+Supplementary Figure 15,a,MPE_5 coupled,3,2.04067
+Supplementary Figure 15,a,MPE_5 coupled,4,2.18226
+Supplementary Figure 15,a,MPE_5 coupled,5,2.35481
+Supplementary Figure 15,a,MPE_5 coupled,6,2.3513
+Supplementary Figure 15,a,MPE_5 coupled,7,2.64699
+Supplementary Figure 15,a,MPE_5 coupled,8,3.83047
+Supplementary Figure 15,a,MPE_5 coupled,9,4.88521
+Supplementary Figure 15,a,MPE_5 coupled,10,3.71508
+Supplementary Figure 15,d,RPT_number_RMSE_SEI only,0,0
+Supplementary Figure 15,d,RPT_number_RMSE_SEI only,1,1
+Supplementary Figure 15,d,RPT_number_RMSE_SEI only,2,2
+Supplementary Figure 15,d,RPT_number_RMSE_SEI only,3,3
+Supplementary Figure 15,d,RPT_number_RMSE_SEI only,4,4
+Supplementary Figure 15,d,RPT_number_RMSE_SEI only,5,5
+Supplementary Figure 15,d,RPT_number_RMSE_SEI only,6,6
+Supplementary Figure 15,d,RPT_number_RMSE_SEI only,7,7
+Supplementary Figure 15,d,RPT_number_RMSE_SEI only,8,8
+Supplementary Figure 15,d,RPT_number_RMSE_SEI only,9,9
+Supplementary Figure 15,d,RPT_number_RMSE_SEI only,10,10
+Supplementary Figure 15,d,RMSE_SEI only,0,17.9641
+Supplementary Figure 15,d,RMSE_SEI only,1,34.8009
+Supplementary Figure 15,d,RMSE_SEI only,2,80.9166
+Supplementary Figure 15,d,RMSE_SEI only,3,102.368
+Supplementary Figure 15,d,RMSE_SEI only,4,114.477
+Supplementary Figure 15,d,RMSE_SEI only,5,126.567
+Supplementary Figure 15,d,RMSE_SEI only,6,131.588
+Supplementary Figure 15,d,RMSE_SEI only,7,146.039
+Supplementary Figure 15,d,RMSE_SEI only,8,189.994
+Supplementary Figure 15,d,RMSE_SEI only,9,229.43
+Supplementary Figure 15,d,RMSE_SEI only,10,196.263
+Supplementary Figure 15,d,RPT_number_RMSE_SEI + Dry out,0,0
+Supplementary Figure 15,d,RPT_number_RMSE_SEI + Dry out,1,1
+Supplementary Figure 15,d,RPT_number_RMSE_SEI + Dry out,2,2
+Supplementary Figure 15,d,RPT_number_RMSE_SEI + Dry out,3,3
+Supplementary Figure 15,d,RPT_number_RMSE_SEI + Dry out,4,4
+Supplementary Figure 15,d,RPT_number_RMSE_SEI + Dry out,5,5
+Supplementary Figure 15,d,RPT_number_RMSE_SEI + Dry out,6,6
+Supplementary Figure 15,d,RPT_number_RMSE_SEI + Dry out,7,7
+Supplementary Figure 15,d,RPT_number_RMSE_SEI + Dry out,8,8
+Supplementary Figure 15,d,RPT_number_RMSE_SEI + Dry out,9,9
+Supplementary Figure 15,d,RPT_number_RMSE_SEI + Dry out,10,10
+Supplementary Figure 15,d,RMSE_SEI + Dry out,0,17.6611
+Supplementary Figure 15,d,RMSE_SEI + Dry out,1,35.7613
+Supplementary Figure 15,d,RMSE_SEI + Dry out,2,81.3644
+Supplementary Figure 15,d,RMSE_SEI + Dry out,3,100.947
+Supplementary Figure 15,d,RMSE_SEI + Dry out,4,111.458
+Supplementary Figure 15,d,RMSE_SEI + Dry out,5,122.029
+Supplementary Figure 15,d,RMSE_SEI + Dry out,6,125.817
+Supplementary Figure 15,d,RMSE_SEI + Dry out,7,138.883
+Supplementary Figure 15,d,RMSE_SEI + Dry out,8,180.932
+Supplementary Figure 15,d,RMSE_SEI + Dry out,9,219.221
+Supplementary Figure 15,d,RMSE_SEI + Dry out,10,185.481
+Supplementary Figure 15,d,RPT_number_RMSE_5 coupled,0,0
+Supplementary Figure 15,d,RPT_number_RMSE_5 coupled,1,1
+Supplementary Figure 15,d,RPT_number_RMSE_5 coupled,2,2
+Supplementary Figure 15,d,RPT_number_RMSE_5 coupled,3,3
+Supplementary Figure 15,d,RPT_number_RMSE_5 coupled,4,4
+Supplementary Figure 15,d,RPT_number_RMSE_5 coupled,5,5
+Supplementary Figure 15,d,RPT_number_RMSE_5 coupled,6,6
+Supplementary Figure 15,d,RPT_number_RMSE_5 coupled,7,7
+Supplementary Figure 15,d,RPT_number_RMSE_5 coupled,8,8
+Supplementary Figure 15,d,RPT_number_RMSE_5 coupled,9,9
+Supplementary Figure 15,d,RPT_number_RMSE_5 coupled,10,10
+Supplementary Figure 15,d,RMSE_5 coupled,0,18.2074
+Supplementary Figure 15,d,RMSE_5 coupled,1,32.6412
+Supplementary Figure 15,d,RMSE_5 coupled,2,73.0557
+Supplementary Figure 15,d,RMSE_5 coupled,3,90.7285
+Supplementary Figure 15,d,RMSE_5 coupled,4,99.0609
+Supplementary Figure 15,d,RMSE_5 coupled,5,108.464
+Supplementary Figure 15,d,RMSE_5 coupled,6,109.737
+Supplementary Figure 15,d,RMSE_5 coupled,7,121.862
+Supplementary Figure 15,d,RMSE_5 coupled,8,168.378
+Supplementary Figure 15,d,RMSE_5 coupled,9,209.362
+Supplementary Figure 15,d,RMSE_5 coupled,10,172.076
+Supplementary Figure 15,b,RPT_number_MPE_SEI only,0,0
+Supplementary Figure 15,b,RPT_number_MPE_SEI only,1,1
+Supplementary Figure 15,b,RPT_number_MPE_SEI only,2,2
+Supplementary Figure 15,b,RPT_number_MPE_SEI only,3,3
+Supplementary Figure 15,b,RPT_number_MPE_SEI only,4,4
+Supplementary Figure 15,b,RPT_number_MPE_SEI only,5,5
+Supplementary Figure 15,b,RPT_number_MPE_SEI only,6,6
+Supplementary Figure 15,b,RPT_number_MPE_SEI only,7,7
+Supplementary Figure 15,b,RPT_number_MPE_SEI only,8,8
+Supplementary Figure 15,b,RPT_number_MPE_SEI only,9,9
+Supplementary Figure 15,b,RPT_number_MPE_SEI only,10,10
+Supplementary Figure 15,b,MPE_SEI only,0,0.541545
+Supplementary Figure 15,b,MPE_SEI only,1,0.78016
+Supplementary Figure 15,b,MPE_SEI only,2,1.40086
+Supplementary Figure 15,b,MPE_SEI only,3,1.75168
+Supplementary Figure 15,b,MPE_SEI only,4,1.93783
+Supplementary Figure 15,b,MPE_SEI only,5,2.066
+Supplementary Figure 15,b,MPE_SEI only,6,2.22612
+Supplementary Figure 15,b,MPE_SEI only,7,2.1467
+Supplementary Figure 15,b,MPE_SEI only,8,2.66569
+Supplementary Figure 15,b,MPE_SEI only,9,2.76111
+Supplementary Figure 15,b,MPE_SEI only,10,3.24494
+Supplementary Figure 15,b,RPT_number_MPE_SEI + Dry out,0,0
+Supplementary Figure 15,b,RPT_number_MPE_SEI + Dry out,1,1
+Supplementary Figure 15,b,RPT_number_MPE_SEI + Dry out,2,2
+Supplementary Figure 15,b,RPT_number_MPE_SEI + Dry out,3,3
+Supplementary Figure 15,b,RPT_number_MPE_SEI + Dry out,4,4
+Supplementary Figure 15,b,RPT_number_MPE_SEI + Dry out,5,5
+Supplementary Figure 15,b,RPT_number_MPE_SEI + Dry out,6,6
+Supplementary Figure 15,b,RPT_number_MPE_SEI + Dry out,7,7
+Supplementary Figure 15,b,RPT_number_MPE_SEI + Dry out,8,8
+Supplementary Figure 15,b,RPT_number_MPE_SEI + Dry out,9,9
+Supplementary Figure 15,b,RPT_number_MPE_SEI + Dry out,10,10
+Supplementary Figure 15,b,MPE_SEI + Dry out,0,0.531193
+Supplementary Figure 15,b,MPE_SEI + Dry out,1,0.762172
+Supplementary Figure 15,b,MPE_SEI + Dry out,2,1.37596
+Supplementary Figure 15,b,MPE_SEI + Dry out,3,1.68163
+Supplementary Figure 15,b,MPE_SEI + Dry out,4,1.82399
+Supplementary Figure 15,b,MPE_SEI + Dry out,5,1.91141
+Supplementary Figure 15,b,MPE_SEI + Dry out,6,2.03211
+Supplementary Figure 15,b,MPE_SEI + Dry out,7,1.91793
+Supplementary Figure 15,b,MPE_SEI + Dry out,8,2.40139
+Supplementary Figure 15,b,MPE_SEI + Dry out,9,2.46442
+Supplementary Figure 15,b,MPE_SEI + Dry out,10,2.91908
+Supplementary Figure 15,b,RPT_number_MPE_5 coupled,0,0
+Supplementary Figure 15,b,RPT_number_MPE_5 coupled,1,1
+Supplementary Figure 15,b,RPT_number_MPE_5 coupled,2,2
+Supplementary Figure 15,b,RPT_number_MPE_5 coupled,3,3
+Supplementary Figure 15,b,RPT_number_MPE_5 coupled,4,4
+Supplementary Figure 15,b,RPT_number_MPE_5 coupled,5,5
+Supplementary Figure 15,b,RPT_number_MPE_5 coupled,6,6
+Supplementary Figure 15,b,RPT_number_MPE_5 coupled,7,7
+Supplementary Figure 15,b,RPT_number_MPE_5 coupled,8,8
+Supplementary Figure 15,b,RPT_number_MPE_5 coupled,9,9
+Supplementary Figure 15,b,RPT_number_MPE_5 coupled,10,10
+Supplementary Figure 15,b,MPE_5 coupled,0,0.53529
+Supplementary Figure 15,b,MPE_5 coupled,1,0.732232
+Supplementary Figure 15,b,MPE_5 coupled,2,1.23995
+Supplementary Figure 15,b,MPE_5 coupled,3,1.50184
+Supplementary Figure 15,b,MPE_5 coupled,4,1.60922
+Supplementary Figure 15,b,MPE_5 coupled,5,1.66341
+Supplementary Figure 15,b,MPE_5 coupled,6,1.76783
+Supplementary Figure 15,b,MPE_5 coupled,7,1.58964
+Supplementary Figure 15,b,MPE_5 coupled,8,2.10042
+Supplementary Figure 15,b,MPE_5 coupled,9,2.13436
+Supplementary Figure 15,b,MPE_5 coupled,10,2.60357
+Supplementary Figure 15,e,RPT_number_RMSE_SEI only,0,0
+Supplementary Figure 15,e,RPT_number_RMSE_SEI only,1,1
+Supplementary Figure 15,e,RPT_number_RMSE_SEI only,2,2
+Supplementary Figure 15,e,RPT_number_RMSE_SEI only,3,3
+Supplementary Figure 15,e,RPT_number_RMSE_SEI only,4,4
+Supplementary Figure 15,e,RPT_number_RMSE_SEI only,5,5
+Supplementary Figure 15,e,RPT_number_RMSE_SEI only,6,6
+Supplementary Figure 15,e,RPT_number_RMSE_SEI only,7,7
+Supplementary Figure 15,e,RPT_number_RMSE_SEI only,8,8
+Supplementary Figure 15,e,RPT_number_RMSE_SEI only,9,9
+Supplementary Figure 15,e,RPT_number_RMSE_SEI only,10,10
+Supplementary Figure 15,e,RMSE_SEI only,0,24.862
+Supplementary Figure 15,e,RMSE_SEI only,1,32.1571
+Supplementary Figure 15,e,RMSE_SEI only,2,59.9607
+Supplementary Figure 15,e,RMSE_SEI only,3,76.8542
+Supplementary Figure 15,e,RMSE_SEI only,4,87.8504
+Supplementary Figure 15,e,RMSE_SEI only,5,95.6386
+Supplementary Figure 15,e,RMSE_SEI only,6,104.806
+Supplementary Figure 15,e,RMSE_SEI only,7,101.08
+Supplementary Figure 15,e,RMSE_SEI only,8,124.076
+Supplementary Figure 15,e,RMSE_SEI only,9,128.278
+Supplementary Figure 15,e,RMSE_SEI only,10,147.268
+Supplementary Figure 15,e,RPT_number_RMSE_SEI + Dry out,0,0
+Supplementary Figure 15,e,RPT_number_RMSE_SEI + Dry out,1,1
+Supplementary Figure 15,e,RPT_number_RMSE_SEI + Dry out,2,2
+Supplementary Figure 15,e,RPT_number_RMSE_SEI + Dry out,3,3
+Supplementary Figure 15,e,RPT_number_RMSE_SEI + Dry out,4,4
+Supplementary Figure 15,e,RPT_number_RMSE_SEI + Dry out,5,5
+Supplementary Figure 15,e,RPT_number_RMSE_SEI + Dry out,6,6
+Supplementary Figure 15,e,RPT_number_RMSE_SEI + Dry out,7,7
+Supplementary Figure 15,e,RPT_number_RMSE_SEI + Dry out,8,8
+Supplementary Figure 15,e,RPT_number_RMSE_SEI + Dry out,9,9
+Supplementary Figure 15,e,RPT_number_RMSE_SEI + Dry out,10,10
+Supplementary Figure 15,e,RMSE_SEI + Dry out,0,24.6171
+Supplementary Figure 15,e,RMSE_SEI + Dry out,1,32.7395
+Supplementary Figure 15,e,RMSE_SEI + Dry out,2,61.0907
+Supplementary Figure 15,e,RMSE_SEI + Dry out,3,76.575
+Supplementary Figure 15,e,RMSE_SEI + Dry out,4,86.0033
+Supplementary Figure 15,e,RMSE_SEI + Dry out,5,92.3233
+Supplementary Figure 15,e,RMSE_SEI + Dry out,6,99.9901
+Supplementary Figure 15,e,RMSE_SEI + Dry out,7,95.0739
+Supplementary Figure 15,e,RMSE_SEI + Dry out,8,116.557
+Supplementary Figure 15,e,RMSE_SEI + Dry out,9,119.604
+Supplementary Figure 15,e,RMSE_SEI + Dry out,10,137.416
+Supplementary Figure 15,e,RPT_number_RMSE_5 coupled,0,0
+Supplementary Figure 15,e,RPT_number_RMSE_5 coupled,1,1
+Supplementary Figure 15,e,RPT_number_RMSE_5 coupled,2,2
+Supplementary Figure 15,e,RPT_number_RMSE_5 coupled,3,3
+Supplementary Figure 15,e,RPT_number_RMSE_5 coupled,4,4
+Supplementary Figure 15,e,RPT_number_RMSE_5 coupled,5,5
+Supplementary Figure 15,e,RPT_number_RMSE_5 coupled,6,6
+Supplementary Figure 15,e,RPT_number_RMSE_5 coupled,7,7
+Supplementary Figure 15,e,RPT_number_RMSE_5 coupled,8,8
+Supplementary Figure 15,e,RPT_number_RMSE_5 coupled,9,9
+Supplementary Figure 15,e,RPT_number_RMSE_5 coupled,10,10
+Supplementary Figure 15,e,RMSE_5 coupled,0,24.5701
+Supplementary Figure 15,e,RMSE_5 coupled,1,30.4357
+Supplementary Figure 15,e,RMSE_5 coupled,2,53.0324
+Supplementary Figure 15,e,RMSE_5 coupled,3,65.0475
+Supplementary Figure 15,e,RMSE_5 coupled,4,72.1093
+Supplementary Figure 15,e,RMSE_5 coupled,5,76.3989
+Supplementary Figure 15,e,RMSE_5 coupled,6,83.6543
+Supplementary Figure 15,e,RMSE_5 coupled,7,74.2472
+Supplementary Figure 15,e,RMSE_5 coupled,8,98.9311
+Supplementary Figure 15,e,RMSE_5 coupled,9,100.315
+Supplementary Figure 15,e,RMSE_5 coupled,10,119.691
+Supplementary Figure 15,c,RPT_number_MPE_SEI only,0,0
+Supplementary Figure 15,c,RPT_number_MPE_SEI only,1,1
+Supplementary Figure 15,c,RPT_number_MPE_SEI only,2,2
+Supplementary Figure 15,c,RPT_number_MPE_SEI only,3,3
+Supplementary Figure 15,c,RPT_number_MPE_SEI only,4,4
+Supplementary Figure 15,c,RPT_number_MPE_SEI only,5,5
+Supplementary Figure 15,c,RPT_number_MPE_SEI only,6,6
+Supplementary Figure 15,c,RPT_number_MPE_SEI only,7,7
+Supplementary Figure 15,c,RPT_number_MPE_SEI only,8,8
+Supplementary Figure 15,c,RPT_number_MPE_SEI only,9,9
+Supplementary Figure 15,c,RPT_number_MPE_SEI only,10,10
+Supplementary Figure 15,c,MPE_SEI only,0,0.376235
+Supplementary Figure 15,c,MPE_SEI only,1,0.462165
+Supplementary Figure 15,c,MPE_SEI only,2,0.699562
+Supplementary Figure 15,c,MPE_SEI only,3,0.967339
+Supplementary Figure 15,c,MPE_SEI only,4,1.21386
+Supplementary Figure 15,c,MPE_SEI only,5,1.40228
+Supplementary Figure 15,c,MPE_SEI only,6,1.97883
+Supplementary Figure 15,c,MPE_SEI only,7,1.54894
+Supplementary Figure 15,c,MPE_SEI only,8,2.21612
+Supplementary Figure 15,c,MPE_SEI only,9,2.18869
+Supplementary Figure 15,c,MPE_SEI only,10,2.4062
+Supplementary Figure 15,c,RPT_number_MPE_SEI + Dry out,0,0
+Supplementary Figure 15,c,RPT_number_MPE_SEI + Dry out,1,1
+Supplementary Figure 15,c,RPT_number_MPE_SEI + Dry out,2,2
+Supplementary Figure 15,c,RPT_number_MPE_SEI + Dry out,3,3
+Supplementary Figure 15,c,RPT_number_MPE_SEI + Dry out,4,4
+Supplementary Figure 15,c,RPT_number_MPE_SEI + Dry out,5,5
+Supplementary Figure 15,c,RPT_number_MPE_SEI + Dry out,6,6
+Supplementary Figure 15,c,RPT_number_MPE_SEI + Dry out,7,7
+Supplementary Figure 15,c,RPT_number_MPE_SEI + Dry out,8,8
+Supplementary Figure 15,c,RPT_number_MPE_SEI + Dry out,9,9
+Supplementary Figure 15,c,RPT_number_MPE_SEI + Dry out,10,10
+Supplementary Figure 15,c,MPE_SEI + Dry out,0,0.366264
+Supplementary Figure 15,c,MPE_SEI + Dry out,1,0.40672
+Supplementary Figure 15,c,MPE_SEI + Dry out,2,0.645909
+Supplementary Figure 15,c,MPE_SEI + Dry out,3,0.901079
+Supplementary Figure 15,c,MPE_SEI + Dry out,4,1.09098
+Supplementary Figure 15,c,MPE_SEI + Dry out,5,1.22728
+Supplementary Figure 15,c,MPE_SEI + Dry out,6,1.7536
+Supplementary Figure 15,c,MPE_SEI + Dry out,7,1.28385
+Supplementary Figure 15,c,MPE_SEI + Dry out,8,1.91099
+Supplementary Figure 15,c,MPE_SEI + Dry out,9,1.84447
+Supplementary Figure 15,c,MPE_SEI + Dry out,10,2.02648
+Supplementary Figure 15,c,RPT_number_MPE_5 coupled,0,0
+Supplementary Figure 15,c,RPT_number_MPE_5 coupled,1,1
+Supplementary Figure 15,c,RPT_number_MPE_5 coupled,2,2
+Supplementary Figure 15,c,RPT_number_MPE_5 coupled,3,3
+Supplementary Figure 15,c,RPT_number_MPE_5 coupled,4,4
+Supplementary Figure 15,c,RPT_number_MPE_5 coupled,5,5
+Supplementary Figure 15,c,RPT_number_MPE_5 coupled,6,6
+Supplementary Figure 15,c,RPT_number_MPE_5 coupled,7,7
+Supplementary Figure 15,c,RPT_number_MPE_5 coupled,8,8
+Supplementary Figure 15,c,RPT_number_MPE_5 coupled,9,9
+Supplementary Figure 15,c,RPT_number_MPE_5 coupled,10,10
+Supplementary Figure 15,c,MPE_5 coupled,0,0.374418
+Supplementary Figure 15,c,MPE_5 coupled,1,0.416966
+Supplementary Figure 15,c,MPE_5 coupled,2,0.600627
+Supplementary Figure 15,c,MPE_5 coupled,3,0.743746
+Supplementary Figure 15,c,MPE_5 coupled,4,0.855543
+Supplementary Figure 15,c,MPE_5 coupled,5,0.963112
+Supplementary Figure 15,c,MPE_5 coupled,6,1.51802
+Supplementary Figure 15,c,MPE_5 coupled,7,0.921539
+Supplementary Figure 15,c,MPE_5 coupled,8,1.5875
+Supplementary Figure 15,c,MPE_5 coupled,9,1.48473
+Supplementary Figure 15,c,MPE_5 coupled,10,1.62873
+Supplementary Figure 15,f,RPT_number_RMSE_SEI only,0,0
+Supplementary Figure 15,f,RPT_number_RMSE_SEI only,1,1
+Supplementary Figure 15,f,RPT_number_RMSE_SEI only,2,2
+Supplementary Figure 15,f,RPT_number_RMSE_SEI only,3,3
+Supplementary Figure 15,f,RPT_number_RMSE_SEI only,4,4
+Supplementary Figure 15,f,RPT_number_RMSE_SEI only,5,5
+Supplementary Figure 15,f,RPT_number_RMSE_SEI only,6,6
+Supplementary Figure 15,f,RPT_number_RMSE_SEI only,7,7
+Supplementary Figure 15,f,RPT_number_RMSE_SEI only,8,8
+Supplementary Figure 15,f,RPT_number_RMSE_SEI only,9,9
+Supplementary Figure 15,f,RPT_number_RMSE_SEI only,10,10
+Supplementary Figure 15,f,RMSE_SEI only,0,19.1003
+Supplementary Figure 15,f,RMSE_SEI only,1,25.7528
+Supplementary Figure 15,f,RMSE_SEI only,2,27.1539
+Supplementary Figure 15,f,RMSE_SEI only,3,37.4707
+Supplementary Figure 15,f,RMSE_SEI only,4,49.696
+Supplementary Figure 15,f,RMSE_SEI only,5,61.2623
+Supplementary Figure 15,f,RMSE_SEI only,6,90.8154
+Supplementary Figure 15,f,RMSE_SEI only,7,69.3821
+Supplementary Figure 15,f,RMSE_SEI only,8,99.3911
+Supplementary Figure 15,f,RMSE_SEI only,9,97.6138
+Supplementary Figure 15,f,RMSE_SEI only,10,106.236
+Supplementary Figure 15,f,RPT_number_RMSE_SEI + Dry out,0,0
+Supplementary Figure 15,f,RPT_number_RMSE_SEI + Dry out,1,1
+Supplementary Figure 15,f,RPT_number_RMSE_SEI + Dry out,2,2
+Supplementary Figure 15,f,RPT_number_RMSE_SEI + Dry out,3,3
+Supplementary Figure 15,f,RPT_number_RMSE_SEI + Dry out,4,4
+Supplementary Figure 15,f,RPT_number_RMSE_SEI + Dry out,5,5
+Supplementary Figure 15,f,RPT_number_RMSE_SEI + Dry out,6,6
+Supplementary Figure 15,f,RPT_number_RMSE_SEI + Dry out,7,7
+Supplementary Figure 15,f,RPT_number_RMSE_SEI + Dry out,8,8
+Supplementary Figure 15,f,RPT_number_RMSE_SEI + Dry out,9,9
+Supplementary Figure 15,f,RPT_number_RMSE_SEI + Dry out,10,10
+Supplementary Figure 15,f,RMSE_SEI + Dry out,0,18.8316
+Supplementary Figure 15,f,RMSE_SEI + Dry out,1,21.3388
+Supplementary Figure 15,f,RMSE_SEI + Dry out,2,24.7592
+Supplementary Figure 15,f,RMSE_SEI + Dry out,3,36.1178
+Supplementary Figure 15,f,RMSE_SEI + Dry out,4,47.1755
+Supplementary Figure 15,f,RMSE_SEI + Dry out,5,57.0512
+Supplementary Figure 15,f,RMSE_SEI + Dry out,6,84.752
+Supplementary Figure 15,f,RMSE_SEI + Dry out,7,61.5378
+Supplementary Figure 15,f,RMSE_SEI + Dry out,8,89.9009
+Supplementary Figure 15,f,RMSE_SEI + Dry out,9,86.3869
+Supplementary Figure 15,f,RMSE_SEI + Dry out,10,93.5777
+Supplementary Figure 15,f,RPT_number_RMSE_5 coupled,0,0
+Supplementary Figure 15,f,RPT_number_RMSE_5 coupled,1,1
+Supplementary Figure 15,f,RPT_number_RMSE_5 coupled,2,2
+Supplementary Figure 15,f,RPT_number_RMSE_5 coupled,3,3
+Supplementary Figure 15,f,RPT_number_RMSE_5 coupled,4,4
+Supplementary Figure 15,f,RPT_number_RMSE_5 coupled,5,5
+Supplementary Figure 15,f,RPT_number_RMSE_5 coupled,6,6
+Supplementary Figure 15,f,RPT_number_RMSE_5 coupled,7,7
+Supplementary Figure 15,f,RPT_number_RMSE_5 coupled,8,8
+Supplementary Figure 15,f,RPT_number_RMSE_5 coupled,9,9
+Supplementary Figure 15,f,RPT_number_RMSE_5 coupled,10,10
+Supplementary Figure 15,f,RMSE_5 coupled,0,19.4639
+Supplementary Figure 15,f,RMSE_5 coupled,1,24.5126
+Supplementary Figure 15,f,RMSE_5 coupled,2,24.1607
+Supplementary Figure 15,f,RMSE_5 coupled,3,28.2621
+Supplementary Figure 15,f,RMSE_5 coupled,4,33.5651
+Supplementary Figure 15,f,RMSE_5 coupled,5,40.2773
+Supplementary Figure 15,f,RMSE_5 coupled,6,69.5033
+Supplementary Figure 15,f,RMSE_5 coupled,7,39.204
+Supplementary Figure 15,f,RMSE_5 coupled,8,70.049
+Supplementary Figure 15,f,RMSE_5 coupled,9,65.9763
+Supplementary Figure 15,f,RMSE_5 coupled,10,71.1743
+Supplementary Figure 2,a,SEI only_MPE_%,0,0.560228
+Supplementary Figure 2,a,SEI only_MPE_%,1,0.736152
+Supplementary Figure 2,a,SEI only_MPE_%,2,0.707135
+Supplementary Figure 2,a,SEI only_MPE_%,3,0.661931
+Supplementary Figure 2,a,SEI only_MPE_%,4,0.676154
+Supplementary Figure 2,a,SEI only_MPE_%,5,0.668074
+Supplementary Figure 2,a,SEI only_MPE_%,6,0.77336
+Supplementary Figure 2,a,SEI only_MPE_%,7,0.786866
+Supplementary Figure 2,a,SEI only_MPE_%,8,0.864364
+Supplementary Figure 2,a,SEI only_MPE_%,9,0.809334
+Supplementary Figure 2,a,SEI only_MPE_%,10,0.787649
+Supplementary Figure 2,a,SEI only_MPE_%,11,0.734238
+Supplementary Figure 2,a,SEI only_MPE_%,12,0.615065
+Supplementary Figure 2,a,SEI + Dry out_MPE_%,0,0.551345
+Supplementary Figure 2,a,SEI + Dry out_MPE_%,1,0.768377
+Supplementary Figure 2,a,SEI + Dry out_MPE_%,2,0.722508
+Supplementary Figure 2,a,SEI + Dry out_MPE_%,3,0.644849
+Supplementary Figure 2,a,SEI + Dry out_MPE_%,4,0.618213
+Supplementary Figure 2,a,SEI + Dry out_MPE_%,5,0.570332
+Supplementary Figure 2,a,SEI + Dry out_MPE_%,6,0.629947
+Supplementary Figure 2,a,SEI + Dry out_MPE_%,7,0.602811
+Supplementary Figure 2,a,SEI + Dry out_MPE_%,8,0.637385
+Supplementary Figure 2,a,SEI + Dry out_MPE_%,9,0.547213
+Supplementary Figure 2,a,SEI + Dry out_MPE_%,10,0.486996
+Supplementary Figure 2,a,SEI + Dry out_MPE_%,11,0.412625
+Supplementary Figure 2,a,SEI + Dry out_MPE_%,12,0.379511
+Supplementary Figure 2,a,5 coupled_MPE_%,0,0.549619
+Supplementary Figure 2,a,5 coupled_MPE_%,1,0.737174
+Supplementary Figure 2,a,5 coupled_MPE_%,2,0.629971
+Supplementary Figure 2,a,5 coupled_MPE_%,3,0.495647
+Supplementary Figure 2,a,5 coupled_MPE_%,4,0.421509
+Supplementary Figure 2,a,5 coupled_MPE_%,5,0.362145
+Supplementary Figure 2,a,5 coupled_MPE_%,6,0.356257
+Supplementary Figure 2,a,5 coupled_MPE_%,7,0.29958
+Supplementary Figure 2,a,5 coupled_MPE_%,8,0.338149
+Supplementary Figure 2,a,5 coupled_MPE_%,9,0.339317
+Supplementary Figure 2,a,5 coupled_MPE_%,10,0.350865
+Supplementary Figure 2,a,5 coupled_MPE_%,11,0.376832
+Supplementary Figure 2,a,5 coupled_MPE_%,12,0.509857
+Supplementary Figure 2,d,SEI only_RMSE_mV,0,24.1176
+Supplementary Figure 2,d,SEI only_RMSE_mV,1,34.0415
+Supplementary Figure 2,d,SEI only_RMSE_mV,2,32.3444
+Supplementary Figure 2,d,SEI only_RMSE_mV,3,30.226
+Supplementary Figure 2,d,SEI only_RMSE_mV,4,31.6195
+Supplementary Figure 2,d,SEI only_RMSE_mV,5,31.2043
+Supplementary Figure 2,d,SEI only_RMSE_mV,6,38.4287
+Supplementary Figure 2,d,SEI only_RMSE_mV,7,39.4361
+Supplementary Figure 2,d,SEI only_RMSE_mV,8,44.0775
+Supplementary Figure 2,d,SEI only_RMSE_mV,9,40.9894
+Supplementary Figure 2,d,SEI only_RMSE_mV,10,39.9094
+Supplementary Figure 2,d,SEI only_RMSE_mV,11,36.9098
+Supplementary Figure 2,d,SEI only_RMSE_mV,12,30.5356
+Supplementary Figure 2,d,SEI + Dry out_RMSE_mV,0,23.9552
+Supplementary Figure 2,d,SEI + Dry out_RMSE_mV,1,38.6264
+Supplementary Figure 2,d,SEI + Dry out_RMSE_mV,2,37.1974
+Supplementary Figure 2,d,SEI + Dry out_RMSE_mV,3,33.9887
+Supplementary Figure 2,d,SEI + Dry out_RMSE_mV,4,33.7299
+Supplementary Figure 2,d,SEI + Dry out_RMSE_mV,5,31.1107
+Supplementary Figure 2,d,SEI + Dry out_RMSE_mV,6,36.8644
+Supplementary Figure 2,d,SEI + Dry out_RMSE_mV,7,35.9042
+Supplementary Figure 2,d,SEI + Dry out_RMSE_mV,8,38.5556
+Supplementary Figure 2,d,SEI + Dry out_RMSE_mV,9,33.233
+Supplementary Figure 2,d,SEI + Dry out_RMSE_mV,10,29.8859
+Supplementary Figure 2,d,SEI + Dry out_RMSE_mV,11,24.9543
+Supplementary Figure 2,d,SEI + Dry out_RMSE_mV,12,23.2526
+Supplementary Figure 2,d,5 coupled_RMSE_mV,0,23.6472
+Supplementary Figure 2,d,5 coupled_RMSE_mV,1,35.8234
+Supplementary Figure 2,d,5 coupled_RMSE_mV,2,30.2524
+Supplementary Figure 2,d,5 coupled_RMSE_mV,3,23.2808
+Supplementary Figure 2,d,5 coupled_RMSE_mV,4,19.8111
+Supplementary Figure 2,d,5 coupled_RMSE_mV,5,17.1704
+Supplementary Figure 2,d,5 coupled_RMSE_mV,6,17.0891
+Supplementary Figure 2,d,5 coupled_RMSE_mV,7,13.9314
+Supplementary Figure 2,d,5 coupled_RMSE_mV,8,17.0007
+Supplementary Figure 2,d,5 coupled_RMSE_mV,9,19.2132
+Supplementary Figure 2,d,5 coupled_RMSE_mV,10,21.8645
+Supplementary Figure 2,d,5 coupled_RMSE_mV,11,25.9069
+Supplementary Figure 2,d,5 coupled_RMSE_mV,12,37.7375
+Supplementary Figure 2,b,SEI only_MPE_%,0,0.690463
+Supplementary Figure 2,b,SEI only_MPE_%,1,0.881709
+Supplementary Figure 2,b,SEI only_MPE_%,2,0.80516
+Supplementary Figure 2,b,SEI only_MPE_%,3,0.749752
+Supplementary Figure 2,b,SEI only_MPE_%,4,0.711823
+Supplementary Figure 2,b,SEI only_MPE_%,5,0.6557
+Supplementary Figure 2,b,SEI only_MPE_%,6,0.668954
+Supplementary Figure 2,b,SEI only_MPE_%,7,0.657973
+Supplementary Figure 2,b,SEI only_MPE_%,8,0.751467
+Supplementary Figure 2,b,SEI only_MPE_%,9,0.670109
+Supplementary Figure 2,b,SEI only_MPE_%,10,0.639133
+Supplementary Figure 2,b,SEI only_MPE_%,11,0.630296
+Supplementary Figure 2,b,SEI only_MPE_%,12,0.55199
+Supplementary Figure 2,b,SEI + Dry out_MPE_%,0,0.681349
+Supplementary Figure 2,b,SEI + Dry out_MPE_%,1,0.911791
+Supplementary Figure 2,b,SEI + Dry out_MPE_%,2,0.825284
+Supplementary Figure 2,b,SEI + Dry out_MPE_%,3,0.743357
+Supplementary Figure 2,b,SEI + Dry out_MPE_%,4,0.672709
+Supplementary Figure 2,b,SEI + Dry out_MPE_%,5,0.582368
+Supplementary Figure 2,b,SEI + Dry out_MPE_%,6,0.556126
+Supplementary Figure 2,b,SEI + Dry out_MPE_%,7,0.505496
+Supplementary Figure 2,b,SEI + Dry out_MPE_%,8,0.552139
+Supplementary Figure 2,b,SEI + Dry out_MPE_%,9,0.433174
+Supplementary Figure 2,b,SEI + Dry out_MPE_%,10,0.384652
+Supplementary Figure 2,b,SEI + Dry out_MPE_%,11,0.350762
+Supplementary Figure 2,b,SEI + Dry out_MPE_%,12,0.302638
+Supplementary Figure 2,b,5 coupled_MPE_%,0,0.680611
+Supplementary Figure 2,b,5 coupled_MPE_%,1,0.869903
+Supplementary Figure 2,b,5 coupled_MPE_%,2,0.725092
+Supplementary Figure 2,b,5 coupled_MPE_%,3,0.588884
+Supplementary Figure 2,b,5 coupled_MPE_%,4,0.464961
+Supplementary Figure 2,b,5 coupled_MPE_%,5,0.340752
+Supplementary Figure 2,b,5 coupled_MPE_%,6,0.288249
+Supplementary Figure 2,b,5 coupled_MPE_%,7,0.28546
+Supplementary Figure 2,b,5 coupled_MPE_%,8,0.301863
+Supplementary Figure 2,b,5 coupled_MPE_%,9,0.329941
+Supplementary Figure 2,b,5 coupled_MPE_%,10,0.376154
+Supplementary Figure 2,b,5 coupled_MPE_%,11,0.416474
+Supplementary Figure 2,b,5 coupled_MPE_%,12,0.528419
+Supplementary Figure 2,e,SEI only_RMSE_mV,0,31.1921
+Supplementary Figure 2,e,SEI only_RMSE_mV,1,41.7403
+Supplementary Figure 2,e,SEI only_RMSE_mV,2,36.8452
+Supplementary Figure 2,e,SEI only_RMSE_mV,3,33.6066
+Supplementary Figure 2,e,SEI only_RMSE_mV,4,31.4034
+Supplementary Figure 2,e,SEI only_RMSE_mV,5,27.9642
+Supplementary Figure 2,e,SEI only_RMSE_mV,6,29.201
+Supplementary Figure 2,e,SEI only_RMSE_mV,7,28.9695
+Supplementary Figure 2,e,SEI only_RMSE_mV,8,33.9454
+Supplementary Figure 2,e,SEI only_RMSE_mV,9,30.3031
+Supplementary Figure 2,e,SEI only_RMSE_mV,10,29.4059
+Supplementary Figure 2,e,SEI only_RMSE_mV,11,29.0398
+Supplementary Figure 2,e,SEI only_RMSE_mV,12,24.7825
+Supplementary Figure 2,e,SEI + Dry out_RMSE_mV,0,31.0648
+Supplementary Figure 2,e,SEI + Dry out_RMSE_mV,1,46.0869
+Supplementary Figure 2,e,SEI + Dry out_RMSE_mV,2,41.7954
+Supplementary Figure 2,e,SEI + Dry out_RMSE_mV,3,37.748
+Supplementary Figure 2,e,SEI + Dry out_RMSE_mV,4,34.1026
+Supplementary Figure 2,e,SEI + Dry out_RMSE_mV,5,28.4774
+Supplementary Figure 2,e,SEI + Dry out_RMSE_mV,6,28.1272
+Supplementary Figure 2,e,SEI + Dry out_RMSE_mV,7,25.687
+Supplementary Figure 2,e,SEI + Dry out_RMSE_mV,8,28.7945
+Supplementary Figure 2,e,SEI + Dry out_RMSE_mV,9,22.4844
+Supplementary Figure 2,e,SEI + Dry out_RMSE_mV,10,20.436
+Supplementary Figure 2,e,SEI + Dry out_RMSE_mV,11,18.776
+Supplementary Figure 2,e,SEI + Dry out_RMSE_mV,12,16.8556
+Supplementary Figure 2,e,5 coupled_RMSE_mV,0,30.6906
+Supplementary Figure 2,e,5 coupled_RMSE_mV,1,42.8789
+Supplementary Figure 2,e,5 coupled_RMSE_mV,2,34.7012
+Supplementary Figure 2,e,5 coupled_RMSE_mV,3,27.0632
+Supplementary Figure 2,e,5 coupled_RMSE_mV,4,20.2308
+Supplementary Figure 2,e,5 coupled_RMSE_mV,5,14.3539
+Supplementary Figure 2,e,5 coupled_RMSE_mV,6,12.2282
+Supplementary Figure 2,e,5 coupled_RMSE_mV,7,14.588
+Supplementary Figure 2,e,5 coupled_RMSE_mV,8,15.5827
+Supplementary Figure 2,e,5 coupled_RMSE_mV,9,20.7944
+Supplementary Figure 2,e,5 coupled_RMSE_mV,10,25.4682
+Supplementary Figure 2,e,5 coupled_RMSE_mV,11,29.733
+Supplementary Figure 2,e,5 coupled_RMSE_mV,12,40.7774
+Supplementary Figure 2,c,SEI only_MPE_%,0,0.589559
+Supplementary Figure 2,c,SEI only_MPE_%,1,0.883713
+Supplementary Figure 2,c,SEI only_MPE_%,2,0.885953
+Supplementary Figure 2,c,SEI only_MPE_%,3,0.852789
+Supplementary Figure 2,c,SEI only_MPE_%,4,0.844738
+Supplementary Figure 2,c,SEI only_MPE_%,5,0.815413
+Supplementary Figure 2,c,SEI only_MPE_%,6,0.834535
+Supplementary Figure 2,c,SEI only_MPE_%,7,0.780802
+Supplementary Figure 2,c,SEI only_MPE_%,8,0.82259
+Supplementary Figure 2,c,SEI only_MPE_%,9,0.7734
+Supplementary Figure 2,c,SEI only_MPE_%,10,0.743638
+Supplementary Figure 2,c,SEI only_MPE_%,11,0.767924
+Supplementary Figure 2,c,SEI only_MPE_%,12,0.780183
+Supplementary Figure 2,c,SEI + Dry out_MPE_%,0,0.580573
+Supplementary Figure 2,c,SEI + Dry out_MPE_%,1,0.911045
+Supplementary Figure 2,c,SEI + Dry out_MPE_%,2,0.889895
+Supplementary Figure 2,c,SEI + Dry out_MPE_%,3,0.821298
+Supplementary Figure 2,c,SEI + Dry out_MPE_%,4,0.772928
+Supplementary Figure 2,c,SEI + Dry out_MPE_%,5,0.701686
+Supplementary Figure 2,c,SEI + Dry out_MPE_%,6,0.674186
+Supplementary Figure 2,c,SEI + Dry out_MPE_%,7,0.578928
+Supplementary Figure 2,c,SEI + Dry out_MPE_%,8,0.571025
+Supplementary Figure 2,c,SEI + Dry out_MPE_%,9,0.47878
+Supplementary Figure 2,c,SEI + Dry out_MPE_%,10,0.407582
+Supplementary Figure 2,c,SEI + Dry out_MPE_%,11,0.396598
+Supplementary Figure 2,c,SEI + Dry out_MPE_%,12,0.35336
+Supplementary Figure 2,c,5 coupled_MPE_%,0,0.5793
+Supplementary Figure 2,c,5 coupled_MPE_%,1,0.897833
+Supplementary Figure 2,c,5 coupled_MPE_%,2,0.840892
+Supplementary Figure 2,c,5 coupled_MPE_%,3,0.739917
+Supplementary Figure 2,c,5 coupled_MPE_%,4,0.662748
+Supplementary Figure 2,c,5 coupled_MPE_%,5,0.561357
+Supplementary Figure 2,c,5 coupled_MPE_%,6,0.510661
+Supplementary Figure 2,c,5 coupled_MPE_%,7,0.384573
+Supplementary Figure 2,c,5 coupled_MPE_%,8,0.388562
+Supplementary Figure 2,c,5 coupled_MPE_%,9,0.334064
+Supplementary Figure 2,c,5 coupled_MPE_%,10,0.325259
+Supplementary Figure 2,c,5 coupled_MPE_%,11,0.353258
+Supplementary Figure 2,c,5 coupled_MPE_%,12,0.253625
+Supplementary Figure 2,f,SEI only_RMSE_mV,0,26.734
+Supplementary Figure 2,f,SEI only_RMSE_mV,1,43.8151
+Supplementary Figure 2,f,SEI only_RMSE_mV,2,44.4352
+Supplementary Figure 2,f,SEI only_RMSE_mV,3,42.522
+Supplementary Figure 2,f,SEI only_RMSE_mV,4,42.5572
+Supplementary Figure 2,f,SEI only_RMSE_mV,5,40.5985
+Supplementary Figure 2,f,SEI only_RMSE_mV,6,42.0558
+Supplementary Figure 2,f,SEI only_RMSE_mV,7,38.6988
+Supplementary Figure 2,f,SEI only_RMSE_mV,8,40.9358
+Supplementary Figure 2,f,SEI only_RMSE_mV,9,37.9534
+Supplementary Figure 2,f,SEI only_RMSE_mV,10,36.1159
+Supplementary Figure 2,f,SEI only_RMSE_mV,11,37.5255
+Supplementary Figure 2,f,SEI only_RMSE_mV,12,38.1658
+Supplementary Figure 2,f,SEI + Dry out_RMSE_mV,0,26.5984
+Supplementary Figure 2,f,SEI + Dry out_RMSE_mV,1,48.4309
+Supplementary Figure 2,f,SEI + Dry out_RMSE_mV,2,49.0451
+Supplementary Figure 2,f,SEI + Dry out_RMSE_mV,3,45.9653
+Supplementary Figure 2,f,SEI + Dry out_RMSE_mV,4,44.3592
+Supplementary Figure 2,f,SEI + Dry out_RMSE_mV,5,40.315
+Supplementary Figure 2,f,SEI + Dry out_RMSE_mV,6,39.665
+Supplementary Figure 2,f,SEI + Dry out_RMSE_mV,7,33.9112
+Supplementary Figure 2,f,SEI + Dry out_RMSE_mV,8,33.5431
+Supplementary Figure 2,f,SEI + Dry out_RMSE_mV,9,27.921
+Supplementary Figure 2,f,SEI + Dry out_RMSE_mV,10,23.5856
+Supplementary Figure 2,f,SEI + Dry out_RMSE_mV,11,23.1937
+Supplementary Figure 2,f,SEI + Dry out_RMSE_mV,12,20.8428
+Supplementary Figure 2,f,5 coupled_RMSE_mV,0,26.2507
+Supplementary Figure 2,f,5 coupled_RMSE_mV,1,47.0593
+Supplementary Figure 2,f,5 coupled_RMSE_mV,2,45.3007
+Supplementary Figure 2,f,5 coupled_RMSE_mV,3,39.9756
+Supplementary Figure 2,f,5 coupled_RMSE_mV,4,36.2998
+Supplementary Figure 2,f,5 coupled_RMSE_mV,5,30.154
+Supplementary Figure 2,f,5 coupled_RMSE_mV,6,27.7061
+Supplementary Figure 2,f,5 coupled_RMSE_mV,7,20.1297
+Supplementary Figure 2,f,5 coupled_RMSE_mV,8,21.2348
+Supplementary Figure 2,f,5 coupled_RMSE_mV,9,18.8111
+Supplementary Figure 2,f,5 coupled_RMSE_mV,10,19.4621
+Supplementary Figure 2,f,5 coupled_RMSE_mV,11,22.4483
+Supplementary Figure 2,f,5 coupled_RMSE_mV,12,15.0167
+Supplementary Figure 3,a,Temperature [°C],0,10
+Supplementary Figure 3,a,Temperature [°C],1,25
+Supplementary Figure 3,a,Temperature [°C],2,40
+Supplementary Figure 3,a,Dry-out (NE) [%],0,6.19949
+Supplementary Figure 3,a,Dry-out (NE) [%],1,5.98014
+Supplementary Figure 3,a,Dry-out (NE) [%],2,6.44461
+Supplementary Figure 3,a,Stress (NE) [%],0,0.952051
+Supplementary Figure 3,a,Stress (NE) [%],1,0.523765
+Supplementary Figure 3,a,Stress (NE) [%],2,0.361616
+Supplementary Figure 3,b,Temperature [°C],0,10
+Supplementary Figure 3,b,Temperature [°C],1,25
+Supplementary Figure 3,b,Temperature [°C],2,40
+Supplementary Figure 3,b,Dry-out (PE) [%],0,6.19949
+Supplementary Figure 3,b,Dry-out (PE) [%],1,5.98014
+Supplementary Figure 3,b,Dry-out (PE) [%],2,6.44461
+Supplementary Figure 3,b,Stress (PE) [%],0,-1.24345e-14
+Supplementary Figure 3,b,Stress (PE) [%],1,5.32907e-15
+Supplementary Figure 3,b,Stress (PE) [%],2,4.44089e-15
+Supplementary Figure 5,a,T_deg_All,0,10
+Supplementary Figure 5,a,T_deg_All,1,25
+Supplementary Figure 5,a,T_deg_All,2,40
+Supplementary Figure 5,a,LLI_to_SEI_Exp2_SEI_only,0,1.59995
+Supplementary Figure 5,a,LLI_to_SEI_Exp2_SEI_only,1,1.54041
+Supplementary Figure 5,a,LLI_to_SEI_Exp2_SEI_only,2,1.75703
+Supplementary Figure 5,a,LLI_to_SEI_Exp3_SEI_only,0,1.99396
+Supplementary Figure 5,a,LLI_to_SEI_Exp3_SEI_only,1,1.94657
+Supplementary Figure 5,a,LLI_to_SEI_Exp3_SEI_only,2,2.15709
+Supplementary Figure 5,a,LLI_to_SEI_Exp2_SEI_dry,0,0.713785
+Supplementary Figure 5,a,LLI_to_SEI_Exp2_SEI_dry,1,0.679541
+Supplementary Figure 5,a,LLI_to_SEI_Exp2_SEI_dry,2,0.783233
+Supplementary Figure 5,a,LLI_to_SEI_Exp3_SEI_dry,0,0.895933
+Supplementary Figure 5,a,LLI_to_SEI_Exp3_SEI_dry,1,0.86803
+Supplementary Figure 5,a,LLI_to_SEI_Exp3_SEI_dry,2,0.967089
+Supplementary Figure 5,a,LLI_to_SEI_Exp2_5couple,0,0.689052
+Supplementary Figure 5,a,LLI_to_SEI_Exp2_5couple,1,0.666249
+Supplementary Figure 5,a,LLI_to_SEI_Exp2_5couple,2,0.727019
+Supplementary Figure 5,a,LLI_to_SEI_Exp3_5couple,0,0.893241
+Supplementary Figure 5,a,LLI_to_SEI_Exp3_5couple,1,0.854197
+Supplementary Figure 5,a,LLI_to_SEI_Exp3_5couple,2,0.913933
+Supplementary Figure 5,b,T_deg_All,0,10
+Supplementary Figure 5,b,T_deg_All,1,25
+Supplementary Figure 5,b,T_deg_All,2,40
+Supplementary Figure 5,b,LLI_to_SEI_cr_Exp2_SEI_only,0,3.05271
+Supplementary Figure 5,b,LLI_to_SEI_cr_Exp2_SEI_only,1,2.93911
+Supplementary Figure 5,b,LLI_to_SEI_cr_Exp2_SEI_only,2,3.35241
+Supplementary Figure 5,b,LLI_to_SEI_cr_Exp3_SEI_only,0,3.80448
+Supplementary Figure 5,b,LLI_to_SEI_cr_Exp3_SEI_only,1,3.71405
+Supplementary Figure 5,b,LLI_to_SEI_cr_Exp3_SEI_only,2,4.11574
+Supplementary Figure 5,b,LLI_to_SEI_cr_Exp2_SEI_dry,0,1.3619
+Supplementary Figure 5,b,LLI_to_SEI_cr_Exp2_SEI_dry,1,1.29656
+Supplementary Figure 5,b,LLI_to_SEI_cr_Exp2_SEI_dry,2,1.49441
+Supplementary Figure 5,b,LLI_to_SEI_cr_Exp3_SEI_dry,0,1.70944
+Supplementary Figure 5,b,LLI_to_SEI_cr_Exp3_SEI_dry,1,1.6562
+Supplementary Figure 5,b,LLI_to_SEI_cr_Exp3_SEI_dry,2,1.84521
+Supplementary Figure 5,b,LLI_to_SEI_cr_Exp2_5couple,0,1.31479
+Supplementary Figure 5,b,LLI_to_SEI_cr_Exp2_5couple,1,1.27124
+Supplementary Figure 5,b,LLI_to_SEI_cr_Exp2_5couple,2,1.38718
+Supplementary Figure 5,b,LLI_to_SEI_cr_Exp3_5couple,0,1.7046
+Supplementary Figure 5,b,LLI_to_SEI_cr_Exp3_5couple,1,1.63001
+Supplementary Figure 5,b,LLI_to_SEI_cr_Exp3_5couple,2,1.74396
+Supplementary Figure 5,c,T_deg_All,0,10
+Supplementary Figure 5,c,T_deg_All,1,25
+Supplementary Figure 5,c,T_deg_All,2,40
+Supplementary Figure 5,c,LLI_to_LiP_Exp2_5couple,0,0.0864444
+Supplementary Figure 5,c,LLI_to_LiP_Exp2_5couple,1,0.102641
+Supplementary Figure 5,c,LLI_to_LiP_Exp2_5couple,2,0.116502
+Supplementary Figure 5,c,LLI_to_LiP_Exp3_5couple,0,0.138648
+Supplementary Figure 5,c,LLI_to_LiP_Exp3_5couple,1,0.14598
+Supplementary Figure 5,c,LLI_to_LiP_Exp3_5couple,2,0.157122
+Supplementary Figure 5,d,T_deg_All,0,10
+Supplementary Figure 5,d,T_deg_All,1,25
+Supplementary Figure 5,d,T_deg_All,2,40
+Supplementary Figure 5,d,LLI_to_LAM_Exp2_SEI_dry,0,3.46749
+Supplementary Figure 5,d,LLI_to_LAM_Exp2_SEI_dry,1,3.29445
+Supplementary Figure 5,d,LLI_to_LAM_Exp2_SEI_dry,2,3.82087
+Supplementary Figure 5,d,LLI_to_LAM_Exp3_SEI_dry,0,4.40186
+Supplementary Figure 5,d,LLI_to_LAM_Exp3_SEI_dry,1,4.25748
+Supplementary Figure 5,d,LLI_to_LAM_Exp3_SEI_dry,2,4.77245
+Supplementary Figure 5,d,LLI_to_LAM_Exp2_5couple,0,4.30215
+Supplementary Figure 5,d,LLI_to_LAM_Exp2_5couple,1,4.00055
+Supplementary Figure 5,d,LLI_to_LAM_Exp2_5couple,2,4.30534
+Supplementary Figure 5,d,LLI_to_LAM_Exp3_5couple,0,6.60298
+Supplementary Figure 5,d,LLI_to_LAM_Exp3_5couple,1,5.93109
+Supplementary Figure 5,d,LLI_to_LAM_Exp3_5couple,2,6.11159
+Supplementary Figure 5,e,T_deg_All,0,10
+Supplementary Figure 5,e,T_deg_All,1,25
+Supplementary Figure 5,e,T_deg_All,2,40
+Supplementary Figure 5,e,LAM_to_Dry_Exp2_SEI_dry,0,2.75328
+Supplementary Figure 5,e,LAM_to_Dry_Exp2_SEI_dry,1,2.60936
+Supplementary Figure 5,e,LAM_to_Dry_Exp2_SEI_dry,2,3.04381
+Supplementary Figure 5,e,LAM_to_Dry_Exp3_SEI_dry,0,3.50614
+Supplementary Figure 5,e,LAM_to_Dry_Exp3_SEI_dry,1,3.3936
+Supplementary Figure 5,e,LAM_to_Dry_Exp3_SEI_dry,2,3.82672
+Supplementary Figure 5,e,LAM_to_Dry_Exp2_5couple,0,3.1422
+Supplementary Figure 5,e,LAM_to_Dry_Exp2_5couple,1,3.01326
+Supplementary Figure 5,e,LAM_to_Dry_Exp2_5couple,2,3.30781
+Supplementary Figure 5,e,LAM_to_Dry_Exp3_5couple,0,4.14778
+Supplementary Figure 5,e,LAM_to_Dry_Exp3_5couple,1,3.93266
+Supplementary Figure 5,e,LAM_to_Dry_Exp3_5couple,2,4.23032
+Supplementary Figure 5,f,T_deg_All,0,10
+Supplementary Figure 5,f,T_deg_All,1,25
+Supplementary Figure 5,f,T_deg_All,2,40
+Supplementary Figure 5,f,LAM_to_Crack_Ne_Exp2_5couple,0,3.23676
+Supplementary Figure 5,f,LAM_to_Crack_Ne_Exp2_5couple,1,2.7139
+Supplementary Figure 5,f,LAM_to_Crack_Ne_Exp2_5couple,2,2.70326
+Supplementary Figure 5,f,LAM_to_Crack_Ne_Exp3_5couple,0,5.91822
+Supplementary Figure 5,f,LAM_to_Crack_Ne_Exp3_5couple,1,4.86731
+Supplementary Figure 5,f,LAM_to_Crack_Ne_Exp3_5couple,2,4.60239
+Supplementary Figure 5,g,T_deg_All,0,10
+Supplementary Figure 5,g,T_deg_All,1,25
+Supplementary Figure 5,g,T_deg_All,2,40
+Supplementary Figure 5,g,LAM_to_Crack_Pe_Exp2_5couple,0,2.29616
+Supplementary Figure 5,g,LAM_to_Crack_Pe_Exp2_5couple,1,2.21074
+Supplementary Figure 5,g,LAM_to_Crack_Pe_Exp2_5couple,2,2.35802
+Supplementary Figure 5,g,LAM_to_Crack_Pe_Exp3_5couple,0,2.91121
+Supplementary Figure 5,g,LAM_to_Crack_Pe_Exp3_5couple,1,2.79249
+Supplementary Figure 5,g,LAM_to_Crack_Pe_Exp3_5couple,2,2.9355
+Supplementary Figure 6,a,Age_T_Exp2_exp,0,10
+Supplementary Figure 6,a,Age_T_Exp2_exp,1,25
+Supplementary Figure 6,a,Age_T_Exp2_exp,2,40
+Supplementary Figure 6,a,SOH_loss_Exp2_exp,0,8.51228
+Supplementary Figure 6,a,SOH_loss_Exp2_exp,1,7.20996
+Supplementary Figure 6,a,SOH_loss_Exp2_exp,2,8.7656
+Supplementary Figure 6,a,SOH_loss_Exp2_SEI,0,7.14343
+Supplementary Figure 6,a,SOH_loss_Exp2_SEI,1,6.92111
+Supplementary Figure 6,a,SOH_loss_Exp2_SEI,2,7.78448
+Supplementary Figure 6,a,SOH_loss_Exp2_SEIDry,0,7.18967
+Supplementary Figure 6,a,SOH_loss_Exp2_SEIDry,1,6.88894
+Supplementary Figure 6,a,SOH_loss_Exp2_SEIDry,2,7.88623
+Supplementary Figure 6,a,SOH_loss_Exp2_5couple,0,8.42592
+Supplementary Figure 6,a,SOH_loss_Exp2_5couple,1,8.02877
+Supplementary Figure 6,a,SOH_loss_Exp2_5couple,2,8.61607
+Supplementary Figure 6,a,Age_T_Exp3_exp,0,10
+Supplementary Figure 6,a,Age_T_Exp3_exp,1,25
+Supplementary Figure 6,a,Age_T_Exp3_exp,2,40
+Supplementary Figure 6,a,SOH_loss_Exp3_exp,0,18.2809
+Supplementary Figure 6,a,SOH_loss_Exp3_exp,1,13.8187
+Supplementary Figure 6,a,SOH_loss_Exp3_exp,2,11.076
+Supplementary Figure 6,a,SOH_loss_Exp3_SEI,0,7.90915
+Supplementary Figure 6,a,SOH_loss_Exp3_SEI,1,7.64064
+Supplementary Figure 6,a,SOH_loss_Exp3_SEI,2,8.45571
+Supplementary Figure 6,a,SOH_loss_Exp3_SEIDry,0,8.06867
+Supplementary Figure 6,a,SOH_loss_Exp3_SEIDry,1,7.71783
+Supplementary Figure 6,a,SOH_loss_Exp3_SEIDry,2,8.61655
+Supplementary Figure 6,a,SOH_loss_Exp3_5couple,0,10.8354
+Supplementary Figure 6,a,SOH_loss_Exp3_5couple,1,9.86717
+Supplementary Figure 6,a,SOH_loss_Exp3_5couple,2,10.2581
+Supplementary Figure 6,b,Age_T_Exp2_exp,0,10
+Supplementary Figure 6,b,Age_T_Exp2_exp,1,25
+Supplementary Figure 6,b,Age_T_Exp2_exp,2,40
+Supplementary Figure 6,b,LLI_Exp2_exp,0,9.43318
+Supplementary Figure 6,b,LLI_Exp2_exp,1,7.65596
+Supplementary Figure 6,b,LLI_Exp2_exp,2,9.31587
+Supplementary Figure 6,b,LLI_Exp2_SEI,0,5.21595
+Supplementary Figure 6,b,LLI_Exp2_SEI,1,5.05307
+Supplementary Figure 6,b,LLI_Exp2_SEI,2,5.69782
+Supplementary Figure 6,b,LLI_Exp2_SEIDry,0,6.20108
+Supplementary Figure 6,b,LLI_Exp2_SEIDry,1,5.92986
+Supplementary Figure 6,b,LLI_Exp2_SEIDry,2,6.80764
+Supplementary Figure 6,b,LLI_Exp2_5couple,0,7.31722
+Supplementary Figure 6,b,LLI_Exp2_5couple,1,6.96326
+Supplementary Figure 6,b,LLI_Exp2_5couple,2,7.49612
+Supplementary Figure 6,b,Age_T_Exp3_exp,0,10
+Supplementary Figure 6,b,Age_T_Exp3_exp,1,25
+Supplementary Figure 6,b,Age_T_Exp3_exp,2,40
+Supplementary Figure 6,b,LLI_Exp3_exp,0,15.2448
+Supplementary Figure 6,b,LLI_Exp3_exp,1,12.9217
+Supplementary Figure 6,b,LLI_Exp3_exp,2,10.4932
+Supplementary Figure 6,b,LLI_Exp3_SEI,0,5.79844
+Supplementary Figure 6,b,LLI_Exp3_SEI,1,5.66061
+Supplementary Figure 6,b,LLI_Exp3_SEI,2,6.27283
+Supplementary Figure 6,b,LLI_Exp3_SEIDry,0,7.00723
+Supplementary Figure 6,b,LLI_Exp3_SEIDry,1,6.78172
+Supplementary Figure 6,b,LLI_Exp3_SEIDry,2,7.58474
+Supplementary Figure 6,b,LLI_Exp3_5couple,0,9.30514
+Supplementary Figure 6,b,LLI_Exp3_5couple,1,8.52465
+Supplementary Figure 6,b,LLI_Exp3_5couple,2,8.88776
+Supplementary Figure 6,c,Age_T_Exp2_exp,0,10
+Supplementary Figure 6,c,Age_T_Exp2_exp,1,25
+Supplementary Figure 6,c,Age_T_Exp2_exp,2,40
+Supplementary Figure 6,c,Res_Exp2_exp,0,27.0449
+Supplementary Figure 6,c,Res_Exp2_exp,1,29.8168
+Supplementary Figure 6,c,Res_Exp2_exp,2,27.4006
+Supplementary Figure 6,c,Res_Exp2_SEI,0,28.4872
+Supplementary Figure 6,c,Res_Exp2_SEI,1,28.3373
+Supplementary Figure 6,c,Res_Exp2_SEI,2,28.6289
+Supplementary Figure 6,c,Res_Exp2_SEIDry,0,29.0435
+Supplementary Figure 6,c,Res_Exp2_SEIDry,1,28.8584
+Supplementary Figure 6,c,Res_Exp2_SEIDry,2,29.2138
+Supplementary Figure 6,c,Res_Exp2_5couple,0,28.5433
+Supplementary Figure 6,c,Res_Exp2_5couple,1,28.3906
+Supplementary Figure 6,c,Res_Exp2_5couple,2,28.5632
+Supplementary Figure 6,c,Age_T_Exp3_exp,0,10
+Supplementary Figure 6,c,Age_T_Exp3_exp,1,25
+Supplementary Figure 6,c,Age_T_Exp3_exp,2,40
+Supplementary Figure 6,c,Res_Exp3_exp,0,35.592
+Supplementary Figure 6,c,Res_Exp3_exp,1,29.9173
+Supplementary Figure 6,c,Res_Exp3_exp,2,31.9662
+Supplementary Figure 6,c,Res_Exp3_SEI,0,29.0389
+Supplementary Figure 6,c,Res_Exp3_SEI,1,28.9141
+Supplementary Figure 6,c,Res_Exp3_SEI,2,29.1992
+Supplementary Figure 6,c,Res_Exp3_SEIDry,0,29.6739
+Supplementary Figure 6,c,Res_Exp3_SEIDry,1,29.5191
+Supplementary Figure 6,c,Res_Exp3_SEIDry,2,29.857
+Supplementary Figure 6,c,Res_Exp3_5couple,0,29.3491
+Supplementary Figure 6,c,Res_Exp3_5couple,1,29.1
+Supplementary Figure 6,c,Res_Exp3_5couple,2,29.255
+Supplementary Figure 6,d,Age_T_Exp2_exp,0,10
+Supplementary Figure 6,d,Age_T_Exp2_exp,1,25
+Supplementary Figure 6,d,Age_T_Exp2_exp,2,40
+Supplementary Figure 6,d,LAM_Ne_Exp2_exp,0,7.98363
+Supplementary Figure 6,d,LAM_Ne_Exp2_exp,1,5.38097
+Supplementary Figure 6,d,LAM_Ne_Exp2_exp,2,6.49371
+Supplementary Figure 6,d,LAM_Ne_Exp2_SEI,0,0
+Supplementary Figure 6,d,LAM_Ne_Exp2_SEI,1,0
+Supplementary Figure 6,d,LAM_Ne_Exp2_SEI,2,0
+Supplementary Figure 6,d,LAM_Ne_Exp2_SEIDry,0,3.88641
+Supplementary Figure 6,d,LAM_Ne_Exp2_SEIDry,1,3.7136
+Supplementary Figure 6,d,LAM_Ne_Exp2_SEIDry,2,4.27393
+Supplementary Figure 6,d,LAM_Ne_Exp2_5couple,0,5.26487
+Supplementary Figure 6,d,LAM_Ne_Exp2_5couple,1,4.81393
+Supplementary Figure 6,d,LAM_Ne_Exp2_5couple,2,5.09831
+Supplementary Figure 6,d,Age_T_Exp3_exp,0,10
+Supplementary Figure 6,d,Age_T_Exp3_exp,1,25
+Supplementary Figure 6,d,Age_T_Exp3_exp,2,40
+Supplementary Figure 6,d,LAM_Ne_Exp3_exp,0,12.3438
+Supplementary Figure 6,d,LAM_Ne_Exp3_exp,1,10.0982
+Supplementary Figure 6,d,LAM_Ne_Exp3_exp,2,7.56211
+Supplementary Figure 6,d,LAM_Ne_Exp3_SEI,0,0
+Supplementary Figure 6,d,LAM_Ne_Exp3_SEI,1,0
+Supplementary Figure 6,d,LAM_Ne_Exp3_SEI,2,0
+Supplementary Figure 6,d,LAM_Ne_Exp3_SEIDry,0,4.40175
+Supplementary Figure 6,d,LAM_Ne_Exp3_SEIDry,1,4.25738
+Supplementary Figure 6,d,LAM_Ne_Exp3_SEIDry,2,4.77233
+Supplementary Figure 6,d,LAM_Ne_Exp3_5couple,0,7.31612
+Supplementary Figure 6,d,LAM_Ne_Exp3_5couple,1,6.45032
+Supplementary Figure 6,d,LAM_Ne_Exp3_5couple,2,6.54414
+Supplementary Figure 6,e,Age_T_Exp2_exp,0,10
+Supplementary Figure 6,e,Age_T_Exp2_exp,1,25
+Supplementary Figure 6,e,Age_T_Exp2_exp,2,40
+Supplementary Figure 6,e,LAM_Pe_Exp2_exp,0,5.89842
+Supplementary Figure 6,e,LAM_Pe_Exp2_exp,1,4.27985
+Supplementary Figure 6,e,LAM_Pe_Exp2_exp,2,4.59918
+Supplementary Figure 6,e,LAM_Pe_Exp2_SEI,0,0
+Supplementary Figure 6,e,LAM_Pe_Exp2_SEI,1,0
+Supplementary Figure 6,e,LAM_Pe_Exp2_SEI,2,0
+Supplementary Figure 6,e,LAM_Pe_Exp2_SEIDry,0,3.88641
+Supplementary Figure 6,e,LAM_Pe_Exp2_SEIDry,1,3.7136
+Supplementary Figure 6,e,LAM_Pe_Exp2_SEIDry,2,4.27393
+Supplementary Figure 6,e,LAM_Pe_Exp2_5couple,0,4.63624
+Supplementary Figure 6,e,LAM_Pe_Exp2_5couple,1,4.47768
+Supplementary Figure 6,e,LAM_Pe_Exp2_5couple,2,4.86522
+Supplementary Figure 6,e,Age_T_Exp3_exp,0,10
+Supplementary Figure 6,e,Age_T_Exp3_exp,1,25
+Supplementary Figure 6,e,Age_T_Exp3_exp,2,40
+Supplementary Figure 6,e,LAM_Pe_Exp3_exp,0,9.63115
+Supplementary Figure 6,e,LAM_Pe_Exp3_exp,1,10.8919
+Supplementary Figure 6,e,LAM_Pe_Exp3_exp,2,5.5488
+Supplementary Figure 6,e,LAM_Pe_Exp3_SEI,0,0
+Supplementary Figure 6,e,LAM_Pe_Exp3_SEI,1,0
+Supplementary Figure 6,e,LAM_Pe_Exp3_SEI,2,0
+Supplementary Figure 6,e,LAM_Pe_Exp3_SEIDry,0,4.40175
+Supplementary Figure 6,e,LAM_Pe_Exp3_SEIDry,1,4.25738
+Supplementary Figure 6,e,LAM_Pe_Exp3_SEIDry,2,4.77233
+Supplementary Figure 6,e,LAM_Pe_Exp3_5couple,0,5.21878
+Supplementary Figure 6,e,LAM_Pe_Exp3_5couple,1,4.95707
+Supplementary Figure 6,e,LAM_Pe_Exp3_5couple,2,5.31303

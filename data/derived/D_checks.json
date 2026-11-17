@@ -1,0 +1,70 @@
+{
+ "zips": {
+  "Expt 1 - Si-based Degradation.zip": {
+   "members_fetched": 18,
+   "bytes_fetched_members": 79719,
+   "total_uncompressed_bytes": 32536208811
+  },
+  "Expt 2,2 - C-based Degradation 2.zip": {
+   "members_fetched": 12,
+   "bytes_fetched_members": 52719,
+   "total_uncompressed_bytes": 24603977489
+  },
+  "Expt 3 - Cathode Degradation and Li-Plating.zip": {
+   "members_fetched": 18,
+   "bytes_fetched_members": 72591,
+   "total_uncompressed_bytes": 36016495824
+  },
+  "Expt 4 - Drive Cycle Aging (Control).zip": {
+   "members_fetched": 16,
+   "bytes_fetched_members": 58466,
+   "total_uncompressed_bytes": 32125987366
+  },
+  "Expt 5 - Standard Cycle Aging (Control).zip": {
+   "members_fetched": 16,
+   "bytes_fetched_members": 81063,
+   "total_uncompressed_bytes": 35306868023
+  }
+ },
+ "cross_check_vs_Li2025_copy": {
+  "rows_kirkaldy": 511,
+  "rows_li_copy": 511,
+  "rows_matched": 511,
+  "max_abs_diff_charge_throughput_Ah": 417.98185587117223,
+  "n_only_one_side_has_value_charge_throughput_Ah": 0,
+  "max_abs_diff_cap_C10_mAh": 0.0004999023058189778,
+  "n_only_one_side_has_value_cap_C10_mAh": 0,
+  "max_abs_diff_R_0p1s_Ohm": 3.8000000007754053e-08,
+  "n_only_one_side_has_value_R_0p1s_Ohm": 0,
+  "max_abs_diff_SOH_dma": 4.97849064196032e-08,
+  "n_only_one_side_has_value_SOH_dma": 0,
+  "max_abs_diff_LLI": 4.989863409965434e-08,
+  "n_only_one_side_has_value_LLI": 0,
+  "max_abs_diff_LAM_NE_tot": 4.967029569591386e-08,
+  "n_only_one_side_has_value_LAM_NE_tot": 0,
+  "max_abs_diff_LAM_PE": 4.905852690750834e-08,
+  "n_only_one_side_has_value_LAM_PE": 0,
+  "throughput_Li_minus_Kirkaldy_Ah_by_expt_min_max": {
+   "1": [
+    -0.004222025279887021,
+    0.000494473199978529
+   ],
+   "2,2": [
+    0.0,
+    417.98185587117223
+   ],
+   "3": [
+    -0.0004896953250863589,
+    0.0004607950231729774
+   ],
+   "4": [
+    -0.0004957772953275708,
+    0.0004954514424753143
+   ],
+   "5": [
+    -0.0004890000000159489,
+    0.0004870000011578668
+   ]
+  }
+ }
+}
