@@ -16,6 +16,7 @@ switch name
     case 'grid_fine',   opt = struct('Nn', 40, 'Ns', 20, 'Np', 40, 'Nrn', 200, 'Nrp', 60); desc = 'luoi min [40 20 40 | 200 60]';
     case 'grid_li',     opt = struct('Nn', 10, 'Ns', 5, 'Np', 5, 'Nrn', 100, 'Nrp', 20); desc = 'luoi Li 2025 [10 5 5 | 100 20]';
     case 'no_tdf',      opt.use_tdf = false; desc = 'bo thermodynamic factor (GD-18)';
+    case 'Rc0',         opt.Rcontact = 0; desc = 'R_contact = 0 (SI Table 2 in V = phi_p - phi_n, khong co R_0; GD-20)';
     otherwise,          desc = '';
 end
 par = dfn_params(opt);
@@ -66,9 +67,25 @@ switch name
     case 'brug0'
         par.neg.brug_e = 0; par.sep.brug_e = 0; par.pos.brug_e = 0;
         desc = 'Bruggeman dien giai = 0 (van chuyen dien giai nhanh ~5-10x)';
+    case {'pos_lith', 'pos_delith', 'neg_lith', 'neg_delith'}
+        % CHI CHAN DOAN: mot dien cuc luon dung mot nhanh OCP (ban dfn_ocp_*.m rieng
+        % trong diag/<ten bien the>/); dien cuc kia giu hysteresis (S46)-(S47).
+        addpath(fullfile(fileparts(mfilename('fullpath')), name));
+        nm = struct('pos_lith', 'cuc duong luon nhanh lithiation (S1) ca khi sac', ...
+                    'pos_delith', 'cuc duong luon nhanh delithiation (S2) ca khi xa/nghi', ...
+                    'neg_lith', 'cuc am luon nhanh lithiation (S3) ca khi xa/nghi', ...
+                    'neg_delith', 'cuc am luon nhanh delithiation (S4) ca khi sac');
+        desc = nm.(name);
+    case 'isoT'
+        % CHI CHAN DOAN: dang nhiet (T = T moi truong) bang h rat lon (x 1e3)
+        par.th.hA_V = 1e3*par.th.hA_V; desc = 'dang nhiet: h x 1000 (T cell ~ T moi truong)';
+    case 'x100_fresh'
+        % Li 2025 SI Note 8 (tr. 46-47): can bang 5 Ah "fresh" voi x100 = 0.9014 (Chen 2020
+        % tr. 13); Li 2025 ha xuong 0.8771 cho cell LG M50T cua Kirkaldy (4.865 Ah).
+        par.neg.x100 = 0.9014; desc = 'duong can bang lithium qua x100 = 0.9014 (can bang 5 Ah, Li SI Note 8 / Chen 2020)';
     case 'start_y0'
         start = 'y0'; desc = 'bat dau tai (x0, y0) cua Li 2025 thay vi duong can bang';
-    case {'base', 'src_paper', 'src_code', 'no_stress', 'EDs_6e4', 'grid_fine', 'grid_li', 'no_tdf'}
+    case {'base', 'src_paper', 'src_code', 'no_stress', 'EDs_6e4', 'grid_fine', 'grid_li', 'no_tdf', 'Rc0'}
     otherwise
         error('diag_variant: bien the khong ro: %s', name);
 end

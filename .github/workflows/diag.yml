@@ -2,7 +2,8 @@ name: Chan doan GD-16 (bao hoa be mat hat cuc am khi sac)
 
 # Chan doan: (1) sac CC-CV tu 0 % SOC cho tung bien the tham so (doi mot thu moi lan);
 # (2) so cac bien the D_s,n voi du lieu mo Zenodo 4864437: pha SAC CC-CV (chua tung
-# dung de chinh tham so) va pha XA.
+# dung de chinh tham so) va pha XA; (3) diag_hyst: tach ap mo hinh khi sac/xa, buoc
+# nhay ap, khep Ah, giao thuc do - tim nguon goc sai lech ap pha sac.
 on:
   push:
     branches: [main]
@@ -19,6 +20,10 @@ on:
         description: 'Bien the cho phan (2), JSON; de trong = mac dinh; [] = bo qua'
         required: false
         default: ''
+      hyst_variants:
+        description: 'Bien the cho phan (3) diag_hyst (nguon goc sai lech ap pha sac), JSON; de trong = mac dinh; [] = bo qua'
+        required: false
+        default: ''
 
 concurrency:
   group: diag-${{ github.ref }}
@@ -26,6 +31,7 @@ concurrency:
 
 jobs:
   diag:
+    if: ${{ github.event.inputs.variants != '[]' }}
     runs-on: ubuntu-latest
     timeout-minutes: 180
     strategy:
@@ -86,8 +92,44 @@ jobs:
           path: results/data
           if-no-files-found: warn
 
+  hyst:
+    if: ${{ github.event.inputs.hyst_variants != '[]' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        variant: ${{ fromJSON(github.event.inputs.hyst_variants || '["base","pos_lith","pos_delith","neg_lith","neg_delith","hys_delith","hys_lith","Rc0","isoT","x100_fresh","no_stress","no_tdf","j0n_chen"]') }}
+        temp: [0, 10, 25]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tai du lieu mo (Zenodo 10.5281/zenodo.4864437, BSD-3) - khong luu vao repo
+        run: |
+          set -e
+          mkdir -p ext
+          curl -sSL --retry 5 --retry-delay 10 -o ext/tec.zip \
+            "https://zenodo.org/api/records/4864437/files/brosaplanella/TEC-reduced-model-v1.0.zip/content"
+          echo "f9306803d4a2e2a5e27ad9b43596fa12  ext/tec.zip" | md5sum -c -
+          unzip -q ext/tec.zip -d ext/tec
+          mv ext/tec/*/data ext/data
+      - uses: matlab-actions/setup-matlab@v2
+        with:
+          release: R2024b
+          cache: true
+      - name: Sac/xa ${{ matrix.variant }} ${{ matrix.temp }} degC
+        uses: matlab-actions/run-command@v2
+        with:
+          command: addpath('src/dfn'); addpath('src/dfn/diag'); diag_hyst('${{ matrix.variant }}', ${{ matrix.temp }}, 'ext/data', 'results/hyst');
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hyst-${{ matrix.variant }}-${{ matrix.temp }}
+          path: results/hyst
+          if-no-files-found: warn
+
   report:
-    needs: [diag, data]
+    needs: [diag, data, hyst]
     if: always()
     runs-on: ubuntu-latest
     steps:
