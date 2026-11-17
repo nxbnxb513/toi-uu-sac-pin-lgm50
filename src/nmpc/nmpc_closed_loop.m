@@ -52,6 +52,7 @@ while t < cfg.tmax
     else
         % that bai: giu dong hien tai trong mot chu ky, khoi tao lai doan dau
         nfail = nfail + 1; slope = 0; Tseg = cfg.Ts;
+        if nfail <= 2, nmpc_diag(C); end
         [zg2, ~] = rom_solve_z(M, xhat, -Ich, Ta, zg);
         rem = max(prm(3), 0.1);
         nmpc_init_guess(C, M, xhat, zg2, Ich, rem, Ta, max(Ich, min(C.opt.Imax, (cfg.soc1 - xhat(rom.ix.soc))*Csoc/rem)));

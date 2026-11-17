@@ -29,6 +29,15 @@ fprintf('CCCV 0.5C: %s, T_CCCV = %.0f s, SOC cuoi %.4f, SEI %.4f mAh, ma Li %.4f
 % ---- NMPC (tao bo giai mot lan) ----
 C = nmpc_build(rom, par, struct('N', cfgn.N, 'Imax', cfgn.Imax, 'codegen_dir', fullfile(pwd, 'c_generated_code')));
 fprintf('acados: tao + bien dich bo giai %.1f s\n', C.t_build);
+% kiem tra bo tich phan IRK tren khoang du bao dau tien (doan dau cua NMPC)
+y0 = dfn_state_soc(par, soc0, Ta);
+y0 = dfn_consistent_init(0, y0, par, struct('mode', 'I', 'value', 0, 'Tamb', Ta));
+[xs0, zg] = rom_from_dfn(rom, par, y0); zs0 = rom_solve_z(M, xs0, 0, Ta, zg);
+tfb = min(k, 1.5)*cc.T_CCCV/3600; Igs = min(cfgn.Imax, (soc1 - soc0)*rom.Csoc/tfb);
+prm0 = [Ta; soc1; tfb; cfgn.w_loss; cfgn.w_dI; cfgn.Tmax; cfgn.delta; cfgn.xsmax];
+for nst = [2 4 8]
+    nmpc_sim_check(rom, par, M, xs0, zs0, 0, Igs, tfb, prm0, C, struct('num_stages', C.opt.num_stages, 'num_steps', nst, 'newton_iter', 8));
+end
 cl.soc0 = soc0; cl.soc1 = soc1; cl.Tamb = Ta;
 cl.budget = k*cc.T_CCCV; cl.Ts = cfgn.Ts;
 cl.w_loss = cfgn.w_loss; cl.w_dI = cfgn.w_dI; cl.Tmax = cfgn.Tmax; cl.delta = cfgn.delta; cl.xsmax = cfgn.xsmax;

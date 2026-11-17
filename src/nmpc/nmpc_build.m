@@ -26,23 +26,7 @@ d = struct('N', 20, 'Imax', 2*par.Qnom, 'tf_min_h', 10/3600, 'tf_cap_h', 20, 'ep
 fn = fieldnames(d);
 for i = 1:numel(fn), if ~isfield(opt, fn{i}), opt.(fn{i}) = d.(fn{i}); end, end
 nx = rom.nx; nX = nx + 2; iI = nx + 1; itf = nx + 2;
-x  = SX.sym('x', nx); Ich = SX.sym('Ich'); tf = SX.sym('tf_h');
-X  = [x; Ich; tf]; Xd = SX.sym('Xdot', nX);
-z  = SX.sym('z', rom.nz); u = SX.sym('u'); p = SX.sym('p', 8);
-Ta = p(1); soc_t = p(2); bud = p(3); wl = p(4); wd = p(5); Tmax = p(6); dlt = p(7); xsm = p(8);
-[fx, g, o] = rom_equations(rom, par, x, z, -Ich, Ta);
-
-model = AcadosModel();
-model.name = opt.name;
-model.x = X; model.xdot = Xd; model.u = u; model.z = z; model.p = p;
-model.f_impl_expr = [Xd - [3600*tf*fx; u; 0]; g];
-loss = x(rom.ix.nsei) + x(rom.ix.npl);
-model.cost_y_expr_0 = sqrt(wd)*u;
-model.cost_y_expr   = sqrt(wd)*u;
-model.cost_y_expr_e = sqrt(rom_smax(wl*loss, 0, 1e-3) + opt.eps_cost);   % >= 0 ca khi lap SQP lam loss hoi am
-hpath = [o.V - par.Vmax; o.T - Tmax; dlt - o.eta_sep; o.xs_sep - xsm; tf - bud];
-model.con_h_expr   = hpath;
-model.con_h_expr_e = [soc_t - x(rom.ix.soc); tf - bud];
+[model, nh] = nmpc_model(rom, par, opt.name, opt.eps_cost);
 
 ocp = AcadosOcp();
 ocp.model = model;
@@ -83,7 +67,7 @@ so.sim_method_newton_iter = 8;
 so.nlp_solver_type = 'SQP';
 so.qp_solver = 'PARTIAL_CONDENSING_HPIPM';
 so.hessian_approx = 'GAUSS_NEWTON';
-so.globalization = 'MERIT_BACKTRACKING';
+so.globalization = 'FIXED_STEP';   % MERIT_BACKTRACKING can danh gia h(x,z): acados v0.6 chua ho tro khi nz > 0
 so.nlp_solver_max_iter = opt.max_iter;
 so.nlp_solver_tol_stat = 1e-6; so.nlp_solver_tol_eq = 1e-7;
 so.nlp_solver_tol_ineq = 1e-7; so.nlp_solver_tol_comp = 1e-7;
