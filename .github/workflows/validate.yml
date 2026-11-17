@@ -1,0 +1,117 @@
+name: Kiem chung mo hinh DFN
+
+# Chay khi sua code DFN hoac workflow nay, hoac bam Run workflow.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/dfn/**'
+      - '.github/workflows/validate.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: validate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Tu kiem tra mo hinh + tai du lieu kiem chung (mot lan) cho cac job sau.
+  selftest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tai du lieu mo (Zenodo 10.5281/zenodo.4864437, BSD-3) - khong luu vao repo
+        run: |
+          set -e
+          mkdir -p ext
+          curl -sSL --retry 5 --retry-delay 10 -o ext/tec.zip \
+            "https://zenodo.org/api/records/4864437/files/brosaplanella/TEC-reduced-model-v1.0.zip/content"
+          echo "f9306803d4a2e2a5e27ad9b43596fa12  ext/tec.zip" | md5sum -c -
+          unzip -q ext/tec.zip -d ext/tec
+          mv ext/tec/*/data ext/data
+          ls ext/data
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tec-data
+          path: ext/data
+          retention-days: 3
+      - uses: matlab-actions/setup-matlab@v2
+        with:
+          release: R2024b
+          cache: true
+      - name: Tu kiem tra (tham so, JPattern, bao toan, CC-CV, hoi tu luoi)
+        uses: matlab-actions/run-command@v2
+        with:
+          command: addpath('src/dfn'); val_selftest('results/selftest');
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: selftest
+          path: results/selftest
+          if-no-files-found: warn
+
+  # 12 dieu kien xa chay song song: 4 C-rate x 3 nhiet do.
+  validate:
+    needs: selftest
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        crate: ['0p1', '0p5', '1', '2']
+        temp: [0, 10, 25]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: tec-data
+          path: ext/data
+      - uses: matlab-actions/setup-matlab@v2
+        with:
+          release: R2024b
+          cache: true
+      - name: Xa ${{ matrix.crate }}C tai ${{ matrix.temp }} degC
+        uses: matlab-actions/run-command@v2
+        with:
+          command: addpath('src/dfn'); val_run_condition('${{ matrix.crate }}', ${{ matrix.temp }}, 'ext/data', 'results');
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: val-${{ matrix.crate }}C-${{ matrix.temp }}degC
+          path: results/
+          if-no-files-found: warn
+
+  report:
+    needs: [selftest, validate]
+    if: always() && needs.selftest.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: results
+          pattern: val-*
+      - uses: actions/download-artifact@v4
+        with:
+          name: selftest
+          path: results/selftest
+      - uses: matlab-actions/setup-matlab@v2
+        with:
+          release: R2024b
+          cache: true
+      - name: Gop ket qua kiem chung
+        uses: matlab-actions/run-command@v2
+        with:
+          command: addpath('src/dfn'); val_report('results', 'results');
+      - name: Tom tat
+        if: always()
+        run: |
+          if [ -f results/validation.md ]; then cat results/validation.md >> "$GITHUB_STEP_SUMMARY"; fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: validation-report
+          path: results/
+          if-no-files-found: warn

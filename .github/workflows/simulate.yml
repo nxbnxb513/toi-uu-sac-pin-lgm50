@@ -1,8 +1,7 @@
 name: Mo phong sac toi uu
 
+# Chi chay khi bam Run workflow (khong chay khi push).
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 jobs:
