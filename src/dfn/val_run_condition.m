@@ -20,20 +20,24 @@ if isempty(files), error('Khong tim thay du lieu cho %s trong %s', tag, datadir)
 crate = str2double(strrep(cstr, 'p', '.'));
 
 % Bien the mo hinh (bao cao tat ca, khong chon ngam):
-%   base      : dung nhu ma nguon Li 2025 (h = 20, co khuech tan do ung suat, khong co nhiet R_contact)
-%   Rc_heat   : them nhiet I^2.R_contact vao can bang nhiet (GD-05)
-%   no_stress : tat khuech tan do ung suat (DFN nhu mo ta trong bai/SI; GD-10)
-%   h15       : h = 15 W/m2/K nhu O'Regan 2022 (tr. 32) thay cho h = 20 cua Li 2025
-%   h_tau     : h suy tu hang so thoi gian nguoi do duoc tau = 582 s (trung vi, data/ket_qua_du_lieu.md
-%               muc A.3) va nhiet dung cua mo hinh: h = rho.c_p,eff.V_cell/(tau.A_cool)
+%   paper          : cho nao bai bao in thi dung nhu in (ke ca he so dien giai 0.8353, -0.612;
+%                    L_SEI,0 = 1.23625e-8 m; mat do xop kho nhu SI Table 6) - xem tai_lieu/gia_dinh.md
+%   code           : cac cho do lay theo ma nguon cua tac gia (0.353, -6.12; L_SEI,0 = 9.2326e-9 m ...)
+%   code_no_stress : code + tat khuech tan do ung suat (GD-10)
+%   code_Rc_heat   : code + nhiet I^2.R_contact trong can bang nhiet (GD-05)
+%   code_h15       : code + h = 15 W/m2/K nhu O'Regan 2022 (tr. 32) thay cho h = 20 cua Li 2025
+%   code_h_tau     : code + h suy tu hang so thoi gian nguoi do duoc tau = 582 s (trung vi,
+%                    data/ket_qua_du_lieu.md muc A.3): h = rho.c_p,eff.V_cell/(tau.A_cool)
 % Nhiet do mo hinh (lumped, mot gia tri) duoc so voi cap nhiet GIUA than cell.
-pb = dfn_params();
+pb = dfn_params(struct('src', 'code'));
 h_tau = dfn_rhocp(pb, Tdeg + 273.15, dfn_aging_state(pb, []))*pb.th.Vcell/(582*pb.th.Acool);
 fprintf('h suy tu tau = 582 s: %.2f W/m2/K\n', h_tau);
-vname = {'base', 'Rc_heat', 'no_stress', 'h15', 'h_tau'};
-pars  = {pb, dfn_params(struct('contact_heat', true)), ...
-         dfn_params(struct('stress_diffusion', false)), dfn_params(struct('h', 15)), ...
-         dfn_params(struct('h', h_tau))};
+vname = {'paper', 'code', 'code_no_stress', 'code_Rc_heat', 'code_h15', 'code_h_tau'};
+pars  = {dfn_params(struct('src', 'paper')), pb, ...
+         dfn_params(struct('src', 'code', 'stress_diffusion', false)), ...
+         dfn_params(struct('src', 'code', 'contact_heat', true)), ...
+         dfn_params(struct('src', 'code', 'h', 15)), ...
+         dfn_params(struct('src', 'code', 'h', h_tau))};
 nv = numel(vname);
 par0 = pars{1};
 fprintf('=== %s: %d file, luoi [%d %d %d | %d %d], %d an ===\n', tag, numel(files), ...
@@ -56,14 +60,22 @@ for fi = 1:numel(files)
         T0 = s.T0 + 273.15;
         sims = cell(1, nv);
         for v = 1:nv
-            tic; sim = run_one(pars{v}, s, T0); wall = toc;
+            try
+                tic; sim = run_one(pars{v}, s, T0); wall = toc;
+            catch ME
+                fprintf('  !!! LOI o %s cell %s xa %d bien the %s: %s\n', tag, cellid, si, vname{v}, ME.message);
+                rows(end+1,:) = {tag, vname{v}, crate, Tdeg, str2double(cellid), si, s.Vrest0, s.T0, s.Imean, NaN, ...
+                    NaN, NaN, NaN, NaN, NaN, NaN, s.cap, NaN, s.T(end), NaN, s.dTpos, s.dTneg, pars{v}.th.h, ...
+                    'error', NaN, NaN}; %#ok<AGROW>
+                continue;
+            end
             m = metrics(sim, s);
             fprintf(['  cell %s xa %d [%-9s]: Vrest=%.4f V, T0=%.1f C, I=%.3f A, q0=%.3f Ah | ', ...
                      'RMSE_V=%.1f mV, RMSE_T=%.2f K, cap sim/exp=%.3f/%.3f Ah, dT sim/exp=%.1f/%.1f K, %s, %d buoc, %.1f s\n'], ...
                 cellid, si, vname{v}, s.Vrest0, s.T0, s.Imean, sim.q0, 1e3*m.rmseV, m.rmseT, ...
                 m.cap_sim, s.cap, m.Tend_sim - s.T0, m.Tend_exp - s.T0, sim.out.reason{1}, sum(sim.out.nsteps), wall);
             if any(strcmp(sim.out.reason, 'solver_failed'))
-                error('val_run_condition: bo giai that bai o %s cell %s bien the %s', tag, cellid, vname{v});
+                fprintf('  !!! bo giai that bai o %s cell %s bien the %s (ghi vao bang, khong dung job)\n', tag, cellid, vname{v});
             end
             rows(end+1,:) = {tag, vname{v}, crate, Tdeg, str2double(cellid), si, s.Vrest0, s.T0, s.Imean, sim.q0, ...
                 1e3*m.rmseV, 1e3*m.maxV, m.rmseT, m.maxT, 1e3*m.rmseVr, m.rmseTr, ...
@@ -84,9 +96,11 @@ Tb = cell2table(rows, 'VariableNames', vn);
 writetable(Tb, fullfile(od, 'metrics.csv'));
 
 % ---- CSV duong cong mo phong (lan chay dau tien) va hinh chong ----------
-r = runs(1); r.sim = r.sims{1};
+r = runs(1); r.sim = r.sims{2};
+if ~isempty(r.sim)
 writetable(table(r.sim.t, r.sim.V, r.sim.T - 273.15, r.sim.I, ...
     'VariableNames', {'t_s', 'V_sim', 'T_sim_degC', 'I_A'}), fullfile(od, 'sim_first_run.csv'));
+end
 plot_overlay(runs, tag, od);
 end
 
@@ -113,6 +127,10 @@ end
 function m = metrics(sim, s)
 % Pha xa: so sanh tren khoang thoi gian chung [0, min(t_sim, t_exp)]
 te = s.t - s.t(1);
+m.rmseV = NaN; m.maxV = NaN; m.rmseT = NaN; m.maxT = NaN; m.rmseVr = NaN; m.rmseTr = NaN;
+m.cap_sim = sim.out.Q(find(sim.out.step == 1, 1, 'last'));
+m.Tend_exp = s.T(end); m.Tend_sim = sim.Tdis(end) - 273.15;
+if numel(sim.tdis) < 3 || sim.tend <= 0, return; end
 tc = min(sim.tend, te(end));
 k = te <= tc;
 Vs = interp1(sim.tdis, sim.Vdis, te(k));
@@ -121,11 +139,8 @@ m.rmseV = sqrt(mean((Vs - s.V(k)).^2));
 m.maxV  = max(abs(Vs - s.V(k)));
 m.rmseT = sqrt(mean((Ts - s.T(k)).^2));
 m.maxT  = max(abs(Ts - s.T(k)));
-m.cap_sim = sim.out.Q(find(sim.out.step == 1, 1, 'last'));
-m.Tend_exp = s.T(end); m.Tend_sim = sim.Tdis(end) - 273.15;
 % Pha nghi sau khi xa: thoi gian tinh tu luc ngat dong cua tung ben
-m.rmseVr = NaN; m.rmseTr = NaN;
-if ~isempty(s.tr) && ~isempty(sim.trest)
+if ~isempty(s.tr) && numel(sim.trest) > 2
     k = s.tr <= sim.trest(end) & s.tr > 0;
     [tu, iu] = unique(sim.trest);
     Vs = interp1(tu, sim.Vrest(iu), s.tr(k));
@@ -141,7 +156,8 @@ co = lines(numel(runs));
 ax1 = subplot(2,2,1); hold(ax1, 'on'); ax2 = subplot(2,2,2); hold(ax2, 'on');
 ax3 = subplot(2,2,3); hold(ax3, 'on'); ax4 = subplot(2,2,4); hold(ax4, 'on');
 for i = 1:numel(runs)
-    s = runs(i).seg; sim = runs(i).sims{1}; sim1 = runs(i).sims{3};
+    s = runs(i).seg; sim = runs(i).sims{2}; sim1 = runs(i).sims{1};
+    if isempty(sim) || isempty(sim1), continue; end
     te = s.t - s.t(1);
     plot(ax1, te/60, s.V, '.', 'Color', co(i,:), 'MarkerSize', 4);
     plot(ax1, sim.tdis/60, sim.Vdis, '-', 'Color', co(i,:), 'LineWidth', 1.2);
@@ -158,7 +174,7 @@ for i = 1:numel(runs)
     end
 end
 xlabel(ax1, 'Thoi gian xa (phut)'); ylabel(ax1, 'Dien ap (V)');
-title(ax1, ['Xa ' strrep(tag, '_', ' ') ': diem = do, lien = DFN base, dut = no stress'], 'Interpreter', 'none');
+title(ax1, ['Xa ' strrep(tag, '_', ' ') ': diem = do, lien = DFN code, dut = DFN paper'], 'Interpreter', 'none');
 xlabel(ax2, 'Thoi gian xa (phut)'); ylabel(ax2, 'Nhiet do be mat (degC)');
 title(ax2, 'Nhiet do be mat', 'Interpreter', 'none');
 xlabel(ax3, 'Thoi gian nghi (phut)'); ylabel(ax3, 'Dien ap (V)'); title(ax3, 'Nghi sau khi xa');

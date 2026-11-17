@@ -11,6 +11,7 @@ y(ix.Q)   = 0;
 m = 0.5*(1 + tanh(par.hys.k*par.hys.offset));
 [Unl, Und, dUn] = dfn_ocp_neg(xn);
 [Upl, Upd, dUp] = dfn_ocp_pos(yp);
+dUn = dUn*par.dUdT_scale/1e-3; dUp = dUp*par.dUdT_scale/1e-3;
 Un = (1 - m)*Unl + m*Und + (T0 - par.Tref)*dUn;
 Up = m*Upl + (1 - m)*Upd + (T0 - par.Tref)*dUp;
 y(ix.phisn) = 0;            % moc the: phi_s = 0 tai current collector am

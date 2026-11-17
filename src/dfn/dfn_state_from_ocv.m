@@ -24,6 +24,7 @@ y = dfn_init_state(par, xn, yp, T0);
         m = 0.5*(1 + tanh(par.hys.k*par.hys.offset));
         [Unl, Und, dUn] = dfn_ocp_neg(xn_);
         [Upl, Upd, dUp] = dfn_ocp_pos(yp_);
+        dUn = dUn*par.dUdT_scale/1e-3; dUp = dUp*par.dUdT_scale/1e-3;
         v = m*Upl + (1 - m)*Upd + (T0 - par.Tref)*dUp ...
           - ((1 - m)*Unl + m*Und + (T0 - par.Tref)*dUn);
     end

@@ -15,13 +15,14 @@ for i = 1:numel(fl)
 end
 Tb = sortrows(Tb, {'variant', 'T_degC', 'crate', 'cell', 'discharge'});
 writetable(Tb, fullfile(outdir, 'validation.csv'));
-vars = {'base', 'Rc_heat', 'no_stress', 'h15', 'h_tau'};
+vars = {'paper', 'code', 'code_no_stress', 'code_Rc_heat', 'code_h15', 'code_h_tau'};
 vars = vars(ismember(vars, unique(Tb.variant)));
-vdesc = {'base', 'dung nhu ma nguon Li 2025: h = 20 W/m2/K, co khuech tan do ung suat, khong co nhiet R_contact'; ...
-         'Rc_heat', 'base + nhiet I^2.R_contact trong can bang nhiet (GD-05)'; ...
-         'no_stress', 'base nhung tat khuech tan do ung suat (DFN nhu bai/SI mo ta; GD-10)'; ...
-         'h15', 'base nhung h = 15 W/m2/K (gia tri O''Regan 2022 chinh tay cho chinh bo du lieu nay)'; ...
-         'h_tau', 'base nhung h suy tu hang so thoi gian nguoi do duoc tau = 582 s (data/ket_qua_du_lieu.md A.3): h = rho.c_p,eff.V_cell/(tau.A_cool)'};
+vdesc = {'paper', 'cho nao bai bao in thi dung nhu in: he so dien giai (S14) 0.8353 va (S15) -0.612 (t+ = 5.7, kappa = 2.4 S/m tai 1 M, 25 degC), L_SEI,0 = 1.23625e-8 m moi lop, mat do xop kho nhu SI Table 6; h = 20'; ...
+         'code', 'nhung cho do lay theo ma nguon cua tac gia: 0.353 va -6.12 (t+ = 0.22, kappa = 0.91 S/m), L_SEI,0 = 9.2326e-9 m, eps_n = 0.234965; h = 20, co khuech tan do ung suat, khong co nhiet R_contact'; ...
+         'code_no_stress', 'code nhung tat khuech tan do ung suat (GD-10)'; ...
+         'code_Rc_heat', 'code + nhiet I^2.R_contact trong can bang nhiet (GD-05)'; ...
+         'code_h15', 'code nhung h = 15 W/m2/K (gia tri O''Regan 2022 chinh tay cho chinh bo du lieu nay)'; ...
+         'code_h_tau', 'code nhung h suy tu hang so thoi gian nguoi do duoc tau = 582 s (data/ket_qua_du_lieu.md A.3): h = rho.c_p,eff.V_cell/(tau.A_cool)'};
 
 % ---- tong hop theo (bien the, T, C-rate) --------------------------------
 S = table();
@@ -29,8 +30,8 @@ for v = 1:numel(vars)
     Tv = Tb(strcmp(Tb.variant, vars{v}), :);
     [G, Tg, Cg] = findgroups(Tv.T_degC, Tv.crate);
     Sv = table(repmat(vars(v), numel(Tg), 1), Tg, Cg, splitapply(@numel, Tv.cell, G), ...
-        splitapply(@mean, Tv.rmseV_mV, G), splitapply(@std, Tv.rmseV_mV, G), ...
-        splitapply(@mean, Tv.rmseT_K, G), splitapply(@std, Tv.rmseT_K, G), ...
+        splitapply(@(x) mean(x, 'omitnan'), Tv.rmseV_mV, G), splitapply(@(x) std(x, 'omitnan'), Tv.rmseV_mV, G), ...
+        splitapply(@(x) mean(x, 'omitnan'), Tv.rmseT_K, G), splitapply(@(x) std(x, 'omitnan'), Tv.rmseT_K, G), ...
         splitapply(@(x) mean(x, 'omitnan'), Tv.rmseV_rest_mV, G), splitapply(@(x) mean(x, 'omitnan'), Tv.rmseT_rest_K, G), ...
         splitapply(@mean, Tv.cap_exp_Ah, G), splitapply(@mean, Tv.cap_sim_Ah, G), ...
         splitapply(@mean, Tv.Tend_exp_degC - Tv.T0_degC, G), splitapply(@mean, Tv.Tend_sim_degC - Tv.T0_degC, G), ...
@@ -39,6 +40,7 @@ for v = 1:numel(vars)
         'VariableNames', {'variant', 'T_degC', 'crate', 'n_runs', 'rmseV_mV', 'rmseV_std_mV', 'rmseT_K', 'rmseT_std_K', ...
         'rmseV_rest_mV', 'rmseT_rest_K', 'cap_exp_Ah', 'cap_sim_Ah', 'dT_exp_K', 'dT_sim_K', 'wall_s', ...
         'dTpos_exp_K', 'dTneg_exp_K', 'h_W_m2K'});
+    Sv.n_notVmin = splitapply(@(x) sum(~strcmp(x, 'Vmin')), Tv.stop_reason, G);
     S = [S; Sv]; %#ok<AGROW>
 end
 writetable(S, fullfile(outdir, 'validation_summary.csv'));
@@ -54,10 +56,10 @@ fprintf(fid, ['- Moi lan xa cua moi cell duoc mo phong rieng: trang thai dau lay
 fprintf(fid, '- RMSE tinh tren khoang thoi gian chung cua mo phong va thi nghiem; "tb +- dlc" la trung binh va do lech chuan qua cac lan xa.\n');
 fprintf(fid, ['- Nhiet do mo hinh la MOT gia tri (lumped); no duoc so voi cap nhiet GIUA than cell ("Temp Cell": LogTempMid, hoac LogTemp001 o cell chi co mot cap nhiet). ' ...
     'Be mat cell khong dong deu: cot "dT dau duong / dau am" la do tang nhiet do duoc o hai dau (chi cell co 3 cap nhiet). Do phan giai nhiet do 0.1 K.\n']);
-pb = dfn_params();
+pb = dfn_params(struct('src', 'code'));
 Cth = dfn_rhocp(pb, 298.15, dfn_aging_state(pb, []))*pb.th.Vcell;
 fprintf(fid, ['- Hang so thoi gian nhiet cua mo hinh (25 degC): C_th = %.1f J/K; tau = C_th/(h.A_cool) = %.0f s voi h = 20, %.0f s voi h = 15. ' ...
-    'Do tu pha nguoi cua chinh bo du lieu nay: trung vi 582 s (462 - 911 s; data/ket_qua_du_lieu.md muc A.3). Khong chinh h theo du lieu trong bien the `base`.\n'], ...
+    'Do tu pha nguoi cua chinh bo du lieu nay: trung vi 582 s (462 - 911 s; data/ket_qua_du_lieu.md muc A.3). Khong chinh h theo du lieu trong bien the `paper` va `code`.\n'], ...
     Cth, Cth/(20*pb.th.Acool), Cth/(15*pb.th.Acool));
 fprintf(fid, '- dT = do tang nhiet do be mat cuoi pha xa.\n- Cac bien the mo hinh:\n');
 for v = 1:numel(vars)
@@ -74,10 +76,11 @@ for v = 1:numel(vars)
             Sv.T_degC(i), Sv.crate(i), Sv.n_runs(i), Sv.rmseV_mV(i), Sv.rmseV_std_mV(i), Sv.rmseT_K(i), Sv.rmseT_std_K(i), ...
             Sv.rmseV_rest_mV(i), Sv.rmseT_rest_K(i), Sv.cap_exp_Ah(i), Sv.cap_sim_Ah(i), Sv.dT_exp_K(i), Sv.dT_sim_K(i), Sv.dTpos_exp_K(i), Sv.dTneg_exp_K(i), Sv.wall_s(i));
     end
-    fprintf(fid, '\n- Trung binh tat ca cac lan xa: RMSE V = %.1f mV; RMSE T = %.2f K.', mean(Tv.rmseV_mV), mean(Tv.rmseT_K));
+    fprintf(fid, '\n- So lan xa KHONG ket thuc o 2.5 V (bo giai hong, dien giai can kiet, stoich be mat cham gioi han): %d / %d.', sum(~strcmp(Tv.stop_reason, 'Vmin')), height(Tv));
+    fprintf(fid, '\n- Trung binh tat ca cac lan xa: RMSE V = %.1f mV; RMSE T = %.2f K.', mean(Tv.rmseV_mV, 'omitnan'), mean(Tv.rmseT_K, 'omitnan'));
     for Tx = unique(Tv.T_degC).'
         k = Tv.T_degC == Tx;
-        fprintf(fid, ' %d degC: %.1f mV, %.2f K.', Tx, mean(Tv.rmseV_mV(k)), mean(Tv.rmseT_K(k)));
+        fprintf(fid, ' %d degC: %.1f mV, %.2f K.', Tx, mean(Tv.rmseV_mV(k), 'omitnan'), mean(Tv.rmseT_K(k), 'omitnan'));
     end
     fprintf(fid, '\n');
 end
@@ -89,13 +92,13 @@ fprintf(fid, ['- Li 2025 (SI Supplementary Table 1): RMSE duong ap C/10 cua RPT 
 fprintf(fid, ['- Luu y: bo tham so Li 2025 duoc chinh cho cell LG M50T cua Kirkaldy 2024 (dung luong 4.865 Ah, R_contact = 11.5 mOhm, h = 20, ' ...
     'lam mat day cell), con du lieu kiem chung la cell LG M50 cua O''Regan/Brosa Planella trong buong nhiet; ' ...
     'sai lech he thong giua hai lo cell va hai dieu kien nhiet nam trong cac so RMSE tren.\n']);
-Tv = Tb(strcmp(Tb.variant, 'base'), :);
-fprintf(fid, '\n## Chi tiet tung lan xa (bien the `base`)\n\n');
-fprintf(fid, '| Dieu kien | cell | lan xa | V nghi (V) | T0 (degC) | I (A) | q0 (Ah) | RMSE V (mV) | max dV (mV) | RMSE T (K) | max dT (K) | cap do (Ah) | cap mo phong (Ah) | ly do dung |\n');
-fprintf(fid, '|---|---|---|---|---|---|---|---|---|---|---|---|---|---|\n');
+Tv = Tb(ismember(Tb.variant, {'paper', 'code'}), :);
+fprintf(fid, '\n## Chi tiet tung lan xa (bien the `paper` va `code`)\n\n');
+fprintf(fid, '| Bien the | Dieu kien | cell | lan xa | V nghi (V) | T0 (degC) | I (A) | q0 (Ah) | RMSE V (mV) | max dV (mV) | RMSE T (K) | max dT (K) | cap do (Ah) | cap mo phong (Ah) | ly do dung |\n');
+fprintf(fid, '|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|\n');
 for i = 1:height(Tv)
-    fprintf(fid, '| %s | %d | %d | %.4f | %.1f | %.3f | %.3f | %.1f | %.1f | %.2f | %.2f | %.3f | %.3f | %s |\n', ...
-        Tv.cond{i}, Tv.cell(i), Tv.discharge(i), Tv.Vrest_V(i), Tv.T0_degC(i), Tv.I_A(i), Tv.q0_Ah(i), Tv.rmseV_mV(i), ...
+    fprintf(fid, '| %s | %s | %d | %d | %.4f | %.1f | %.3f | %.3f | %.1f | %.1f | %.2f | %.2f | %.3f | %.3f | %s |\n', ...
+        Tv.variant{i}, Tv.cond{i}, Tv.cell(i), Tv.discharge(i), Tv.Vrest_V(i), Tv.T0_degC(i), Tv.I_A(i), Tv.q0_Ah(i), Tv.rmseV_mV(i), ...
         Tv.maxerrV_mV(i), Tv.rmseT_K(i), Tv.maxerrT_K(i), Tv.cap_exp_Ah(i), Tv.cap_sim_Ah(i), Tv.stop_reason{i});
 end
 st = dir(fullfile(indir, '**', 'selftest.md'));
@@ -104,8 +107,8 @@ if ~isempty(st)
 end
 fclose(fid);
 
-% ---- hinh tong hop (bien the base) --------------------------------------
-Sb = S(strcmp(S.variant, 'base'), :);
+% ---- hinh tong hop (bien the code) --------------------------------------
+Sb = S(strcmp(S.variant, 'code'), :);
 fig = figure('Visible', 'off', 'Position', [100 100 1000 420]);
 Ts = unique(Sb.T_degC); Cs = unique(Sb.crate);
 MV = nan(numel(Cs), numel(Ts)); MT = MV;
@@ -116,7 +119,7 @@ end
 lg = arrayfun(@(x) sprintf('%d degC', x), Ts, 'UniformOutput', false);
 xl = arrayfun(@(x) sprintf('%gC', x), Cs, 'UniformOutput', false);
 subplot(1,2,1); bar(MV); set(gca, 'XTick', 1:numel(Cs), 'XTickLabel', xl); ylabel('RMSE dien ap pha xa (mV)'); legend(lg, 'Location', 'northwest'); grid on;
-title('DFN (base) so voi du lieu LG M50');
+title('DFN (bien the code) so voi du lieu LG M50');
 subplot(1,2,2); bar(MT); set(gca, 'XTick', 1:numel(Cs), 'XTickLabel', xl); ylabel('RMSE nhiet do pha xa (K)'); legend(lg, 'Location', 'northwest'); grid on;
 print(fig, fullfile(outdir, 'validation_summary.png'), '-dpng', '-r110');
 close(fig);

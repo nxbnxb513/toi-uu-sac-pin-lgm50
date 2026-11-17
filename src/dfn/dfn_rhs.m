@@ -48,6 +48,7 @@ xsp  = min(max(thsp, 1e-8), 1 - 1e-8);
 m = 0.5*(1 + tanh(par.hys.k*(iapp + par.hys.offset)));   % 1: xa/nghi, 0: sac
 [Unl, Und, dUn] = dfn_ocp_neg(xsn);
 [Upl, Upd, dUp] = dfn_ocp_pos(xsp);
+dUn = dUn*par.dUdT_scale/1e-3; dUp = dUp*par.dUdT_scale/1e-3;   % GD-08
 Un = (1 - m)*Unl + m*Und + (T - par.Tref)*dUn;
 Up = m*Upl + (1 - m)*Upd + (T - par.Tref)*dUp;
 
@@ -83,13 +84,13 @@ dthp = (g.r2fp(2:end).*flp(2:end,:) - g.r2fp(1:end-1).*flp(1:end-1,:))./g.Vshp;
 % ---- (3),(4) dien giai --------------------------------------------------
 epe  = ag.eps;
 brug = [par.neg.brug_e*ones(Nn,1); par.sep.brug_e*ones(Ns,1); par.pos.brug_e*ones(Np,1)];
-[De, kap] = dfn_elyte(cep, T);
+[De, kap] = dfn_elyte(cep, T, par);
 Deff = De.*epe.^brug;  keff = kap.*epe.^brug;
 wL = g.dx(1:N-1); wR = g.dx(2:N); dxc = 0.5*(wL + wR);
 Df = (wL + wR)./(wL./Deff(1:N-1) + wR./Deff(2:N));     % trung binh dieu hoa tai mat
 kf = (wL + wR)./(wL./keff(1:N-1) + wR./keff(2:N));
 cf = (cep(1:N-1).*wR + cep(2:N).*wL)./(wL + wR);
-[~, ~, tpf, tdff] = dfn_elyte(cf, T);
+[~, ~, tpf, tdff] = dfn_elyte(cf, T, par);
 dphie = diff(phie);
 ie = -kf.*(dphie - 2*(1 - tpf).*tdff.*RTF.*diff(log(cep)))./dxc;   % A/m^2 tai mat trong
 Nf = -Df.*diff(ce)./dxc + tpf.*ie/F;                               % mol/m^2/s

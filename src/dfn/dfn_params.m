@@ -3,7 +3,7 @@ function par = dfn_params(opt)
 %
 %   par = dfn_params()        luoi mac dinh
 %   par = dfn_params(opt)     opt la struct ghi de: Nn, Ns, Np, Nrn, Nrp,
-%                             E_Ds_n, V_SEI, L_SEI_extra, contact_heat, h, Rcontact,
+%                             src ('paper'|'code'), E_Ds_n, V_SEI, contact_heat, h, Rcontact,
 %                             stress_diffusion
 %
 % BO THAM SO: baseline cua Li et al. 2025 (Nat. Commun. 16:2776) = O'Regan
@@ -28,6 +28,18 @@ function par = dfn_params(opt)
 % mat j [A/m^2] > 0 la phan ung anod (Li roi hat, vao dien giai).
 
 if nargin < 1 || isempty(opt), opt = struct(); end
+
+% ---- NGUON khi bai bao va ma nguon khac nhau ----------------------------
+% QUY TAC (yeu cau cua nguoi dung): cai gi BAI BAO in (bai chinh, bang, phuong
+% trinh SI) thi lam dung nhu in; ma nguon cua tac gia chi dung cho nhung thu
+% bai khong ghi. opt.src = 'paper' (mac dinh) hoac 'code' (dung gia tri cua ma
+% nguon o nhung cho hai ben khac nhau, de so sanh). Cac cho bi anh huong:
+%   - he so dien giai pt. (S14), (S15)            (GD-03, GD-04)
+%   - lop SEI ban dau va do xop cuc am ban dau    (GD-02)
+%   - mat do lop xop kho cuc am / mang ngan       (GD-07)
+par.src = getopt(opt, 'src', 'paper');
+iscode = strcmp(par.src, 'code');
+if ~iscode && ~strcmp(par.src, 'paper'), error('dfn_params: src phai la paper hoac code'); end
 
 % ---- Hang so ------------------------------------------------------------
 par.F    = 96485.33212;   % C/mol   hang so Faraday (CODATA)
@@ -122,7 +134,21 @@ par.sep.brug_e = 1.5;         % -  [Li-T6]
 par.ce0    = 1000;            % mol/m3 nong do ban dau [Li-T6]
 par.ce_ref = 1000;            % mol/m3 <c_e> trong pt. S26/S27 = "Typical
                               % electrolyte concentration" 1000 [code]. GD-06
-% D_e, kappa, t+, TDF: xem dfn_elyte.m ([Li-N10] pt. S12-S16)
+% D_e, kappa, t+, TDF: xem dfn_elyte.m ([Li-N10] pt. S12-S16). Hai he so ma
+% SI in khac voi ma nguon (GD-03, GD-04):
+if iscode
+    par.el.k4  = 0.353;       % [code] OKane2023.py (= Landesfeind & Gasteiger 2019)
+    par.el.tp2 = -6.12;       % [code]
+else
+    par.el.k4  = 0.8353;      % [Li-N10] pt. (S14) nhu in
+    par.el.tp2 = -0.612;      % [Li-N10] pt. (S15) nhu in
+end
+% Thermodynamic factor (S16): bai liet ke la tham so cua mo hinh nhung phuong
+% trinh the dien giai in trong SI Table 2 khong co no; vi tri (nhan voi (1 - t+))
+% lay theo [code]. GD-18. use_tdf = false: dung dung nhu SI Table 2 in.
+par.el.use_tdf = getopt(opt, 'use_tdf', true);
+% Don vi he so entropy (S5), (S6): 1e-3 = coi he so la mV/K (GD-08)
+par.dUdT_scale = getopt(opt, 'dUdT_scale', 1e-3);
 
 % ---- Hysteresis OCP "current sigmoid" [Li-N7] pt. S46-S47 ---------------
 par.hys.k      = 100;         % m2/A
@@ -130,7 +156,8 @@ par.hys.offset = 0.2;         % A/m2
 
 % ---- Trang thai dau doi (BOL) lien quan toi lao hoa ---------------------
 % Lop SEI ban dau va do xop cuc am: [Li-N9] pt. S7-S11.
-par.sei.Qloss0 = 5 - 4.86491; % Ah   [Li-N9] "5 - 4.865 = 0.135 Ah"; [code] Fun_NC.py dung 4.86491
+par.sei.Qloss0 = 5 - 4.865;   % Ah   [Li-N9] "5 - 4.865 = 0.135 Ah"
+if iscode, par.sei.Qloss0 = 5 - 4.86491; end   % [code] Fun_NC.py
 par.sei.z      = 2;           % -    [Li-T8] z_SEI
 par.sei.rho    = 2e5;         % Ohm.m [Li-T8] SEI resistivity
 % V_SEI: [Li-T3] cot "5 coupled" = 5.22e-5 m3/mol. GD-02
@@ -142,16 +169,22 @@ par.neg.as0    = 3*par.neg.eps_s/par.neg.Rp;       % 1/m [Li-N9] pt. S9
 par.pos.as0    = 3*par.pos.eps_s/par.pos.Rp;       % 1/m
 Sr   = 2*par.crk.l0*par.crk.w0*par.crk.rho + 1;    % [Li-N9] pt. S8
 Vn   = par.A*par.neg.L;                            % m3 the tich cuc am
-% pt. S7: do day moi lop (inner = outer) suy tu luong mat dung luong ban dau
-L_S7 = 1800*par.sei.Qloss0/(par.F*par.sei.z) * par.sei.V/(Sr*par.neg.as0*Vn);
-% [code] Fun_NC.py::Overwrite_Initial_L_SEI_0_Neg_Porosity cong them 2.5 nm cho
-% moi lop (khong co trong SI); do xop thi KHONG tinh phan 2.5 nm nay. GD-02
-par.sei.L_extra  = getopt(opt, 'L_SEI_extra', 2.5e-9);
-par.sei.L_layer0 = L_S7 + par.sei.L_extra;         % m, moi lop
-par.sei.L0       = 2*par.sei.L_layer0;             % m, inner + outer (Note 2 pt. S8)
-par.sei.Sr       = Sr;
-deps             = 2*L_S7*Sr*par.neg.as0;          % pt. S10
-par.neg.eps_e    = 0.25 - deps;                    % pt. S11
+par.sei.Sr = Sr;
+if iscode
+    % [code] Fun_NC.py::Overwrite_Initial_L_SEI_0_Neg_Porosity: tinh lai theo
+    % (S7) voi V_SEI da fit, cong them 2.5 nm cho moi lop (khong co trong SI);
+    % do xop khong tinh phan 2.5 nm. Bo "5 coupled": 9.2326e-9 m, eps_n = 0.234965.
+    L_S7 = 1800*par.sei.Qloss0/(par.F*par.sei.z) * par.sei.V/(Sr*par.neg.as0*Vn);
+    par.sei.L_layer0 = L_S7 + 2.5e-9;
+    deps = 2*L_S7*Sr*par.neg.as0;
+else
+    % [Li-T8]: "Initial inner/outer SEI thickness" = 1.23625e-8 m (ghi la khong doi);
+    % do xop: [Li-T6] "See Eq. (S11)", [Li-N9] pt. (S10): d_eps = 2 L_SEI,0^inner S_r a
+    par.sei.L_layer0 = getopt(opt, 'L_SEI_layer0', 1.23625e-8);
+    deps = 2*par.sei.L_layer0*Sr*par.neg.as0;       % pt. S10
+end
+par.sei.L0    = 2*par.sei.L_layer0;                 % m, inner + outer (Note 2 pt. S8)
+par.neg.eps_e = 0.25 - deps;                        % pt. S11
 
 % ---- Nhiet (lumped 0D) --------------------------------------------------
 par.th.h       = getopt(opt, 'h', 20);  % W/m2/K [Li-T6] total heat transfer coeff.
@@ -166,9 +199,11 @@ par.th.rhocc_p = 2700;        % kg/m3 [Li-T6]
 par.th.cpcc_n  = 385;         % J/kg/K [Li-T6]
 par.th.cpcc_p  = 897;         % J/kg/K [Li-T6]
 par.th.rho_wet = [2060, 1548, 3700];  % kg/m3 am, mang ngan, duong [Li-T6] "Density (wet)"
-% Mat do xop kho: duong 3270, am 1740, mang ngan 946 kg/m3 [OR-T7], [OR-T5].
-% (Li-T6 in cot am/mang ngan dao cho nhau: GD-07.)
-par.th.rho_dry = [1740, 946, 3270];   % kg/m3 am, mang ngan, duong
+% Mat do lop xop kho "Density (porous)" [Li-T6] nhu in: duong 3270, mang ngan
+% 1740, am 946 kg/m3. O'Regan 2022 Table 7 va [code] thi nguoc lai o hai cot
+% sau (graphite 1740, separator 946). GD-07
+par.th.rho_dry = [946, 1740, 3270];   % kg/m3 am, mang ngan, duong  [Li-T6]
+if iscode, par.th.rho_dry = [1740, 946, 3270]; end   % [code], [OR-T7]
 par.th.rho_l   = 1280;        % kg/m3 mat do dien giai [OR-T5]
 par.th.cp_l    = 229;         % J/kg/K [Li-T6] "Heat capacity of electrolyte"
 % C_p,s(T) = p1 T^3 + p2 T^2 + p3 T + p4 [Li-N11] pt. S21-S23 (T [K])
