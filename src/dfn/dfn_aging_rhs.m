@@ -64,7 +64,7 @@ dcLi = -ag.as_n.*sr.jLi/F - dcdl;
 % ---- do xop: d(L_total a_n)/dt ------------------------------------------
 dS    = 2*A.w_cr*A.rho_cr*dlcr;
 dLf   = dLin + dLout + (ag.S - 1).*(dLcin + dLcout) + dS.*ag.LSEIcr;
-dLta  = dLf.*ag.as_n + ag.Lfilm.*(3/par.neg.Rp)*depsn_s + (dcLi + dcdl)*A.V_Li;
+dLta  = dLf.*ag.as_n + ag.Lfilm.*(3/par.neg.Rp).*depsn_s + (dcLi + dcdl)*A.V_Li;
 depsn = -dLta;
 
 % ---- so sach ------------------------------------------------------------
