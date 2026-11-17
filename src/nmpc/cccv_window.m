@@ -2,11 +2,12 @@ function R = cccv_window(par, soc0, soc1, Crate, Tamb, opt)
 %CCCV_WINDOW  Sac CCCV cho mot vung SOC tren DFN day du (dung dfn_cccv.m).
 %   R = cccv_window(par, soc0, soc1, Crate, Tamb)
 % Bat dau: trang thai nghi can bang tai soc0 (dfn_state_soc.m), T = Tamb.
-% CC: dong Crate.Q_nom (1C = 5 A, par.Qnom) toi khi V = 4.2 V HOAC SOC = soc1.
-% CV: giu 4.2 V (rang buoc dai so) toi khi |I| <= C/50 HOAC SOC = soc1.
+% CC: dong Crate.Q_nom (1C = 5 A, par.Qnom) toi khi V = V_cv HOAC SOC = soc1.
+% CV: giu V_cv (rang buoc dai so) toi khi |I| <= C/50 HOAC SOC = soc1.
+% V_cv = v_limit(par) = par.V_cv = 4.2 (1 - 0.02) = 4.116 V (GD-43, sai so mo hinh 2 %).
 % Dieu kien dung nao den truoc thi dung (GD-25). Voi vung ket thuc < 100 %
 % thuong dung o soc1 ngay trong pha CC. Neu DFN dung vi stoich be mat cuc
-% am cham 1 - 1e-4 (su kien xsn_max, GD-16) truoc khi toi 4.2 V hay soc1 thi
+% am cham 1 - 1e-4 (su kien xsn_max, GD-16) truoc khi toi V_cv hay soc1 thi
 % CCCV KHONG hoan thanh vung; R.complete = false va bao cao nguyen trang.
 % R.T_CCCV [s]; lao hoa tam thoi hau kiem sau sac R.nsei, R.npl, R.ndl [mAh];
 % R.perm [mAh] = mat vinh vien sau sac + xa ve SOC dau (eval_discharge.m).

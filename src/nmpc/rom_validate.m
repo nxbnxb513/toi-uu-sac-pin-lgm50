@@ -3,7 +3,7 @@ function rom_validate(Tc, dirn, outdir, cfg)
 %   rom_validate(25, 'charge', 'results')     sac tu SOC 0 toi khi DFN dung
 %   rom_validate(10, 'discharge', 'results')  xa tu SOC 1 toi 2.5 V
 % Ca hai mo hinh bat dau tu CUNG trang thai (ROM = anh xa cua trang thai DFN).
-% Dieu kien dung giong nhau: V cham 4.2 V (sac) / 2.5 V (xa), hoac stoich be
+% Dieu kien dung giong nhau: V cham V_cv = v_limit(par) = 4.116 V (sac, GD-43) / 2.5 V (xa), hoac stoich be
 % mat hat cham 1e-4 / 1 - 1e-4 (su kien cua dfn_events.m, GD-16).
 % Bao cao (tren khoang thoi gian chung): sai so dien ap, stoich be mat cuc am
 % phia mang ngan, phi_s - phi_e phia mang ngan, the ma lithium phia mang ngan,

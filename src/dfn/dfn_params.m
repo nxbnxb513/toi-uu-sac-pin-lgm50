@@ -5,7 +5,7 @@ function par = dfn_params(opt)
 %   par = dfn_params(opt)     opt la struct ghi de: Nn, Ns, Np, Nrn, Nrp,
 %                             src ('approved'|'paper'|'code'), E_Ds_n, V_SEI, contact_heat, h,
 %                             Rcontact, stress_diffusion, sei_init ('code'|'paper'), use_tdf,
-%                             dUdT_scale, L_SEI_layer0, ocp_n_branch ('delith'|'hyst')
+%                             dUdT_scale, L_SEI_layer0, ocp_n_branch ('delith'|'hyst'), V_cv
 %
 % BO THAM SO: baseline cua Li et al. 2025 (Nat. Commun. 16:2776) = O'Regan
 % et al. 2022 (Electrochim. Acta 425:140700) + cac muc danh dau * trong
@@ -79,12 +79,15 @@ par.cfg.Nrp = getopt(opt, 'Nrp', 20);
 par.A        = 1.58 * 6.5e-2;  % m^2  dai x rong dien cuc            [Li-T6]
 par.Qnom     = 5.0;            % Ah   dung luong danh dinh (1C = 5 A) [Li-N9]
 par.Vmax     = 4.2;            % V    [code] Fun_NC.py V_max
-% Ap chuyen CC -> CV va ap giu CV trong MO PHONG sac (GD-43, quyet dinh 17/11/2026): nguoi
-% dung chap nhan sai so ap cua mo hinh ~1 % va muon dat nguong nay THAP hon 4.2 V thay vi bu
-% mo hinh; day la phan du cho SAI SO MO HINH, khong phai do chinh xac cam bien. Mac dinh
-% van 4.2 V cho toi khi nguoi dung chon f (V_cv = 4.2 (1 - f)). Dung boi dfn_cccv.m va
-% doc duoc tu bo dieu khien (par.V_cv). par.Vmax van la gioi han 4.2 V cua cell/du lieu.
-par.V_cv     = getopt(opt, 'V_cv', 4.2);   % V
+% par.Vmax: gioi han ap danh dinh cua cell (4.2 V), CHI de ghi chep / doc du lieu do (pha
+% CV cua du lieu o 4.2 V); KHONG dung lam nguong sac trong mo phong.
+% Ap chuyen CC -> CV va ap giu CV trong MO PHONG sac, va rang buoc V cua bo dieu khien
+% (GD-43, NGUOI DUNG QUYET DINH 17/11/2026): chap nhan sai so ap CO DINH cua mo hinh 2 %:
+%   V_cv = 4.2 V x (1 - 0.02) = 4.116 V.
+% Day la phan du cho SAI SO MO HINH (mo hinh thieu ~30-38 mV khi sac o ~1 Ah tren cung,
+% tai_lieu/dieu_tra_dien_ap_sac.md), KHONG phai do chinh xac cam bien. Dung boi dfn_cccv.m,
+% val_selftest.m, src/nmpc (qua v_limit.m: cccv_window, nmpc_model, rom_validate ...).
+par.V_cv     = getopt(opt, 'V_cv', 4.2*(1 - 0.02));   % V  (= 4.116 V, GD-43)
 par.Vmin     = 2.5;            % V    [code] Fun_NC.py V_min
 par.Rcontact = getopt(opt, 'Rcontact', 11.5e-3);  % Ohm  [Li-T6] "Contact resistance"
 % Vi tri: V = phi_s,p(L) - phi_s,n(0) - I.R_contact theo [code] (khong bai nao

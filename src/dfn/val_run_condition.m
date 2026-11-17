@@ -1,4 +1,4 @@
-function val_run_condition(cstr, Tdeg, datadir, outdir, x100mode)
+function val_run_condition(cstr, Tdeg, datadir, outdir, x100mode, extra)
 %VAL_RUN_CONDITION  Kiem chung mot dieu kien xa (C-rate, nhiet do) voi du lieu mo.
 %   cstr    : '0p1' | '0p5' | '1' | '2'  (C-rate nhu trong ten file)
 %   Tdeg    : 0 | 10 | 25 (degC)
@@ -9,6 +9,9 @@ function val_run_condition(cstr, Tdeg, datadir, outdir, x100mode)
 %                       (Li 2025 SI Note 8, cell "fresh" 5 Ah) cho moi bien the tru approved_old
 %             'li2025': giu x100 = 0.8771 cua bo mac dinh (nhu truoc 17/11/2026)
 %             Chi anh huong kiem chung; bo tham so mac dinh cua du an KHONG doi.
+%   extra   : (tuy chon, CHI CHAN DOAN) 'AC' them hai bien the tach A / C:
+%             approved_A_only = chi muc A (cuc am delith, x100 = 0.8771);
+%             approved_C_only = chi muc C (cuc am hysteresis, x100 = 0.9014).
 % Voi MOI cell va MOI lan xa trong file: mo phong tu trang thai dau cua du lieu
 %   - trang thai lithium ban dau: OCV(mo hinh) = ap nghi do duoc ngay truoc khi xa
 %   - T ban dau = T moi truong = nhiet do be mat cell do duoc ngay truoc khi xa (GD-09)
@@ -17,6 +20,8 @@ function val_run_condition(cstr, Tdeg, datadir, outdir, x100mode)
 % (xem danh sach ben duoi).
 if ischar(Tdeg) || isstring(Tdeg), Tdeg = str2double(Tdeg); end
 if nargin < 5 || isempty(x100mode), x100mode = 'fresh'; end
+if nargin < 6, extra = ''; end
+extra = char(extra);
 x100mode = char(x100mode);
 if ~any(strcmp(x100mode, {'fresh', 'li2025'})), error('val_run_condition: x100mode phai la fresh hoac li2025'); end
 cstr = char(cstr);
@@ -52,11 +57,19 @@ pars  = {pb, ...
          dfn_params(struct('src', 'paper')), ...
          dfn_params(struct('src', 'code')), ...
          dfn_params(struct('src', 'approved', 'ocp_n_branch', 'hyst'))};
+if strcmp(extra, 'AC')
+    vname = [vname, {'approved_A_only', 'approved_C_only'}];
+    pars  = [pars, {dfn_params(struct('src', 'approved')), dfn_params(struct('src', 'approved', 'ocp_n_branch', 'hyst'))}];
+end
 nv = numel(vname);
 if strcmp(x100mode, 'fresh')
     for v = 1:nv
-        if ~strcmp(vname{v}, 'approved_old'), pars{v}.neg.x100 = pars{v}.val.x100_fresh; end
+        if ~any(strcmp(vname{v}, {'approved_old', 'approved_A_only'})), pars{v}.neg.x100 = pars{v}.val.x100_fresh; end
     end
+end
+if strcmp(extra, 'AC')
+    kc = strcmp(vname, 'approved_C_only');   % A_only giu x100 mac dinh 0.8771
+    pars{kc}.neg.x100 = pars{kc}.val.x100_fresh;
 end
 fprintf('x100mode = %s: x100 = %s (%s)\n', x100mode, mat2str(cellfun(@(q) q.neg.x100, pars), 5), strjoin(vname, ', '));
 par0 = pars{1};

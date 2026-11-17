@@ -12,9 +12,13 @@ start = 'balance';
 %   'val_new'      : approved moi nhu dung trong kiem chung (cuc am delith + x100 = 0.9014)
 %   'val_new_both' : val_new + cuc duong cung luon nhanh xa (khong hysteresis ca hai cuc)
 %   'base'         : approved CU (hysteresis cuc am, x100 = 0.8771) - de so sanh
+%   'val_new_fXXX' : val_new + V_cv = 4.2 (1 - XXX/10000), XXX = 050/075/100/125/200 (GD-43);
+%                    f = 2 % (val_new_f200) = mac dinh moi cua du an (4.116 V, 17/11/2026)
+% TAI LAP: tu 17/11/2026 mac dinh par.V_cv = 4.116 V (GD-43). Moi bien the KHONG thuoc
+% val_new_fXXX duoc ghim V_cv = par.Vmax = 4.2 V nhu khi chung duoc chay truoc do.
 opt = struct('ocp_n_branch', 'hyst');
 switch name
-    case {'new', 'val_new', 'val_new_both', 'val_new_f050', 'val_new_f075', 'val_new_f100', 'val_new_f125'}
+    case {'new', 'val_new', 'val_new_both', 'val_new_f050', 'val_new_f075', 'val_new_f100', 'val_new_f125', 'val_new_f200'}
         opt.ocp_n_branch = 'delith'; desc = 'cuc am luon nhanh delithiation (GD-40, mac dinh moi)';
     case 'base',        desc = 'bo approved CU (hysteresis cuc am, ocp_n_branch = hyst)';
     case 'src_paper',   opt.src = 'paper'; desc = 'src=paper (he so dien giai nhu SI in: 0.8353, -0.612)';
@@ -29,6 +33,7 @@ switch name
     otherwise,          desc = '';
 end
 par = dfn_params(opt);
+par.V_cv = par.Vmax;   % ghim 4.2 V de tai lap (xem tren); val_new_fXXX dat lai ben duoi
 switch name
     case {'Dx2', 'Dx3', 'Dx5', 'Dx10', 'Dx30'}
         k = str2double(name(3:end));
@@ -96,8 +101,8 @@ switch name
     case 'val_new'
         par.neg.x100 = par.val.x100_fresh;
         desc = [desc ' + x100 = 0.9014 cho cell kiem chung (GD-42)'];
-    case {'val_new_f050', 'val_new_f075', 'val_new_f100', 'val_new_f125'}
-        % GD-43: ap CC->CV / CV = 4.2 (1 - f), f = 0.50 / 0.75 / 1.00 / 1.25 %
+    case {'val_new_f050', 'val_new_f075', 'val_new_f100', 'val_new_f125', 'val_new_f200'}
+        % GD-43: ap CC->CV / CV = 4.2 (1 - f), f = 0.50 / 0.75 / 1.00 / 1.25 / 2.00 %
         f = str2double(name(end-2:end))/1e4;
         par.neg.x100 = par.val.x100_fresh; par.V_cv = par.Vmax*(1 - f);
         desc = sprintf('%s + x100 = 0.9014 + V_cv = 4.2 (1 - %.2f %%) = %.4f V', desc, 100*f, par.V_cv);

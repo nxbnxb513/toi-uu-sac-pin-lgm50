@@ -105,11 +105,11 @@ Pc = [P, {dfn_params(struct('src', 'approved', 'ocp_n_branch', 'hyst'))}];
 srcc = [srcs, {'approved_old (hyst cuc am)'}];
 for s = 1:numel(Pc)
     par = Pc{s};
-    p('\n## 3.%d Chu trinh - bo `%s`: xa 1C toi 2.5 V -> nghi 30 phut -> sac CC 0.3C toi 4.2 V -> giu ap toi C/100 -> nghi 30 phut (25 C)\n\n', s, srcc{s});
+    p('\n## 3.%d Chu trinh - bo `%s`: xa 1C toi 2.5 V -> nghi 30 phut -> sac CC 0.3C toi V_cv = %.4f V -> giu ap toi C/100 -> nghi 30 phut (25 C)\n\n', s, srcc{s}, par.V_cv);
     p(['| Buoc | Ly do dung | thoi luong (s) | V cuoi (V) | I cuoi (A) | T cuoi (degC) | Q da xa (Ah) | x_surf am [min, max] | ' ...
        'max x_surf am trong buoc | min(phi_s - phi_e) phia mang ngan trong buoc (mV) | so lan goi ve phai | thoi gian chay (s) |\n|---|---|---|---|---|---|---|---|---|---|---|---|\n']);
     y = dfn_init_state(par, par.neg.x100, par.pos.y100, T25);
-    nm = {'xa 1C', 'nghi', 'sac CC 0.3C', 'giu ap CV 4.2 V', 'nghi'};
+    nm = {'xa 1C', 'nghi', 'sac CC 0.3C', sprintf('giu ap CV %.3f V', par.V_cv), 'nghi'};
     cc = dfn_cccv(0.3*par.Qnom, par.V_cv, par.Qnom/100, T25);
     stl = {struct('mode', 'I', 'value', 5, 'tmax', 2*3600, 'Tamb', T25, 'stop', struct('Vmin', par.Vmin), 'tout', []), ...
            struct('mode', 'rest', 'value', 0, 'tmax', 1800, 'Tamb', T25, 'stop', struct(), 'tout', []), ...

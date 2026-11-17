@@ -11,6 +11,11 @@ on:
       - '!src/dfn/diag/**'   # file chan doan GD-16 khong anh huong kiem chung
       - '.github/workflows/validate.yml'
   workflow_dispatch:
+    inputs:
+      extra:
+        description: "Bien the chan doan them: '' (khong) | AC (tach muc A / muc C: approved_A_only, approved_C_only)"
+        required: false
+        default: ''
 
 concurrency:
   group: validate-${{ github.ref }}
@@ -77,7 +82,7 @@ jobs:
       - name: Xa ${{ matrix.crate }}C tai ${{ matrix.temp }} degC
         uses: matlab-actions/run-command@v2
         with:
-          command: addpath('src/dfn'); val_run_condition('${{ matrix.crate }}', ${{ matrix.temp }}, 'ext/data', 'results');
+          command: addpath('src/dfn'); val_run_condition('${{ matrix.crate }}', ${{ matrix.temp }}, 'ext/data', 'results', '', '${{ github.event.inputs.extra }}');
       - uses: actions/upload-artifact@v4
         if: always()
         with:
