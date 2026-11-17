@@ -37,12 +37,17 @@ runs:
       shell: bash
       run: sudo apt-get update -qq && sudo apt-get install -y -qq build-essential cmake git unzip wget
 
+    - name: Identify OS image (cache key)
+      id: os
+      shell: bash
+      run: echo "id=$(. /etc/os-release; echo "$ID$VERSION_ID")" >> "$GITHUB_OUTPUT"
+
     - name: Cache acados build
       id: cache
       uses: actions/cache@v4
       with:
         path: ~/acados
-        key: acados-${{ runner.os }}-${{ env.ImageOS }}-${{ inputs.acados-tag }}-hpipm-tera${{ inputs.tera-version }}-cm${{ inputs.casadi-matlab }}-${{ hashFiles('.github/actions/setup-acados/action.yml') }}
+        key: acados-${{ steps.os.outputs.id }}-${{ inputs.acados-tag }}-hpipm-tera${{ inputs.tera-version }}-cm${{ inputs.casadi-matlab }}-${{ hashFiles('.github/actions/setup-acados/action.yml') }}
 
     - name: Clone and build acados
       if: steps.cache.outputs.cache-hit != 'true'
