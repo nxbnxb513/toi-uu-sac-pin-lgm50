@@ -45,7 +45,6 @@ ocp.constraints.lbx_e = [0; opt.tf_min_h]; ocp.constraints.ubx_e = [opt.Imax; op
 ocp.constraints.idxbu = 0;
 ocp.constraints.lbu = -opt.Imax*opt.N; ocp.constraints.ubu = opt.Imax*opt.N;
 % rang buoc phi tuyen (mem) - viet dang h <= 0
-nh = numel(hpath);
 ocp.constraints.lh = -1e4*ones(nh, 1); ocp.constraints.uh = zeros(nh, 1);
 ocp.constraints.lh_e = -1e4*ones(2, 1); ocp.constraints.uh_e = zeros(2, 1);
 ocp.constraints.idxsh = 0:nh-1;

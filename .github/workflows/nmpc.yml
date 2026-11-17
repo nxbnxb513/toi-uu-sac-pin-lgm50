@@ -1,7 +1,8 @@
 name: NMPC - mo hinh rut gon va chay thu
 
 # Buoc E (mo hinh rut gon, so voi DFN) va buoc G (NMPC acados, chay thu vong kin).
-# Chay khi sua src/nmpc/** hoac workflow nay, hoac bam Run workflow.
+# Khi sua src/nmpc/** hoac workflow nay: chi chay job rom. Job pilot (21 job) chi
+# chay khi bam Run workflow (stage = pilot hoac all).
 on:
   push:
     branches: [main]
@@ -57,7 +58,7 @@ jobs:
 
   # ---- Buoc G: chay thu vong kin (3 vung x 7 ngan sach), moi job tao bo giai mot lan
   pilot:
-    if: github.event_name == 'push' || inputs.stage != 'rom'
+    if: github.event_name == 'workflow_dispatch' && inputs.stage != 'rom'
     runs-on: ubuntu-latest
     timeout-minutes: 300
     strategy:
