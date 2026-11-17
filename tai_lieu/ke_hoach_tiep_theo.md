@@ -119,7 +119,7 @@ Với mỗi trường hợp (vùng sạc × mức dòng CCCV × nhiệt độ m�
 
 | Chiều của lưới | Giá trị | Số mức |
 |---|---|---|
-| Vùng sạc | **lưới thưa hơn bước 10 %** (người dùng muốn ít trường hợp; bước cụ thể chờ chốt) | < 55 |
+| Vùng sạc | **bước 20 %** (người dùng chốt 17/11/2026): 0→20, 0→40, 0→60, 0→80, 0→100, 20→40, …, 80→100 | 15 |
 | Dòng CCCV | 0.3C, 0.5C, 1C (2C nếu có nguồn cho phép) | 3–4 |
 | Nhiệt độ môi trường | 10, 25, 40 °C | 3 |
 | Ngân sách thời gian k | 0.8; 1; 1.25; 1.5; 2; 3; không giới hạn | 7 |
