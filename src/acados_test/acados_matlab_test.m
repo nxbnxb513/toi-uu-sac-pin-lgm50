@@ -152,6 +152,9 @@ try
         'msg', sprintf('status 0 x%d, median %.3f ms/solve (time_tot)', Nsim, 1e3*median(t_acados)));
 catch e
     fprintf('FAIL in substage "%s":\n%s\n', substage, getReport(e, 'extended'));
+    fprintf('--- diagnostics ---\n');
+    system('find . -maxdepth 3 \( -name "*.so" -o -name "*.mexa64" -o -name "Makefile" -o -name "CMakeLists.txt" \) | sort');
+    system('for f in $(find . -name "acados_mex_create_*.mexa64"); do echo "ldd $f"; ldd $f; readelf -d $f | grep -Ei "rpath|runpath|needed"; done');
     results(end+1) = struct('stage', 'acados closed loop', 'ok', false, ...
         'msg', sprintf('[%s] %s', substage, e.message));
 end
