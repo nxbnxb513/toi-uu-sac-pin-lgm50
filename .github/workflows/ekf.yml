@@ -1,0 +1,149 @@
+name: EKF - bo uoc luong tren mo hinh rut gon
+
+# Buoc F (tai_lieu/bo_uoc_luong_ekf.md). Pin "that" = DFN day du (src/dfn).
+# Khi push vao src/ekf/** hoac workflow nay: tu kiem tra + lat cat nho (stage = pilot).
+# Bam Run workflow voi stage = full de chay toan bo luoi phep thu.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/ekf/**'
+      - '.github/workflows/ekf.yml'
+  workflow_dispatch:
+    inputs:
+      stage:
+        description: "pilot | full"
+        default: full
+
+concurrency:
+  group: ekf-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+jobs:
+  selftest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-acados
+        with:
+          casadi-matlab: 'true'
+      - uses: matlab-actions/setup-matlab@v2
+        with:
+          cache: true
+      - name: Tu kiem tra EKF
+        uses: matlab-actions/run-command@v2
+        with:
+          command: >
+            addpath('${{ github.workspace }}/src/dfn'); addpath('${{ github.workspace }}/src/nmpc'); addpath('${{ github.workspace }}/src/ekf');
+            ekf_selftest('${{ github.workspace }}/results/ekf');
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ekf-selftest
+          path: results/ekf
+          if-no-files-found: warn
+
+  pilot:
+    if: github.event_name == 'push' || inputs.stage == 'pilot'
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {temp: 25, crate: 1,   noise: lab,     socerr: 0.1,  scen: mismatch}
+          - {temp: 10, crate: 1,   noise: bms_off, socerr: 0.1,  scen: mismatch}
+          - {temp: 25, crate: 0.5, noise: bms,     socerr: -0.1, scen: mismatch}
+          - {temp: 25, crate: 1,   noise: lab,     socerr: 0.1,  scen: nominal}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-acados
+        with:
+          casadi-matlab: 'true'
+      - uses: matlab-actions/setup-matlab@v2
+        with:
+          cache: true
+      - name: EKF ${{ matrix.scen }} ${{ matrix.noise }} ${{ matrix.temp }} degC ${{ matrix.crate }}C sai SOC ${{ matrix.socerr }}
+        uses: matlab-actions/run-command@v2
+        with:
+          command: >
+            addpath('${{ github.workspace }}/src/dfn'); addpath('${{ github.workspace }}/src/nmpc'); addpath('${{ github.workspace }}/src/ekf');
+            ekf_run_case(${{ matrix.temp }}, ${{ matrix.crate }}, '${{ matrix.noise }}', ${{ matrix.socerr }}, '${{ matrix.scen }}', '${{ github.workspace }}/results/ekf');
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ekf-case-${{ matrix.scen }}-${{ matrix.noise }}-${{ matrix.temp }}-${{ matrix.crate }}-${{ matrix.socerr }}
+          path: results/ekf
+          if-no-files-found: warn
+
+  full:
+    if: github.event_name == 'workflow_dispatch' && inputs.stage == 'full'
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        temp: [10, 25]
+        crate: [0.5, 1]
+        noise: [lab, bms, bms_off]
+        socerr: [0.1, -0.1]
+        scen: [mismatch]
+        include:
+          - {temp: 25, crate: 1,   noise: lab, socerr: 0.1, scen: nominal}
+          - {temp: 10, crate: 1,   noise: lab, socerr: 0.1, scen: nominal}
+          - {temp: 25, crate: 0.5, noise: lab, socerr: 0.1, scen: nominal}
+          - {temp: 10, crate: 0.5, noise: lab, socerr: 0.1, scen: nominal}
+          - {temp: 25, crate: 1,   noise: bms, socerr: 0.1, scen: mismatch_Rc}
+          - {temp: 10, crate: 1,   noise: bms, socerr: 0.1, scen: mismatch_Rc}
+          - {temp: 25, crate: 0.5, noise: bms, socerr: 0.1, scen: mismatch_Rc}
+          - {temp: 10, crate: 0.5, noise: bms, socerr: 0.1, scen: mismatch_Rc}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-acados
+        with:
+          casadi-matlab: 'true'
+      - uses: matlab-actions/setup-matlab@v2
+        with:
+          cache: true
+      - name: EKF ${{ matrix.scen }} ${{ matrix.noise }} ${{ matrix.temp }} degC ${{ matrix.crate }}C sai SOC ${{ matrix.socerr }}
+        uses: matlab-actions/run-command@v2
+        with:
+          command: >
+            addpath('${{ github.workspace }}/src/dfn'); addpath('${{ github.workspace }}/src/nmpc'); addpath('${{ github.workspace }}/src/ekf');
+            ekf_run_case(${{ matrix.temp }}, ${{ matrix.crate }}, '${{ matrix.noise }}', ${{ matrix.socerr }}, '${{ matrix.scen }}', '${{ github.workspace }}/results/ekf');
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ekf-case-${{ matrix.scen }}-${{ matrix.noise }}-${{ matrix.temp }}-${{ matrix.crate }}-${{ matrix.socerr }}
+          path: results/ekf
+          if-no-files-found: warn
+
+  report:
+    needs: [pilot, full]
+    if: always() && (needs.pilot.result == 'success' || needs.pilot.result == 'failure' || needs.full.result == 'success' || needs.full.result == 'failure')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: ekf-case-*
+          path: results/ekf
+      - uses: matlab-actions/setup-matlab@v2
+        with:
+          cache: true
+      - name: Gop ket qua
+        uses: matlab-actions/run-command@v2
+        with:
+          command: >
+            addpath('${{ github.workspace }}/src/ekf');
+            ekf_report('${{ github.workspace }}/results/ekf', '${{ github.workspace }}/results/ekf/ekf_report.md');
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ekf-report
+          path: |
+            results/ekf/ekf_report.md
+            results/ekf/ekf_all.csv
+          if-no-files-found: warn
