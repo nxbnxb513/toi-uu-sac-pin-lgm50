@@ -1,11 +1,14 @@
 name: Kiem chung mo hinh DFN
 
-# Chay khi sua code DFN hoac workflow nay, hoac bam Run workflow.
+# Chay khi sua code DFN (tru src/dfn/diag/) hoac workflow nay, hoac bam Run workflow.
+# Bien the bao cao: approved (mac dinh), approved_no_stress, approved_h_tau,
+# approved_Rc_heat, paper, code (xem src/dfn/val_run_condition.m).
 on:
   push:
     branches: [main]
     paths:
       - 'src/dfn/**'
+      - '!src/dfn/diag/**'   # file chan doan GD-16 khong anh huong kiem chung
       - '.github/workflows/validate.yml'
   workflow_dispatch:
 
