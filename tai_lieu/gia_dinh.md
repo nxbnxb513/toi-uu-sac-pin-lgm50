@@ -53,3 +53,9 @@ Các mục dưới đây là chỗ bài in **không cài được đúng nguyên
 | GD-22 | D_e, SI pt. (S13) | "10⁻¹⁰ · 1010 · e^{…}" | Không sai thứ nguyên, nhưng cách in dễ đọc thành 10⁻¹⁰·10¹⁰. Đọc theo ảnh trang SI tr. 50 là 1010 (một nghìn không trăm mười). | 1.01e3 × 1e-10 | 1010 × 10⁻¹⁰ m²/s (D_e(1 M, 25 °C) = 2.9×10⁻¹⁰ m²/s). |
 
 Các mục "Chờ quyết định" thuộc phần lão hoá (số mũ SEI không có F/RT, α của mạ lithium, t_0…) nằm trong `tai_lieu/dac_ta_lao_hoa.md` và sẽ được bổ sung vào đây ở bước 2.
+
+### Người dùng đã duyệt (17/11/2026)
+- GD-21: Butler–Volmer dùng dạng in trong O'Kane 2022 Table S1 (j = 2·j₀·sinh(F·η/(2RT))), j₀ theo Li 2025 SI (S26)–(S27).
+- GD-08: hệ số entropy (S5)–(S6) hiểu là mV/K (`dUdT_scale = 1e-3`), căn cứ số liệu đo của O'Regan.
+- GD-22: hệ số trong D_e (S13) là 1010 (× 10⁻¹⁰ m²/s).
+- GD-16 (bề mặt hạt cực âm bão hoà khi sạc): CHƯA quyết định.
