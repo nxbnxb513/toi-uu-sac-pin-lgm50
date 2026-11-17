@@ -1,4 +1,4 @@
-function nmpc_diag(C)
+function nmpc_diag(C, prm)
 %NMPC_DIAG  In chan doan khi acados that bai: thong ke SQP, NaN trong lap va
 % trong ma tran QP tung nut.
 s = C.solver; N = C.N;
@@ -28,5 +28,35 @@ end
 try
     z = s.get('z', 0); fprintf('nmpc_diag: z nut 0 = %s\n', mat2str(z.', 4));
 catch
+end
+% tich phan lai cac nut nghi van bang bo tich phan acados doc lap (cung cai dat)
+% va bang ode15s tren ROM, de biet loi o bo tich phan IRK hay o mo hinh
+if nargin < 2 || ~isfield(C, 'simchk') || ~isfield(C, 'M'), return; end
+M = C.M; Ta = prm(1);
+cand = unique([bad(:).', 0, N-1]);
+for k = cand(1:min(4, numel(cand)))
+    xk = X(:, k+1); uk = U(k+1);
+    try, zk = s.get('z', k); catch, zk = zeros(r.nz, 1); end
+    [zc, okz, rz] = rom_solve_z(M, xk(1:r.nx), -xk(C.iI), Ta, zk);
+    fprintf('nmpc_diag: nut %d: z cua acados vs z nhat quan: ok %d, |g| %.2e, max|dz| %.3g\n', k, okz, rz, max(abs(zc - zk)));
+    try
+        xa = C.simchk.simulate(xk, uk, zc, [], prm(:));
+        fprintf('  acados sim (z nhat quan): NaN %d, max|x| %.3g, T %.2f, soc %.4f\n', any(~isfinite(xa)), max(abs(xa)), xa(ix.T), xa(ix.soc));
+    catch e
+        fprintf('  acados sim loi: %s\n', e.message);
+    end
+    try
+        xa2 = C.simchk.simulate(xk, uk, zk, [], prm(:));
+        fprintf('  acados sim (z cua OCP): NaN %d, max|x| %.3g\n', any(~isfinite(xa2)), max(abs(xa2)));
+    catch e
+        fprintf('  acados sim (z cua OCP) loi: %s\n', e.message);
+    end
+    dt = 3600*xk(C.itf)/N;
+    try
+        rr = rom_sim(M, r, xk(1:r.nx), zc, @(t) -(xk(C.iI) + uk/N*t/dt), Ta, linspace(0, dt, 5).', struct('sat', false));
+        fprintf('  ode15s ROM: %s, V cuoi %.4f, soc cuoi %.4f, max|x| %.3g\n', rr.reason, rr.V(end), rr.soc(end), max(abs(rr.Y(:, end))));
+    catch e
+        fprintf('  ode15s ROM loi: %s\n', e.message);
+    end
 end
 end

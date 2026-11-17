@@ -64,7 +64,7 @@ while t < cfg.tmax
     else
         % that bai: giu dong hien tai trong mot chu ky, khoi tao lai doan dau
         nfail = nfail + 1; slope = 0; Tseg = cfg.Ts;
-        if nfail <= 2, nmpc_diag(C); end
+        if nfail <= 2, nmpc_diag(C, prm); end
         C.solver.reset();
         [zg2, ~] = rom_solve_z(M, xhat, -Ich, Ta, zg);
         rem = max(prm(3), 0.1);

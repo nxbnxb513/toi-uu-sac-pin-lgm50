@@ -1,4 +1,4 @@
-function chk = nmpc_sim_check(rom, par, M, x0, z0, Ich0, Ig, tf_h, prm, C, opt)
+function [chk, ss] = nmpc_sim_check(rom, par, M, x0, z0, Ich0, Ig, tf_h, prm, C, opt)
 %NMPC_SIM_CHECK  Kiem tra bo tich phan IRK cua acados (cung cai dat voi OCP)
 % tren MOT khoang du bao: tu x0, dong sac tang tuyen tinh Ich0 -> Ig, dai
 % 3600 tf_h / N giay; so voi ROM tich phan bang ode15s (rom_sim.m).

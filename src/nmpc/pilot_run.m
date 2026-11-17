@@ -1,4 +1,4 @@
-function pilot_run(iw, ik, outdir, romcfg)
+function pilot_run(iw, ik, outdir, romcfg, variant)
 %PILOT_RUN  Chay thu (dot 1): mot vung SOC x mot muc ngan sach, NMPC biet het
 % trang thai, pin "that" = DFN day du, 25 degC, CCCV goc 0.5C.
 %   iw: 1 = 0->50 %, 2 = 25->75 %, 3 = 50->100 %
@@ -8,7 +8,8 @@ function pilot_run(iw, ik, outdir, romcfg)
 % Lao hoa: TAM THOI - toc do SEI + ma lithium (aging_rates.m) tinh hau kiem
 % tren quy dao DFN; lao hoa chua co trong DFN (buoc C). Ghi CSV, md, hinh.
 if nargin < 3, outdir = 'results'; end
-if nargin < 4, romcfg = 'A'; end
+if nargin < 4, romcfg = 'D'; end
+if nargin < 5 || isempty(variant), variant = 'base'; end
 if ~exist(outdir, 'dir'), mkdir(outdir); end
 W = [0 0.5; 0.25 0.75; 0.5 1.0];
 Ks = [0.8 1 1.25 1.5 2 3 Inf];
@@ -27,7 +28,16 @@ fprintf('CCCV 0.5C: %s, T_CCCV = %.0f s, SOC cuoi %.4f, SEI %.4f mAh, ma Li %.4f
     cc.reason, cc.T_CCCV, cc.soc_end, cc.nsei, cc.npl, cc.wall);
 
 % ---- NMPC (tao bo giai mot lan) ----
-C = nmpc_build(rom, par, struct('N', cfgn.N, 'Imax', cfgn.Imax, 'codegen_dir', fullfile(pwd, 'c_generated_code')));
+bo = struct('N', cfgn.N, 'Imax', cfgn.Imax, 'codegen_dir', fullfile(pwd, 'c_generated_code'));
+switch variant      % bien the so hoc de do tim cai dat on dinh (chi dung khi go loi)
+    case 'base'
+    case 's4n12', bo.num_steps = 4; bo.newton_iter = 12;
+    case 'lm10',  bo.lm = 10;
+    case 's4lm10', bo.num_steps = 4; bo.newton_iter = 12; bo.lm = 10;
+    otherwise, error('pilot_run: bien the %s', variant);
+end
+fprintf('Bien the so hoc NMPC: %s\n', variant);
+C = nmpc_build(rom, par, bo);
 fprintf('acados: tao + bien dich bo giai %.1f s\n', C.t_build);
 % kiem tra bo tich phan IRK tren khoang du bao dau tien (doan dau cua NMPC)
 y0 = dfn_state_soc(par, soc0, Ta);
@@ -35,9 +45,9 @@ y0 = dfn_consistent_init(0, y0, par, struct('mode', 'I', 'value', 0, 'Tamb', Ta)
 [xs0, zg] = rom_from_dfn(rom, par, y0); zs0 = rom_solve_z(M, xs0, 0, Ta, zg);
 tfb = min(k, 1.5)*cc.T_CCCV/3600; Igs = min(cfgn.Imax, (soc1 - soc0)*rom.Csoc/tfb);
 prm0 = [Ta; soc1; tfb; cfgn.w_loss; cfgn.w_dI; cfgn.Tmax; cfgn.delta; cfgn.xsmax];
-for nst = 2
-    nmpc_sim_check(rom, par, M, xs0, zs0, 0, Igs, tfb, prm0, C, struct('num_stages', C.opt.num_stages, 'num_steps', nst, 'newton_iter', 8));
-end
+[~, C.simchk] = nmpc_sim_check(rom, par, M, xs0, zs0, 0, Igs, tfb, prm0, C, ...
+    struct('num_stages', C.opt.num_stages, 'num_steps', C.opt.num_steps, 'newton_iter', C.opt.newton_iter));
+C.M = M;
 cl.soc0 = soc0; cl.soc1 = soc1; cl.Tamb = Ta;
 cl.budget = k*cc.T_CCCV; cl.Ts = cfgn.Ts;
 cl.w_loss = cfgn.w_loss; cl.w_dI = cfgn.w_dI; cl.Tmax = cfgn.Tmax; cl.delta = cfgn.delta; cl.xsmax = cfgn.xsmax;

@@ -12,8 +12,11 @@ on:
   workflow_dispatch:
     inputs:
       stage:
-        description: "rom | pilot | all"
+        description: "rom | pilot | all | debug"
         default: all
+      variant:
+        description: "bien the so hoc NMPC (base | s4n12 | lm10 | s4lm10)"
+        default: base
 
 concurrency:
   group: nmpc-${{ github.ref }}
@@ -22,7 +25,7 @@ concurrency:
 jobs:
   # ---- Buoc E: kiem tra thanh phan + so sanh ROM voi DFN -------------------
   rom:
-    if: github.event_name == 'push' || inputs.stage != 'pilot'
+    if: github.event_name == 'push' || inputs.stage == 'rom' || inputs.stage == 'all'
     runs-on: ubuntu-latest
     timeout-minutes: 120
     strategy:
@@ -58,7 +61,7 @@ jobs:
 
   # ---- Buoc G: chay thu vong kin (3 vung x 7 ngan sach), moi job tao bo giai mot lan
   pilot:
-    if: github.event_name == 'workflow_dispatch' && inputs.stage != 'rom'
+    if: github.event_name == 'workflow_dispatch' && (inputs.stage == 'pilot' || inputs.stage == 'all')
     runs-on: ubuntu-latest
     timeout-minutes: 300
     strategy:
@@ -82,14 +85,48 @@ jobs:
           command: >
             cd(fullfile('${{ runner.temp }}', 'mwork'));
             addpath('${{ github.workspace }}/src/dfn'); addpath('${{ github.workspace }}/src/nmpc');
-            pilot_run(${{ matrix.win }}, ${{ matrix.k }}, '${{ github.workspace }}/results/pilot', getenv('ROM_CFG'));
+            pilot_run(${{ matrix.win }}, ${{ matrix.k }}, '${{ github.workspace }}/results/pilot', getenv('ROM_CFG'), getenv('NMPC_VARIANT'));
         env:
           ROM_CFG: D
+          NMPC_VARIANT: ${{ inputs.variant }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: pilot-w${{ matrix.win }}-k${{ matrix.k }}
           path: results/pilot
+          if-no-files-found: warn
+
+  # ---- go loi: vung 1, k = 0.8 va 1.5, nhieu bien the so hoc song song ----
+  debug:
+    if: github.event_name == 'workflow_dispatch' && inputs.stage == 'debug'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [base, s4n12, lm10, s4lm10]
+        k: [1, 4]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-acados
+        with:
+          casadi-matlab: 'true'
+          codegen-dir: ${{ runner.temp }}/mwork/c_generated_code
+      - uses: matlab-actions/setup-matlab@v2
+        with:
+          cache: true
+      - name: Bien the ${{ matrix.variant }}, ngan sach ${{ matrix.k }}
+        uses: matlab-actions/run-command@v2
+        with:
+          command: >
+            cd(fullfile('${{ runner.temp }}', 'mwork'));
+            addpath('${{ github.workspace }}/src/dfn'); addpath('${{ github.workspace }}/src/nmpc');
+            pilot_run(1, ${{ matrix.k }}, '${{ github.workspace }}/results/debug', 'D', '${{ matrix.variant }}');
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: debug-${{ matrix.variant }}-k${{ matrix.k }}
+          path: results/debug
           if-no-files-found: warn
 
   report:
