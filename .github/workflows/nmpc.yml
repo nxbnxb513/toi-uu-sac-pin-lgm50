@@ -1,8 +1,9 @@
 name: NMPC - mo hinh rut gon va chay thu
 
 # Buoc E (mo hinh rut gon, so voi DFN) va buoc G (NMPC acados, chay thu vong kin).
-# Khi sua src/nmpc/** hoac workflow nay: chi chay job rom. Job pilot (6 job) chi
-# chay khi bam Run workflow (stage = pilot hoac all): 3 vung x 2 muc dong CCCV = 6 job.
+# Khi sua src/nmpc/** hoac workflow nay: chi chay job rom. Job pilot chi chay khi
+# bam Run workflow (stage = pilot hoac all): 3 vung x 2 muc dong CCCV x 7 ngan sach k
+# = 42 job, moi job MOT lan vong kin (toi da 20 job song song).
 on:
   push:
     branches: [main]
@@ -15,11 +16,14 @@ on:
         description: "rom | pilot | all | debug"
         default: all
       variant:
-        description: "bien the so hoc NMPC (base | s4n12 | lm10 | s4lm10)"
-        default: base
+        description: "pilot: bien the so hoc NMPC (nmpc_variant.m)"
+        default: jrw5
+      variants:
+        description: "debug: danh sach bien the (JSON)"
+        default: '["base","jr","jrw5","jrw2"]'
       ks:
-        description: "chi so ngan sach k (MATLAB), 1..7 = 0.8, 1, 1.25, 1.5, 2, 3, khong gioi han"
-        default: "1:7"
+        description: "pilot: danh sach chi so k (JSON), 1..7 = 0.8, 1, 1.25, 1.5, 2, 3, khong gioi han; debug: bieu thuc MATLAB"
+        default: "[1,2,3,4,5,6,7]"
       win:
         description: "debug: chi so vung (soc_windows.m)"
         default: "3"
@@ -70,18 +74,19 @@ jobs:
           path: results/rom
           if-no-files-found: warn
 
-  # ---- Buoc G: chay thu vong kin. Moi job = mot vung x mot muc dong CCCV, chay
-  # lan luot du 7 ngan sach k (tao bo giai acados mot lan moi job).
+  # ---- Buoc G: chay thu vong kin. Moi job = mot vung x mot muc dong CCCV x MOT
+  # ngan sach k (tao bo giai acados trong moi job, ~8 phut).
   pilot:
     if: github.event_name == 'workflow_dispatch' && (inputs.stage == 'pilot' || inputs.stage == 'all')
     runs-on: ubuntu-latest
-    timeout-minutes: 350
+    timeout-minutes: 355
     strategy:
       fail-fast: false
       max-parallel: 20
       matrix:
         win: [3, 8, 12]     # 0->60, 20->80, 40->100 trong soc_windows.m
         cbase: [0.5, 1]     # dong CCCV goc (C)
+        k: ${{ fromJSON(inputs.ks) }}
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-acados
@@ -91,17 +96,17 @@ jobs:
       - uses: matlab-actions/setup-matlab@v2
         with:
           cache: true
-      - name: Vung ${{ matrix.win }}, CCCV ${{ matrix.cbase }}C, k = 0.8 ... khong gioi han
+      - name: Vung ${{ matrix.win }}, CCCV ${{ matrix.cbase }}C, k so ${{ matrix.k }}
         uses: matlab-actions/run-command@v2
         with:
           command: >
             cd(fullfile('${{ runner.temp }}', 'mwork'));
             addpath('${{ github.workspace }}/src/dfn'); addpath('${{ github.workspace }}/src/nmpc');
-            pilot_run(${{ matrix.win }}, ${{ matrix.cbase }}, ${{ inputs.ks }}, '${{ github.workspace }}/results/pilot', 'D', '${{ inputs.variant }}', 25, 320);
+            pilot_run(${{ matrix.win }}, ${{ matrix.cbase }}, ${{ matrix.k }}, '${{ github.workspace }}/results/pilot', 'D', '${{ inputs.variant }}', 25, 325);
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: pilot-w${{ matrix.win }}-c${{ matrix.cbase }}
+          name: pilot-w${{ matrix.win }}-c${{ matrix.cbase }}-k${{ matrix.k }}
           path: results/pilot
           if-no-files-found: warn
 
@@ -109,11 +114,11 @@ jobs:
   debug:
     if: github.event_name == 'workflow_dispatch' && inputs.stage == 'debug'
     runs-on: ubuntu-latest
-    timeout-minutes: 150
+    timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
-        variant: [base]
+        variant: ${{ fromJSON(inputs.variants) }}
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-acados
@@ -123,17 +128,17 @@ jobs:
       - uses: matlab-actions/setup-matlab@v2
         with:
           cache: true
-      - name: Bien the ${{ inputs.variant }}, vung ${{ inputs.win }}, k ${{ inputs.ks }}
+      - name: Bien the ${{ matrix.variant }}, vung ${{ inputs.win }}, k ${{ inputs.ks }}
         uses: matlab-actions/run-command@v2
         with:
           command: >
             cd(fullfile('${{ runner.temp }}', 'mwork'));
             addpath('${{ github.workspace }}/src/dfn'); addpath('${{ github.workspace }}/src/nmpc');
-            pilot_run(${{ inputs.win }}, ${{ inputs.cbase }}, ${{ inputs.ks }}, '${{ github.workspace }}/results/debug', 'D', '${{ inputs.variant }}', 25, 30);
+            pilot_run(${{ inputs.win }}, ${{ inputs.cbase }}, ${{ inputs.ks }}, '${{ github.workspace }}/results/debug', 'D', '${{ matrix.variant }}', 25, 60);
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: debug-${{ inputs.variant }}
+          name: debug-${{ matrix.variant }}
           path: results/debug
           if-no-files-found: warn
 

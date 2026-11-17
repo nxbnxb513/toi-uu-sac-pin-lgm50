@@ -8,6 +8,13 @@ switch variant
     case 'tols16', bo.num_steps = 16; bo.newton_iter = 20; bo.newton_tol = 1e-8;
     case 'lm10',  bo.lm = 10;
     case 's4lm10', bo.num_steps = 4; bo.newton_iter = 12; bo.lm = 10;
+    % --- so lan lap SQP / chi phi moi lan giai (18/11/2026, xem ket_qua_pilot_nmpc.md) ---
+    % jr: dung lai Jacobian Newton cua IRK; wM: tu lan giai thu 2 (khoi dong nong tu
+    % nghiem truoc) toi da M vong SQP. Lan giai dau van toi da 60 vong.
+    case 'jr',    bo.jac_reuse = 1;
+    case 'jrw5',  bo.jac_reuse = 1; bo.max_iter_warm = 5;
+    case 'jrw2',  bo.jac_reuse = 1; bo.max_iter_warm = 2;
+    case 'w5',    bo.max_iter_warm = 5;
     otherwise, error('nmpc_variant: bien the %s', variant);
 end
 fprintf('Bien the so hoc NMPC: %s\n', variant);

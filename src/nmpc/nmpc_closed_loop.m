@@ -31,12 +31,17 @@ Ig = min(C.opt.Imax, (cfg.soc1 - cfg.soc0)*Csoc/(tf0/3600));
 nmpc_init_guess(C, M, x0, z0, 0, tf0/3600, Ta, Ig);
 % ---- vong lap ----
 S = struct('t', [], 'I', [], 'V', [], 'T', [], 'soc', [], 'xs_sep', [], 'eta_sep', [], 'dphi_sep', [], 'nsei', [], 'npl', []);
-K = struct('t', [], 'status', [], 'sqp_iter', [], 'time_tot', [], 'wall', [], 'tf_h', [], 'slope', [], 'loss_pred', [], 'soc_end', [], 'nrep', []);
+K = struct('t', [], 'status', [], 'sqp_iter', [], 'time_tot', [], 'wall', [], 'tf_h', [], 'slope', [], 'loss_pred', [], 'soc_end', [], 'nrep', [], ...
+    'time_lin', [], 'time_sim', [], 'time_qp', [], 'time_glob', [], 'max_iter', []);
 if ~isfield(cfg, 'band'), cfg.band = 1.3; end
 tf_ref = tf0/3600;
 reason = 'tmax'; nfail = 0; meas = struct('t', 0, 'I', 0, 'V', NaN, 'T', Ta);
 if ~isfield(cfg, 'wall_max'), cfg.wall_max = Inf; end   % gioi han thoi gian CHAY (s) cua mot lan vong kin
 tw = tic; tplant = 0;
+% so vong SQP toi da: lan giai "lanh" (dau tien / sau khoi tao lai) = C.opt.max_iter;
+% cac lan sau khoi dong nong tu nghiem truoc = C.opt.max_iter_warm (nmpc_variant.m)
+cold = true;
+if ~isfield(cfg, 'print_stat'), cfg.print_stat = 2; end
 while t < cfg.tmax
     if toc(tw) > cfg.wall_max, reason = 'wall_limit'; break; end
     xhat = cfg.estimator(y, trk, meas);
@@ -47,11 +52,18 @@ while t < cfg.tmax
         prm(3) = max((cfg.budget - t)/3600, C.opt.tf_min_h);
     end
     % giai, dich vung tin cay cua t_f neu nghiem cham bien vung (toi da 8 lan)
-    ttot = 0; twal = 0;
+    ttot = 0; twal = 0; tbr = zeros(1, 4);
+    if cold, mi = C.opt.max_iter; else, mi = C.opt.max_iter_warm; end
+    C.solver.set('nlp_solver_max_iter', mi);
     for rep = 1:8
         tfband = [max(C.opt.tf_min_h, tf_ref/cfg.band), min(C.opt.tf_cap_h, tf_ref*cfg.band)];
         [plan, info] = nmpc_solve(C, xhat, Ich, prm, tfband);
         ttot = ttot + info.time_tot; twal = twal + info.wall;
+        tbr = tbr + [info.time_lin, info.time_sim, info.time_qp, info.time_glob];
+        if numel(K.t) < cfg.print_stat
+            fprintf('  thong ke SQP lan giai %d (rep %d, toi da %d vong):\n', numel(K.t) + 1, rep, mi);
+            try, C.solver.print('stat'); catch, end
+        end
         glob = abs(plan.tf_h - C.opt.tf_min_h) < 1e-6 || abs(plan.tf_h - C.opt.tf_cap_h) < 1e-6;
         if ~plan.ok || ~plan.at_edge || glob, break; end
         tf_ref = plan.tf_h;
@@ -61,15 +73,18 @@ while t < cfg.tmax
     K.time_tot(end+1, 1) = info.time_tot; K.wall(end+1, 1) = info.wall;
     K.tf_h(end+1, 1) = plan.tf_h; K.slope(end+1, 1) = plan.slope; K.loss_pred(end+1, 1) = plan.loss_pred;
     K.soc_end(end+1, 1) = plan.soc_end; K.nrep(end+1, 1) = rep;
+    K.time_lin(end+1, 1) = tbr(1); K.time_sim(end+1, 1) = tbr(2); K.time_qp(end+1, 1) = tbr(3); K.time_glob(end+1, 1) = tbr(4);
+    K.max_iter(end+1, 1) = mi;
     if numel(K.t) <= 10 || mod(numel(K.t), 20) == 0 || ~plan.ok
-        fprintf('  [%4d] t %6.0f s soc %.4f I %.2f A | status %d sqp %2d rep %d %.0f ms | tf %.3f h slope %.2e A/s loss %.4f mAh soc_N %.4f | wall %.0f s\n', ...
-            numel(K.t), t, xhat(rom.ix.soc), Ich, info.status, info.sqp_iter, rep, 1e3*info.time_tot, plan.tf_h, plan.slope, plan.loss_pred, plan.soc_end, toc(tw));
+        fprintf('  [%4d] t %6.0f s soc %.4f I %.2f A | status %d sqp %2d/%d rep %d %.0f ms (lin %.0f, sim %.0f, qp %.0f, glob %.0f) | tf %.3f h slope %.2e A/s loss %.4f mAh soc_N %.4f | wall %.0f s\n', ...
+            numel(K.t), t, xhat(rom.ix.soc), Ich, info.status, info.sqp_iter, mi, rep, 1e3*info.time_tot, 1e3*tbr, plan.tf_h, plan.slope, plan.loss_pred, plan.soc_end, toc(tw));
     end
     if plan.ok
+        cold = false;
         slope = plan.slope; Tseg = min(cfg.Ts, max(plan.dt1, 1));
     else
         % that bai: giu dong hien tai trong mot chu ky, khoi tao lai doan dau
-        nfail = nfail + 1; slope = 0; Tseg = cfg.Ts;
+        nfail = nfail + 1; slope = 0; Tseg = cfg.Ts; cold = true;
         if nfail <= 2, nmpc_diag(C, prm); C.sweep = false; end
         C.solver.reset();
         [zg2, ~] = rom_solve_z(M, xhat, -Ich, Ta, zg);

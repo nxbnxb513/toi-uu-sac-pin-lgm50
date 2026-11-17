@@ -22,6 +22,11 @@ tw = tic; s.solve(); info.wall = toc(tw);
 info.status = s.get('status');
 info.sqp_iter = s.get('sqp_iter');
 info.time_tot = s.get('time_tot');
+% phan bo thoi gian (s): tuyen tinh hoa (gom tich phan + do nhay), rieng tich phan, QP, tim kiem duong
+tf_ = {'time_lin', 'time_sim', 'time_qp', 'time_glob'};
+for i = 1:numel(tf_)
+    try, info.(tf_{i}) = s.get(tf_{i}); catch, info.(tf_{i}) = NaN; end
+end
 X0 = s.get('x', 0); XN = s.get('x', C.N);
 u0 = s.get('u', 0);
 plan.tf_h = X0(C.itf);

@@ -24,7 +24,8 @@ if nargin < 3, opt = struct(); end
 d = struct('N', 20, 'Imax', 2*par.Qnom, 'tf_min_h', 10/3600, 'tf_cap_h', 20, 'eps_cost', 1e-3, ...
     'name', 'rom_nmpc', 'codegen_dir', fullfile(pwd, 'c_generated_code'), 'max_iter', 60, ...
     'num_stages', 2, 'num_steps', 8, 'lm', 1e-2, 'newton_iter', 8, 'newton_tol', 0, 'E', [], ...
-    'globalization', 'MERIT_BACKTRACKING');
+    'globalization', 'MERIT_BACKTRACKING', 'jac_reuse', 0, 'tol_stat', 1e-6, 'tol_eq', 1e-7, ...
+    'tol_ineq', 1e-7, 'tol_comp', 1e-7, 'max_iter_warm', 60, 'timeout', 0);
 fn = fieldnames(d);
 for i = 1:numel(fn), if ~isfield(opt, fn{i}), opt.(fn{i}) = d.(fn{i}); end, end
 nx = rom.nx; nX = nx + 2; iI = nx + 1; itf = nx + 2;
@@ -65,14 +66,16 @@ so.collocation_type = 'GAUSS_RADAU_IIA';
 so.sim_method_num_stages = opt.num_stages;
 so.sim_method_num_steps = opt.num_steps;
 so.sim_method_newton_iter = opt.newton_iter;
+so.sim_method_jac_reuse = opt.jac_reuse;   % 1: dung lai Jacobian Newton cua IRK trong mot buoc (nhanh hon)
 if opt.newton_tol > 0, so.sim_method_newton_tol = opt.newton_tol; end
 so.nlp_solver_type = 'SQP';
 so.qp_solver = 'PARTIAL_CONDENSING_HPIPM';
 so.hessian_approx = 'GAUSS_NEWTON';
 so.globalization = opt.globalization;   % mo hinh la ODE thuan (z da khu) nen tim kiem duong dung duoc
 so.nlp_solver_max_iter = opt.max_iter;
-so.nlp_solver_tol_stat = 1e-6; so.nlp_solver_tol_eq = 1e-7;
-so.nlp_solver_tol_ineq = 1e-7; so.nlp_solver_tol_comp = 1e-7;
+so.nlp_solver_tol_stat = opt.tol_stat; so.nlp_solver_tol_eq = opt.tol_eq;
+so.nlp_solver_tol_ineq = opt.tol_ineq; so.nlp_solver_tol_comp = opt.tol_comp;
+if opt.timeout > 0, so.timeout_max_time = opt.timeout; end   % s, gioi han thoi gian MOT lan giai
 so.qp_solver_iter_max = 200;
 % Levenberg-Marquardt nho lam on dinh QP (Hessian Gauss-Newton gan bang 0 vi
 % muc tieu gan tuyen tinh); buoc SQP con duoc tim kiem duong (merit) gioi han.
