@@ -8,7 +8,7 @@ function val_run_condition(cstr, Tdeg, datadir, outdir)
 %   - trang thai lithium ban dau: OCV(mo hinh) = ap nghi do duoc ngay truoc khi xa
 %   - T ban dau = T moi truong = nhiet do be mat cell do duoc ngay truoc khi xa (GD-09)
 %   - dong xa = dong trung binh do duoc; dung khi V = 2.5 V; sau do nghi 2 h
-% roi tinh RMSE dien ap va nhiet do so voi du lieu, cho 4 bien the mo hinh
+% roi tinh RMSE dien ap va nhiet do so voi du lieu, cho 6 bien the mo hinh
 % (xem danh sach ben duoi).
 if ischar(Tdeg) || isstring(Tdeg), Tdeg = str2double(Tdeg); end
 cstr = char(cstr);
@@ -20,24 +20,25 @@ if isempty(files), error('Khong tim thay du lieu cho %s trong %s', tag, datadir)
 crate = str2double(strrep(cstr, 'p', '.'));
 
 % Bien the mo hinh (bao cao tat ca, khong chon ngam):
-%   paper          : cho nao bai bao in thi dung nhu in (ke ca he so dien giai 0.8353, -0.612;
-%                    L_SEI,0 = 1.23625e-8 m; mat do xop kho nhu SI Table 6) - xem tai_lieu/gia_dinh.md
-%   code           : cac cho do lay theo ma nguon cua tac gia (0.353, -6.12; L_SEI,0 = 9.2326e-9 m ...)
-%   code_no_stress : code + tat khuech tan do ung suat (GD-10)
-%   code_Rc_heat   : code + nhiet I^2.R_contact trong can bang nhiet (GD-05)
-%   code_h15       : code + h = 15 W/m2/K nhu O'Regan 2022 (tr. 32) thay cho h = 20 cua Li 2025
-%   code_h_tau     : code + h suy tu hang so thoi gian nguoi do duoc tau = 582 s (trung vi,
-%                    data/ket_qua_du_lieu.md muc A.3): h = rho.c_p,eff.V_cell/(tau.A_cool)
+%   approved           : bo da duyet, MAC DINH (bai in + bai goc cho cho in sai + ma nguon
+%                        cho cho khong bai nao ghi) - xem dfn_params.m, tai_lieu/gia_dinh.md
+%   approved_no_stress : approved + tat khuech tan do ung suat (GD-10)
+%   approved_h_tau     : approved + h suy tu hang so thoi gian nguoi do duoc tau = 582 s (trung vi,
+%                        data/ket_qua_du_lieu.md muc A.3): h = rho.c_p,eff(T_amb).V_cell/(tau.A_cool)
+%   approved_Rc_heat   : approved + nhiet I^2.R_contact trong can bang nhiet (GD-05)
+%   paper              : de so sanh - dung nhu Li 2025 in, ke ca cho in sai (0.8353, -0.612 ...)
+%   code               : de so sanh - gia tri ma nguon tac gia (khac approved: dQ (S7) 0.13509 Ah)
 % Nhiet do mo hinh (lumped, mot gia tri) duoc so voi cap nhiet GIUA than cell.
-pb = dfn_params(struct('src', 'code'));
+pb = dfn_params(struct('src', 'approved'));
 h_tau = dfn_rhocp(pb, Tdeg + 273.15, dfn_aging_state(pb, []))*pb.th.Vcell/(582*pb.th.Acool);
 fprintf('h suy tu tau = 582 s: %.2f W/m2/K\n', h_tau);
-vname = {'paper', 'code', 'code_no_stress', 'code_Rc_heat', 'code_h15', 'code_h_tau'};
-pars  = {dfn_params(struct('src', 'paper')), pb, ...
-         dfn_params(struct('src', 'code', 'stress_diffusion', false)), ...
-         dfn_params(struct('src', 'code', 'contact_heat', true)), ...
-         dfn_params(struct('src', 'code', 'h', 15)), ...
-         dfn_params(struct('src', 'code', 'h', h_tau))};
+vname = {'approved', 'approved_no_stress', 'approved_h_tau', 'approved_Rc_heat', 'paper', 'code'};
+pars  = {pb, ...
+         dfn_params(struct('src', 'approved', 'stress_diffusion', false)), ...
+         dfn_params(struct('src', 'approved', 'h', h_tau)), ...
+         dfn_params(struct('src', 'approved', 'contact_heat', true)), ...
+         dfn_params(struct('src', 'paper')), ...
+         dfn_params(struct('src', 'code'))};
 nv = numel(vname);
 par0 = pars{1};
 fprintf('=== %s: %d file, luoi [%d %d %d | %d %d], %d an ===\n', tag, numel(files), ...
@@ -100,7 +101,7 @@ Tb = cell2table(rows, 'VariableNames', vn);
 writetable(Tb, fullfile(od, 'metrics.csv'));
 
 % ---- CSV duong cong mo phong (lan chay dau tien) va hinh chong ----------
-r = runs(1); r.sim = r.sims{2};
+r = runs(1); r.sim = r.sims{1};
 if ~isempty(r.sim)
 writetable(table(r.sim.t, r.sim.V, r.sim.T - 273.15, r.sim.I, ...
     'VariableNames', {'t_s', 'V_sim', 'T_sim_degC', 'I_A'}), fullfile(od, 'sim_first_run.csv'));
@@ -163,8 +164,9 @@ co = lines(numel(runs));
 ax1 = subplot(2,2,1); hold(ax1, 'on'); ax2 = subplot(2,2,2); hold(ax2, 'on');
 ax3 = subplot(2,2,3); hold(ax3, 'on'); ax4 = subplot(2,2,4); hold(ax4, 'on');
 for i = 1:numel(runs)
-    s = runs(i).seg; sim = runs(i).sims{2}; sim1 = runs(i).sims{1};
-    if isempty(sim) || isempty(sim1), continue; end
+    s = runs(i).seg; sim = runs(i).sims{1}; sim1 = runs(i).sims{5};
+    if isempty(sim), continue; end
+    if isempty(sim1), sim1 = struct('tdis', NaN, 'Vdis', NaN, 'Tdis', NaN, 'trest', NaN, 'Trest', NaN); end
     te = s.t - s.t(1);
     plot(ax1, te/60, s.V, '.', 'Color', co(i,:), 'MarkerSize', 4);
     plot(ax1, sim.tdis/60, sim.Vdis, '-', 'Color', co(i,:), 'LineWidth', 1.2);
@@ -181,7 +183,7 @@ for i = 1:numel(runs)
     end
 end
 xlabel(ax1, 'Thoi gian xa (phut)'); ylabel(ax1, 'Dien ap (V)');
-title(ax1, ['Xa ' strrep(tag, '_', ' ') ': diem = do, lien = DFN code, dut = DFN paper'], 'Interpreter', 'none');
+title(ax1, ['Xa ' strrep(tag, '_', ' ') ': diem = do, lien = DFN approved, dut = DFN paper'], 'Interpreter', 'none');
 xlabel(ax2, 'Thoi gian xa (phut)'); ylabel(ax2, 'Nhiet do be mat (degC)');
 title(ax2, 'Nhiet do be mat', 'Interpreter', 'none');
 xlabel(ax3, 'Thoi gian nghi (phut)'); ylabel(ax3, 'Dien ap (V)'); title(ax3, 'Nghi sau khi xa');

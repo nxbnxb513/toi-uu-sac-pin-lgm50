@@ -1,6 +1,6 @@
 function val_selftest(outdir)
 %VAL_SELFTEST  Kiem tra nhanh mo hinh DFN truoc khi chay kiem chung:
-%  1. in cac gia tri tham so dan xuat (bo 'paper' va bo 'code') de doi chieu
+%  1. in cac gia tri tham so dan xuat (bo 'approved' = mac dinh, 'paper', 'code') de doi chieu
 %  2. JPattern viet tay chua moi phan tu khac 0 cua Jacobian sai phan day du
 %  3. bao toan lithium (pha ran va dien giai)
 %  4. chu trinh: xa 1C -> nghi -> sac CC 0.3C -> giu ap CV (rang buoc dai so) -> nghi
@@ -9,8 +9,9 @@ if nargin < 1, outdir = 'results'; end
 if ~exist(outdir, 'dir'), mkdir(outdir); end
 fid = fopen(fullfile(outdir, 'selftest.md'), 'w');
 T25 = 298.15;
-srcs = {'paper', 'code'};
-P = {dfn_params(struct('src', 'paper')), dfn_params(struct('src', 'code'))};
+srcs = {'approved', 'paper', 'code'};
+P = {dfn_params(struct('src', 'approved')), dfn_params(struct('src', 'paper')), dfn_params(struct('src', 'code'))};
+nP = numel(P);
 
 % ---- 1. tham so ----------------------------------------------------------
 p('# Tu kiem tra mo hinh DFN\n\n## 1. Tham so dan xuat\n\n');
@@ -19,7 +20,7 @@ p('- So an: %d (vi phan %d, dai so %d); so mau cot cua khoi dai so: %d\n', par.i
 p('- Dung luong dien cuc tren don vi stoich: am %.4f Ah, duong %.4f Ah\n', par.neg.Qcap, par.pos.Qcap);
 p('- Dung luong giua cac gioi han stoich: am %.4f Ah, duong %.4f Ah (Li 2025: 4.865 Ah)\n', ...
     par.neg.Qcap*(par.neg.x100 - par.neg.x0), par.pos.Qcap*(par.pos.y0 - par.pos.y100));
-pns = dfn_params(struct('stress_diffusion', false));
+pns = dfn_params(struct('src', 'approved', 'stress_diffusion', false));
 p('- He so nhan khuech tan do ung suat (25 C): am x=0.03/0.88: %.3f / %.3f; duong y=0.24/0.93: %.1f / %.1f\n', ...
     dfn_Ds(par.neg, 0.03, T25, par)/dfn_Ds(pns.neg, 0.03, T25, pns), dfn_Ds(par.neg, 0.88, T25, par)/dfn_Ds(pns.neg, 0.88, T25, pns), ...
     dfn_Ds(par.pos, 0.24, T25, par)/dfn_Ds(pns.pos, 0.24, T25, pns), dfn_Ds(par.pos, 0.93, T25, par)/dfn_Ds(pns.pos, 0.93, T25, pns));
@@ -29,9 +30,9 @@ p('- D_eff,p(y = %s; 25 C) = %s m2/s\n', mat2str(xs), mat2str(dfn_Ds(par.pos, xs
 p('- Kiem tra bang Kirchhoff: (K(0.6) - K(0.5))/0.1 = %.4e, D_eff(0.55) = %.4e m2/s (am)\n', ...
     (dfn_Kint(par.neg, 0.6, T25, par) - dfn_Kint(par.neg, 0.5, T25, par))/0.1, dfn_Ds(par.neg, 0.55, T25, par));
 p('- j0,n(x = 0.5), j0,p(y = 0.5) tai 1 M, 25 C: %.4f, %.4f A/m2\n', dfn_j0(par.neg, 1000, 0.5, T25, par), dfn_j0(par.pos, 1000, 0.5, T25, par));
-p('\n| Dai luong | bo `paper` (nhu bai in) | bo `code` (ma nguon tac gia) |\n|---|---|---|\n');
-v = cell(2, 9);
-for s = 1:2
+p('\n| Dai luong | bo `approved` (mac dinh) | bo `paper` (nhu bai in) | bo `code` (ma nguon tac gia) |\n|---|---|---|---|\n');
+v = cell(nP, 9);
+for s = 1:nP
     q = P{s};
     [De, kap, tp, tdf] = dfn_elyte(1000, T25, q);
     ag = dfn_aging_state(q, []);
@@ -44,14 +45,20 @@ for s = 1:2
 end
 lab = {'D_e (1 M, 25 C) [m2/s]', 'kappa (1 M, 25 C) [S/m]', 't+ (1 M, 25 C)', 'TDF (1 M, 25 C)', 'L_SEI,0 moi lop [m]', ...
        'eps_n ban dau', 'R_film = rho_SEI.L_SEI [Ohm.m2]', 'nhiet dung cell, tau = C/(h.A) voi h = 20', 'OCV tai (x100, y100), nhanh xa [V]'};
-for i = 1:9, p('| %s | %s | %s |\n', lab{i}, v{1,i}, v{2,i}); end
-qc = P{2};
+for i = 1:9, p('| %s | %s | %s | %s |\n', lab{i}, v{1,i}, v{2,i}, v{3,i}); end
+qa = P{1};
+p('- Bo `approved`: rho kho [am, mang ngan, duong] = %s kg/m3; dQ ban dau (S7) = %.5f Ah; L_SEI,0 cach tinh: %s\n', ...
+    mat2str(qa.th.rho_dry), qa.sei.Qloss0, qa.sei.init);
+p('- Luat SEI cho buoc C (chua dung): exp(-F(phi_s - phi_e)/(RT)), he so moi lop %.4g, z_SEI = %d\n', qa.sei.growth.k_layer, qa.sei.z);
+assert(qa.el.k4 == 0.353 && qa.el.tp2 == -6.12 && isequal(qa.th.rho_dry, [1740, 946, 3270]), 'bo approved: sai he so dien giai / mat do kho');
+assert(abs(qa.sei.L_layer0 - 9.2282e-9) < 1e-12, 'bo approved: L_SEI,0 lech ma nguon qua nhieu');
+qc = P{3};
 assert(abs(qc.sei.L_layer0 - 9.23265e-9) < 2e-13 && abs(qc.neg.eps_e - 0.234965) < 2e-6, 'bo code: SEI/do xop ban dau khong khop ma nguon');
-pchk = dfn_params(struct('L_SEI_layer0', 1.236e-8));
+pchk = dfn_params(struct('src', 'paper', 'L_SEI_layer0', 1.236e-8));
 assert(abs(pchk.neg.eps_e - 0.222) < 1e-3, 'S10-S11 khong khop vi du cua bai bao');
 
 % ---- 2, 3. JPattern va bao toan (ca hai bo) ------------------------------
-for s = 1:2
+for s = 1:nP
     par = P{s};
     p('\n## 2.%d JPattern va bao toan - bo `%s` (xa 1C 600 s tu 100 %% SOC, 25 C)\n\n', s, srcs{s});
     y100 = dfn_init_state(par, par.neg.x100, par.pos.y100, T25);
@@ -93,7 +100,7 @@ for s = 1:2
 end
 
 % ---- 4. chu trinh ---------------------------------------------------------
-for s = 1:2
+for s = 1:nP
     par = P{s};
     p('\n## 3.%d Chu trinh - bo `%s`: xa 1C toi 2.5 V -> nghi 30 phut -> sac CC 0.3C toi 4.2 V -> giu ap toi C/100 -> nghi 30 phut (25 C)\n\n', s, srcs{s});
     p('| Buoc | Ly do dung | thoi luong (s) | V cuoi (V) | I cuoi (A) | T cuoi (degC) | Q da xa (Ah) | x_surf am [min, max] | so lan goi ve phai | thoi gian chay (s) |\n|---|---|---|---|---|---|---|---|---|---|\n');
@@ -122,9 +129,9 @@ for s = 1:2
 end
 
 % ---- 5. hoi tu luoi -------------------------------------------------------
-p('\n## 4. Hoi tu luoi - bo `code` (so voi luoi min [40 20 40 | 200 60])\n\n');
-mo = {struct('src', 'code', 'Nn', 40, 'Ns', 20, 'Np', 40, 'Nrn', 200, 'Nrp', 60), struct('src', 'code'), ...
-      struct('src', 'code', 'Nn', 10, 'Ns', 5, 'Np', 5, 'Nrn', 100, 'Nrp', 20)};
+p('\n## 4. Hoi tu luoi - bo `approved` (so voi luoi min [40 20 40 | 200 60])\n\n');
+mo = {struct('src', 'approved', 'Nn', 40, 'Ns', 20, 'Np', 40, 'Nrn', 200, 'Nrp', 60), struct('src', 'approved'), ...
+      struct('src', 'approved', 'Nn', 10, 'Ns', 5, 'Np', 5, 'Nrn', 100, 'Nrp', 20)};
 pl = {dfn_params(mo{1}), dfn_params(mo{2}), dfn_params(mo{3})};
 lab = {'min [40 20 40 - 200 60]', sprintf('mac dinh [%d %d %d - %d %d]', pl{2}.cfg.Nn, pl{2}.cfg.Ns, pl{2}.cfg.Np, pl{2}.cfg.Nrn, pl{2}.cfg.Nrp), 'Li 2025 [10 5 5 - 100 20]'};
 % {ten, I [A], T [degC], x dau, y dau}

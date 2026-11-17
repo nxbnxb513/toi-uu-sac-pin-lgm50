@@ -6,11 +6,15 @@ function [De, kap, tp, tdf] = dfn_elyte(ce, T, par)
 %   tp  [-]      so van chuyen cation     pt. (S15)
 %   tdf [-]      thermodynamic factor     pt. (S16)
 % Gioi han bao hoa 4000 mol/m3: pt. (S12).
-% Hai he so in trong SI khac voi ma nguon cua chinh bai bao (GD-03, GD-04);
+% Hai he so SI in sai so voi bai goc Landesfeind 2019 Table II (GD-03, GD-04);
 % gia tri dung nam trong par.el (dfn_params.m, tuy chon src):
-%   (S14) par.el.k4 : SI in 0.8353, ma nguon 0.353  (kappa(1M, 25C) = 2.45 hoac 0.91 S/m)
-%   (S15) par.el.tp2: SI in -0.612, ma nguon -6.12  (t+(1M, 25C) = 5.73 hoac 0.22)
-% (S13) SI in "10^-10 . 1010": doc la 1010 x 1e-10 ([code] coeffs 1.01e3).
+%   (S14) par.el.k4 : SI in 0.8353; Landesfeind 2019 Table II (= ma nguon) 0.353
+%                     (kappa(1M, 25C) = 2.45 hoac 0.91 S/m)
+%   (S15) par.el.tp2: SI in -0.612; Landesfeind 2019 Table II (= ma nguon) -6.12
+%                     (t+(1M, 25C) = 5.73 hoac 0.22)
+% Cac he so con lai trung tung so voi Landesfeind 2019 Table II.
+% (S13) SI in "10^-10 . 1010": 1010 x 1e-10 m2/s (Landesfeind 2019 Table II p1 = 1.01E+03, GD-22).
+% tdf nhan voi 2(1 - t+)(RT/F) dln(c_e)/dx (Landesfeind 2019 eq. [2]; dfn_rhs.m, GD-18).
 c = min(ce, 4000)/1000;          % mol/L, pt. (S12)
 eT = exp(1000/T);
 De  = 1e-10 * 1010 * exp(1.01*c) .* exp(-1560/T) .* exp(-487*c/T);
