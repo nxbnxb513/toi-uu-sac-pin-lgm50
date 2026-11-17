@@ -42,7 +42,7 @@ runs:
       uses: actions/cache@v4
       with:
         path: ~/acados
-        key: acados-${{ runner.os }}-${{ inputs.acados-tag }}-hpipm-tera${{ inputs.tera-version }}-cm${{ inputs.casadi-matlab }}-${{ hashFiles('.github/actions/setup-acados/action.yml') }}
+        key: acados-${{ runner.os }}-${{ env.ImageOS }}-${{ inputs.acados-tag }}-hpipm-tera${{ inputs.tera-version }}-cm${{ inputs.casadi-matlab }}-${{ hashFiles('.github/actions/setup-acados/action.yml') }}
 
     - name: Clone and build acados
       if: steps.cache.outputs.cache-hit != 'true'
