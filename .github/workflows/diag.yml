@@ -32,7 +32,7 @@ jobs:
       fail-fast: false
       max-parallel: 20
       matrix:
-        variant: ${{ fromJSON(github.event.inputs.variants || '["base","src_paper","no_stress","EDs_6e4","Dx2","Dx3","Dx5","Dx10","Dx30","Dconst","fit_clamp","ocp_end","hys_delith","no_film","j0n_x10","brug0","start_y0","grid_fine"]') }}
+        variant: ${{ fromJSON(github.event.inputs.variants || '["base","brug_n0","brug_s0","kap_x3","De_x10","j0n_chen","no_tdf","Dconst","ocp_end","hys_delith"]') }}
     steps:
       - uses: actions/checkout@v4
       - uses: matlab-actions/setup-matlab@v2
@@ -58,7 +58,7 @@ jobs:
       fail-fast: false
       max-parallel: 20
       matrix:
-        variant: ${{ fromJSON(github.event.inputs.data_variants || '["base","Dx2","Dx3","Dx5","Dx10","Dconst"]') }}
+        variant: ${{ fromJSON(github.event.inputs.data_variants || '["base","Dx3","Dx10","Dconst","ocp_end","hys_delith","brug0"]') }}
         temp: [0, 10, 25]
     steps:
       - uses: actions/checkout@v4

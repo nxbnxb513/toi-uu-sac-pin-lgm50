@@ -28,7 +28,7 @@ for fi = 1:numel(files)
         afterdis = any(isd(1:a-1));
         t = d.t(a:b) - d.t(a); I = d.I(a:b); V = d.V(a:b);
         kcv = find(V >= par.Vmax - 0.005, 1);
-        if isempty(kcv), continue; end
+        if isempty(kcv) || kcv < 3, continue; end   % pha sac bat dau o gan 4.2 V: bo qua
         Icc = median(I(1:max(1, round(kcv*0.8))));
         Iend = I(end);
         QCC = trapz(t(1:kcv), I(1:kcv))/3600; Qtot = trapz(t, I)/3600;
@@ -38,14 +38,26 @@ for fi = 1:numel(files)
             tic; s = sim_charge(par, Vr, T0, Icc, Iend, e); w = toc;
         catch ME
             fprintf('  !!! cell %d sac %d: %s\n', cellid, k, ME.message);
-            s = struct('q0', NaN, 'tCC', NaN, 'QCC', NaN, 'tCV', NaN, 'Qtot', NaN, 'r1', 'error', 'r2', '', 'xsmax', NaN, 'xsmin_end', NaN, 'eplmin', NaN, 'Vend', NaN); w = NaN;
+            s = struct('q0', NaN, 'tCC', NaN, 'QCC', NaN, 'tCV', NaN, 'Qtot', NaN, 'r1', 'error', 'r2', '', 'xsmax', NaN, 'xsmin_end', NaN, 'eplmin', NaN, 'Vend', NaN, 'tt', [0; 1], 'VV', [NaN; NaN]); w = NaN;
         end
+        % sai so dien ap pha CC (tren khoang thoi gian chung) va ap mo hinh tai thoi diem
+        % ma cell that cham 4.2 V
+        tcm = min(t(kcv), s.tt(end)); kk = t <= tcm;
+        [tu, iu] = unique(s.tt);
+        if nnz(kk) > 2 && numel(tu) > 2
+            rmseCC = sqrt(mean((interp1(tu, s.VV(iu), t(kk)) - V(kk)).^2));
+        else
+            rmseCC = NaN;
+        end
+        Vsim_at = NaN; if s.tt(end) >= t(kcv), Vsim_at = interp1(tu, s.VV(iu), t(kcv)); end
+        dV98 = NaN; k98 = find(t <= 0.98*min(t(kcv), s.tt(end)), 1, 'last');
+        if ~isempty(k98) && numel(tu) > 2, dV98 = interp1(tu, s.VV(iu), t(k98)) - V(k98); end
         fprintf(['  cell %d (xa %gC) sac %d (sau xa: %d): Vrest=%.4f T0=%.1f Icc=%.3f Iend=%.3f | tCC do/mo=%.0f/%.0f s, QCC=%.3f/%.3f Ah, tCV=%.0f/%.0f s, Qtot=%.3f/%.3f Ah | ', ...
-                 'CC dung: %s (V=%.4f), CV dung: %s, x_surf,n max=%.4f, min(phi_s-phi_e-jR)=%.1f mV, %.0f s\n'], ...
+                 'CC dung: %s (V=%.4f), CV dung: %s, x_surf,n max=%.4f, min(phi_s-phi_e-jR)=%.1f mV, RMSE_V(CC)=%.1f mV, V_mo(98%% t chung)-V_do=%.1f mV, %.0f s\n'], ...
             cellid, crt, k, afterdis, Vr, T0 - 273.15, Icc, Iend, e.tCC, s.tCC, e.QCC, s.QCC, e.tCV, s.tCV, e.Qtot, s.Qtot, ...
-            s.r1, s.Vend, s.r2, s.xsmax, 1e3*s.eplmin, w);
+            s.r1, s.Vend, s.r2, s.xsmax, 1e3*s.eplmin, 1e3*rmseCC, 1e3*dV98, w);
         rc(end+1,:) = {variant, Tdeg, cellid, crt, k, afterdis, Vr, T0 - 273.15, Icc, Iend, s.q0, ...
-            e.tCC, s.tCC, e.QCC, s.QCC, e.tCV, s.tCV, e.Qtot, s.Qtot, s.r1, s.Vend, s.r2, s.xsmax, 1e3*s.eplmin}; %#ok<AGROW>
+            e.tCC, s.tCC, e.QCC, s.QCC, e.tCV, s.tCV, e.Qtot, s.Qtot, s.r1, s.Vend, s.r2, s.xsmax, 1e3*s.eplmin, 1e3*rmseCC, Vsim_at, 1e3*dV98}; %#ok<AGROW>
     end
     % ---- (2) cac pha xa ------------------------------------------------------
     for si = 1:numel(d.seg)
@@ -74,7 +86,8 @@ end
 if ~isempty(rc)
     writetable(cell2table(rc, 'VariableNames', {'variant', 'T_degC', 'cell', 'crate_dis', 'k', 'after_discharge', 'Vrest_V', 'T0_degC', ...
         'Icc_A', 'Iend_A', 'q0_Ah', 'tCC_exp_s', 'tCC_sim_s', 'QCC_exp_Ah', 'QCC_sim_Ah', 'tCV_exp_s', 'tCV_sim_s', ...
-        'Qtot_exp_Ah', 'Qtot_sim_Ah', 'stop_CC', 'V_end_CC', 'stop_CV', 'xsn_max', 'min_eta_pl_mV'}), ...
+        'Qtot_exp_Ah', 'Qtot_sim_Ah', 'stop_CC', 'V_end_CC', 'stop_CV', 'xsn_max', 'min_eta_pl_mV', ...
+        'rmseV_CC_mV', 'Vsim_at_tCCexp', 'dV_98pct_mV'}), ...
         fullfile(outdir, sprintf('data_%s_%ddegC_charge.csv', variant, Tdeg)));
 end
 if ~isempty(rd)
@@ -91,7 +104,7 @@ st = struct('mode', 'I', 'value', -abs(Icc), 'tmax', 1.5*e.tCC + 3600, 'Tamb', T
     'stop', struct('Vmax', par.Vmax), 'tout', linspace(0, 1.5*e.tCC + 3600, 600).');
 o = dfn_run(par, y0, st);
 s.q0 = q0; s.r1 = o.reason{1}; s.tCC = o.t(end); s.QCC = -o.Q(end); s.Vend = o.V(end);
-s.xsmax = max(o.xsn(:,2)); s.eplmin = min(o.eta_pl_min);
+s.xsmax = max(o.xsn(:,2)); s.eplmin = min(o.eta_pl_min); s.tt = o.t; s.VV = o.V;
 s.r2 = 'skipped'; s.tCV = NaN; s.Qtot = s.QCC; s.xsmin_end = NaN;
 if strcmp(s.r1, 'Vmax')
     tm = 3*e.tCV + 3600;

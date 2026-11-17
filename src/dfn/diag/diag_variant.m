@@ -15,6 +15,7 @@ switch name
     case 'EDs_6e4',     opt.E_Ds_n = 6e4; desc = 'E_act D_s,n = 6e4 J/mol (GD-01, cot SEI only)';
     case 'grid_fine',   opt = struct('Nn', 40, 'Ns', 20, 'Np', 40, 'Nrn', 200, 'Nrp', 60); desc = 'luoi min [40 20 40 | 200 60]';
     case 'grid_li',     opt = struct('Nn', 10, 'Ns', 5, 'Np', 5, 'Nrn', 100, 'Nrp', 20); desc = 'luoi Li 2025 [10 5 5 | 100 20]';
+    case 'no_tdf',      opt.use_tdf = false; desc = 'bo thermodynamic factor (GD-18)';
     otherwise,          desc = '';
 end
 par = dfn_params(opt);
@@ -41,6 +42,19 @@ switch name
         % khong co). Thuc hien bang ban dfn_ocp_neg.m rieng trong diag/ocp_end/.
         addpath(fullfile(fileparts(mfilename('fullpath')), 'ocp_end'));
         desc = 'U_n + (RT/F) ln((1-x)/(1-x+0.01)) - chi de chan doan';
+    case {'kap_x3', 'De_x10'}
+        % CHI CHAN DOAN: ban dfn_elyte.m rieng trong diag/elyte_scale/ nhan kappa / D_e
+        addpath(fullfile(fileparts(mfilename('fullpath')), 'elyte_scale'));
+        par.diag.kfac = 1; par.diag.Dfac = 1;
+        if strcmp(name, 'kap_x3'), par.diag.kfac = 3; else, par.diag.Dfac = 10; end
+        desc = sprintf('kappa x %g, D_e x %g (chi de chan doan)', par.diag.kfac, par.diag.Dfac);
+    case 'brug_n0'
+        par.neg.brug_e = 0; desc = 'Bruggeman dien giai cuc am = 0 (chi cuc am)';
+    case 'brug_s0'
+        par.sep.brug_e = 0; desc = 'Bruggeman mang ngan = 0 (chi mang ngan)';
+    case 'j0n_chen'
+        % Chen 2020: k_n = 6.48e-7 -> j0,n(x = 0.5, 1 M, 25 C) ~ 0.30 A/m2; Li 2025 (S27): 1.33 A/m2
+        par.neg.j0_ref = 0.228*par.neg.j0_ref; desc = 'j0,n x 0.228 (~ muc cua Chen 2020 tai x = 0.5)';
     case 'hys_delith'
         par.hys.offset = 1e4;  desc = 'luon dung nhanh delithiation cuc am (m = 1) ca khi sac';
     case 'hys_lith'
@@ -54,7 +68,7 @@ switch name
         desc = 'Bruggeman dien giai = 0 (van chuyen dien giai nhanh ~5-10x)';
     case 'start_y0'
         start = 'y0'; desc = 'bat dau tai (x0, y0) cua Li 2025 thay vi duong can bang';
-    case {'base', 'src_paper', 'src_code', 'no_stress', 'EDs_6e4', 'grid_fine', 'grid_li'}
+    case {'base', 'src_paper', 'src_code', 'no_stress', 'EDs_6e4', 'grid_fine', 'grid_li', 'no_tdf'}
     otherwise
         error('diag_variant: bien the khong ro: %s', name);
 end
