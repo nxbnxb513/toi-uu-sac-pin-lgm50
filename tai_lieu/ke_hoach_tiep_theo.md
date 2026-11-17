@@ -232,3 +232,8 @@ Với mỗi trường hợp (vùng sạc × mức dòng CCCV × nhiệt độ m�
 - GD-55 (nồng độ sau khi cạn) và GD-56 (thấm lại): giữ lựa chọn hiện tại (bảo toàn lithium; thấm lại tối đa bằng diện tích ban đầu).
 - Người dùng không muốn bị hỏi lắt nhắt: với các điểm mơ hồ nhỏ trong bài báo, chọn phương án đúng vật lý và bảo toàn, ghi vào gia_dinh.md, rồi báo gộp. Chỉ hỏi ngay khi lựa chọn có thể làm đổi kết luận chính.
 - 17/11/2026 (khoảng 23:20 giờ VN): đã khởi động kiểm chứng lão hoá đầy đủ, chỉ biến thể V_cv = 4.116 V: run 44123422399 (`aging.yml`, mode=full: selftest + Expt 2/3 × 10/25/40 °C, nối tối đa 3 chặng, kiểm chứng nhảy chu kỳ Jmax 20/50, báo cáo `aging-report`). Phiên sau: đọc kết quả, so với Kirkaldy 2024 / Li 2025, điền README mục KETQUA_LAO_HOA. SOH phải tính theo 4.865 Ah (cột chuẩn hoá cố định đã được lưu).
+
+## Ghi chú bàn giao EKF (18/11/2026)
+
+- Chọn cấu hình theo tiêu chí đặt trước (bo_uoc_luong_ekf.md mục 6.1–6.2): IEKF 5 lần lặp, **giữ rf/LLI cả lần sạc** (`t_hold = Inf`), P₀ rf 0.2, LLI 0.05 Ah (GD-75, GD-76). Ước cao η_Li xấu nhất trên 3 ca khó: 8.9 mV (cũ 19.5).
+- Đang chạy lưới đầy đủ 76 ca: run 44202422495 (`ekf.yml` stage=full, GD-77). Việc tiếp: tải artifact `ekf-report`, điền mục 6.3–6.4 và 8 của bo_uoc_luong_ekf.md, mục EKF trong README.
