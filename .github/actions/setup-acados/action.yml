@@ -1,0 +1,96 @@
+name: Setup acados
+description: >
+  Build acados (pinned tag, qpOASES on) into ~/acados with actions/cache, install
+  t_renderer, optionally the CasADi MATLAB binaries and the Python acados_template,
+  and export ACADOS_INSTALL_DIR / ACADOS_SOURCE_DIR / LD_LIBRARY_PATH / MATLABPATH / ENV_RUN.
+  Usage:  - uses: ./.github/actions/setup-acados   (after actions/checkout)
+
+inputs:
+  acados-tag:
+    description: acados git tag
+    default: v0.6.0
+  tera-version:
+    description: t_renderer version (acados v0.6.0 set_up_t_renderer.m uses v0.2.1)
+    default: v0.2.1
+  casadi-matlab:
+    description: "'true' to install CasADi MATLAB binaries into ~/acados/external/casadi-matlab"
+    default: 'false'
+  casadi-matlab-url:
+    description: CasADi MATLAB zip (same as acados CI install_new_casadi_matlab.sh)
+    default: https://github.com/casadi/casadi/releases/download/3.7.2/casadi-3.7.2-linux64-matlab2018b.zip
+  python:
+    description: "'true' to pip install -e acados_template into the current Python"
+    default: 'false'
+  codegen-dir:
+    description: directory where generated solvers will live (put on LD_RUN_PATH)
+    default: c_generated_code
+
+outputs:
+  cache-hit:
+    description: whether the acados build came from cache
+    value: ${{ steps.cache.outputs.cache-hit }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install build deps
+      shell: bash
+      run: sudo apt-get update -qq && sudo apt-get install -y -qq build-essential cmake git unzip wget
+
+    - name: Cache acados build
+      id: cache
+      uses: actions/cache@v4
+      with:
+        path: ~/acados
+        key: acados-${{ runner.os }}-${{ inputs.acados-tag }}-qpoases-tera${{ inputs.tera-version }}-cm${{ inputs.casadi-matlab }}-${{ hashFiles('.github/actions/setup-acados/action.yml') }}
+
+    - name: Clone and build acados
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      env:
+        TAG: ${{ inputs.acados-tag }}
+        TERA: ${{ inputs.tera-version }}
+        CM: ${{ inputs.casadi-matlab }}
+        CMURL: ${{ inputs.casadi-matlab-url }}
+      run: |
+        set -euo pipefail
+        T0=$(date +%s)
+        git clone -q --depth 1 --branch "$TAG" https://github.com/acados/acados.git ~/acados
+        cd ~/acados
+        git submodule update -q --recursive --init --depth 1
+        mkdir -p build && cd build
+        cmake .. -DCMAKE_BUILD_TYPE=Release -DACADOS_WITH_QPOASES=ON -DACADOS_WITH_OPENMP=OFF -DACADOS_OCTAVE=OFF > /dev/null
+        make install -j4 > /dev/null
+        mkdir -p ~/acados/bin
+        wget -q -O ~/acados/bin/t_renderer "https://github.com/acados/tera_renderer/releases/download/${TERA}/t_renderer-${TERA}-linux-amd64"
+        chmod +x ~/acados/bin/t_renderer
+        if [ "$CM" = "true" ]; then
+          cd ~/acados/external
+          wget -q -O casadi-matlab.zip "$CMURL"
+          mkdir -p casadi-matlab && unzip -q casadi-matlab.zip -d casadi-matlab && rm casadi-matlab.zip
+        fi
+        echo "ACADOS BUILD TIME: $(( $(date +%s) - T0 )) s"
+
+    - name: Export acados environment
+      shell: bash
+      env:
+        CG: ${{ inputs.codegen-dir }}
+      run: |
+        A=$HOME/acados
+        case "$CG" in /*) ;; *) CG="$PWD/$CG";; esac
+        {
+          echo "ACADOS_INSTALL_DIR=$A"
+          echo "ACADOS_SOURCE_DIR=$A"
+          echo "ENV_RUN=true"
+          echo "LD_LIBRARY_PATH=$A/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+          echo "LD_RUN_PATH=$CG"
+          echo "MATLABPATH=$A/interfaces/acados_matlab_octave:$A/interfaces/acados_matlab_octave/acados_template_mex:$A/external/casadi-matlab${MATLABPATH:+:$MATLABPATH}"
+        } >> "$GITHUB_ENV"
+        ~/acados/bin/t_renderer --version || true
+
+    - name: Install acados_template (Python)
+      if: inputs.python == 'true'
+      shell: bash
+      run: |
+        pip install -q -e ~/acados/interfaces/acados_template
+        python -c "import casadi, acados_template; print('casadi', casadi.__version__)"
