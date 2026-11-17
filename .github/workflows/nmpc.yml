@@ -1,0 +1,54 @@
+name: NMPC - mo hinh rut gon va chay thu
+
+# Buoc E (mo hinh rut gon, so voi DFN) va buoc G (NMPC acados, chay thu vong kin).
+# Chay khi sua src/nmpc/** hoac workflow nay, hoac bam Run workflow.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/nmpc/**'
+      - '.github/workflows/nmpc.yml'
+  workflow_dispatch:
+    inputs:
+      stage:
+        description: "rom | pilot | all"
+        default: all
+
+concurrency:
+  group: nmpc-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---- Buoc E: kiem tra thanh phan + so sanh ROM voi DFN -------------------
+  rom:
+    if: github.event_name == 'push' || inputs.stage != 'pilot'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        temp: [25, 10]
+        dir: [charge, discharge]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-acados
+        with:
+          casadi-matlab: 'true'
+          codegen-dir: ${{ runner.temp }}/mwork/c_generated_code
+      - uses: matlab-actions/setup-matlab@v2
+        with:
+          cache: true
+      - name: ROM so voi DFN (${{ matrix.dir }}, ${{ matrix.temp }} degC)
+        uses: matlab-actions/run-command@v2
+        with:
+          command: >
+            addpath('${{ github.workspace }}/src/dfn'); addpath('${{ github.workspace }}/src/nmpc');
+            out = '${{ github.workspace }}/results/rom';
+            if ${{ matrix.temp }} == 25 && strcmp('${{ matrix.dir }}', 'charge'), rom_unit_tests(out); end;
+            rom_validate(${{ matrix.temp }}, '${{ matrix.dir }}', out);
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rom-${{ matrix.dir }}-${{ matrix.temp }}
+          path: results/rom
+          if-no-files-found: warn
