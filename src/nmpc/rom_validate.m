@@ -1,4 +1,4 @@
-function rom_validate(Tc, dirn, outdir)
+function rom_validate(Tc, dirn, outdir, cfg)
 %ROM_VALIDATE  So sanh ROM voi DFN day du: dong khong doi 0.3C, 1C, 2C.
 %   rom_validate(25, 'charge', 'results')     sac tu SOC 0 toi khi DFN dung
 %   rom_validate(10, 'discharge', 'results')  xa tu SOC 1 toi 2.5 V
@@ -9,18 +9,19 @@ function rom_validate(Tc, dirn, outdir)
 % phia mang ngan, phi_s - phi_e phia mang ngan, the ma lithium phia mang ngan,
 % nhiet do; lao hoa tam thoi tich luy; thoi gian chay. Ghi CSV + md + hinh.
 if nargin < 3, outdir = 'results'; end
+if nargin < 4, cfg = 'A'; end
 if ~exist(outdir, 'dir'), mkdir(outdir); end
-par = dfn_params(); rom = rom_setup(par);
+par = dfn_params(); rom = rom_setup(par, cfg);
 tg = tic; M = rom_model(rom, par); tbuild = toc(tg);
 Ta = Tc + 273.15;
 rates = [0.3 1 2];
-tag = sprintf('%s_%dC', dirn, Tc);
+tag = sprintf('%s_%dC_%s', dirn, Tc, cfg);
 fid = fopen(fullfile(outdir, ['rom_validate_' tag '.md']), 'w');
-p('# ROM so voi DFN: %s, %d degC\n\n', dirn, Tc);
+p('# ROM (cau hinh %s) so voi DFN: %s, %d degC\n\n', cfg, dirn, Tc);
 p('Tao ham CasADi cua ROM: %.1f s. ROM: %d trang thai vi phan + %d dai so; DFN: %d + %d.\n\n', tbuild, rom.nx, rom.nz, par.ix.nd, par.ix.ny - par.ix.nd);
 p('| C-rate | ly do dung DFN / ROM | t cuoi DFN / ROM (s) | Q DFN / ROM (Ah) | V RMS / max (mV) | xs_sep RMS / max (-) | phi_s-phi_e sep RMS / max (mV) | eta_Li sep RMS / max (mV) | T max (K) | SEI DFN / ROM (uAh) | ma Li DFN / ROM (uAh) | chay DFN / ROM (s) |\n');
 p('|---|---|---|---|---|---|---|---|---|---|---|---|\n');
-hdr = 'dir,Tamb_C,crate,reason_dfn,reason_rom,tend_dfn,tend_rom,Q_dfn,Q_rom,V_rms_mV,V_max_mV,xs_rms,xs_max,dphi_rms_mV,dphi_max_mV,eta_rms_mV,eta_max_mV,T_max_K,sei_dfn_uAh,sei_rom_uAh,pl_dfn_uAh,pl_rom_uAh,wall_dfn_s,wall_rom_s,map_V_max_mV,map_dphi_max_mV';
+hdr = 'cfg,dir,Tamb_C,crate,reason_dfn,reason_rom,tend_dfn,tend_rom,Q_dfn,Q_rom,V_rms_mV,V_max_mV,xs_rms,xs_max,dphi_rms_mV,dphi_max_mV,eta_rms_mV,eta_max_mV,T_max_K,sei_dfn_uAh,sei_rom_uAh,pl_dfn_uAh,pl_rom_uAh,wall_dfn_s,wall_rom_s,map_V_max_mV,map_dphi_max_mV';
 rows = {};
 fig = figure('Visible', 'off', 'Position', [0 0 1400 900]);
 for ir = 1:numel(rates)
@@ -70,8 +71,8 @@ for ir = 1:numel(rates)
         sprintf('%.3f', max(abs(dT))), sprintf('%.3f / %.3f', 1e3*D.nsei(end), 1e3*nseiR), sprintf('%.3f / %.3f', 1e3*D.npl(end), 1e3*nplR), ...
         sprintf('%.1f / %.1f', wD, wR)};
     p('| %.1fC | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s |\n', v{:});
-    rows{end+1} = sprintf('%s,%d,%.2f,%s,%s,%.1f,%.1f,%.5f,%.5f,%.3f,%.3f,%.5f,%.5f,%.3f,%.3f,%.3f,%.3f,%.4f,%.5f,%.5f,%.5f,%.5f,%.2f,%.2f,%.3f,%.3f', ...
-        dirn, Tc, cr, D.reason{end}, R.reason, D.t(end), R.t(end), QD, QR, 1e3*rmsv(dV), 1e3*max(abs(dV)), rmsv(dX), max(abs(dX)), ...
+    rows{end+1} = sprintf('%s,%s,%d,%.2f,%s,%s,%.1f,%.1f,%.5f,%.5f,%.3f,%.3f,%.5f,%.5f,%.3f,%.3f,%.3f,%.3f,%.4f,%.5f,%.5f,%.5f,%.5f,%.2f,%.2f,%.3f,%.3f', ...
+        cfg, dirn, Tc, cr, D.reason{end}, R.reason, D.t(end), R.t(end), QD, QR, 1e3*rmsv(dV), 1e3*max(abs(dV)), rmsv(dX), max(abs(dX)), ...
         1e3*rmsv(dP), 1e3*max(abs(dP)), 1e3*rmsv(dE), 1e3*max(abs(dE)), max(abs(dT)), 1e3*D.nsei(end), 1e3*nseiR, 1e3*D.npl(end), 1e3*nplR, wD, wR, 1e3*mV, 1e3*mP); %#ok<AGROW>
     % ---- hinh ----
     sub = @(r, c) subplot(3, 4, (r - 1)*4 + c);

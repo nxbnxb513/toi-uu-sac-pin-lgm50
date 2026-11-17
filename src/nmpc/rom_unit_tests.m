@@ -1,4 +1,4 @@
-function rom_unit_tests(outdir)
+function rom_unit_tests(outdir, cfg)
 %ROM_UNIT_TESTS  Kiem tra tung thanh phan cua ROM so voi ham DFN (src/dfn):
 %  1. rom_elyte  vs dfn_elyte  (cung cong thuc, chi khac min tron)
 %  2. rom_rhocp  vs dfn_rhocp
@@ -7,10 +7,11 @@ function rom_unit_tests(outdir)
 %  5. bao toan lithium cua phep anh xa
 % Loi -> error (job CI do).
 if nargin < 1, outdir = 'results'; end
+if nargin < 2, cfg = 'A'; end
 if ~exist(outdir, 'dir'), mkdir(outdir); end
-fid = fopen(fullfile(outdir, 'rom_unit_tests.md'), 'w');
-par = dfn_params(); rom = rom_setup(par);
-p('# Kiem tra thanh phan ROM\n\n');
+fid = fopen(fullfile(outdir, ['rom_unit_tests_' cfg '.md']), 'w');
+par = dfn_params(); rom = rom_setup(par, cfg);
+p('# Kiem tra thanh phan ROM (cau hinh %s)\n\n', cfg);
 p('- ROM: cuc am %d o %s (so o DFN), mang ngan %d o, cuc duong %d o; vo hat am %d %s, duong %d %s (don vi R/Nr DFN)\n', ...
     rom.Nn, mat2str(rom.cellsn), rom.Ns, rom.Np, rom.Nrn, mat2str(rom.shn), rom.Nrp, mat2str(rom.shp));
 p('- So trang thai vi phan %d, dai so %d (DFN: %d vi phan, %d dai so)\n', rom.nx, rom.nz, par.ix.nd, par.ix.ny - par.ix.nd);

@@ -3,9 +3,9 @@ function [De, kap, tp, tdf] = rom_elyte(ce, T, par)
 % src/dfn/dfn_elyte.m (Landesfeind & Gasteiger 2019; Li 2025 SI pt. S12-S16,
 % par.el.k4 / par.el.tp2 / par.el.use_tdf cua bo tham so dang dung). Khac duy
 % nhat: chan tren 4000 mol/m3 cua pt. (S12) viet bang ham min TRON (rom_smin)
-% de NMPC co dao ham lien tuc; lech so voi min that < 1e-6 mol/m3 khi ce < 3990.
+% de NMPC co dao ham lien tuc; lech so voi min that < 3e-8 mol/m3 khi ce < 3999.
 % Chay voi double va CasADi SX. rom_unit_tests.m so tung so voi dfn_elyte.m.
-c  = rom_smin(ce, 4000, 1)/1000;
+c  = rom_smin(ce, 4000, 1e-2)/1000;
 eT = exp(1000/T);
 De  = 1e-10 * 1010 * exp(1.01*c) .* exp(-1560/T) .* exp(-487*c/T);
 kap = 0.1 * 0.521 * (1 + (T - 228)) * c ...

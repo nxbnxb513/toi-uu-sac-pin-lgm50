@@ -26,9 +26,11 @@ jobs:
     timeout-minutes: 120
     strategy:
       fail-fast: false
+      max-parallel: 12
       matrix:
         temp: [25, 10]
         dir: [charge, discharge]
+        cfg: [A, B, C, D]
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-acados
@@ -38,17 +40,17 @@ jobs:
       - uses: matlab-actions/setup-matlab@v2
         with:
           cache: true
-      - name: ROM so voi DFN (${{ matrix.dir }}, ${{ matrix.temp }} degC)
+      - name: ROM ${{ matrix.cfg }} so voi DFN (${{ matrix.dir }}, ${{ matrix.temp }} degC)
         uses: matlab-actions/run-command@v2
         with:
           command: >
             addpath('${{ github.workspace }}/src/dfn'); addpath('${{ github.workspace }}/src/nmpc');
             out = '${{ github.workspace }}/results/rom';
-            if ${{ matrix.temp }} == 25 && strcmp('${{ matrix.dir }}', 'charge'), rom_unit_tests(out); end;
-            rom_validate(${{ matrix.temp }}, '${{ matrix.dir }}', out);
+            if ${{ matrix.temp }} == 25 && strcmp('${{ matrix.dir }}', 'charge'), rom_unit_tests(out, '${{ matrix.cfg }}'); end;
+            rom_validate(${{ matrix.temp }}, '${{ matrix.dir }}', out, '${{ matrix.cfg }}');
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: rom-${{ matrix.dir }}-${{ matrix.temp }}
+          name: rom-${{ matrix.cfg }}-${{ matrix.dir }}-${{ matrix.temp }}
           path: results/rom
           if-no-files-found: warn

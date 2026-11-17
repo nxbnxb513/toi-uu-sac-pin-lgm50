@@ -4,6 +4,7 @@ function rom = rom_setup(par, opt)
 %   rom = rom_setup(par, opt)   opt ghi de: cellsn, cellss, cellsp (so o DFN gop
 %                               vao moi o ROM), shn, shp (mat vo hat theo don vi
 %                               R/Nr cua DFN), ngl (so diem Gauss-Legendre)
+%   rom = rom_setup(par, 'B')   cau hinh dat ten (rom_preset.m)
 %
 % Luoi ROM duoc chon sao cho MOI mat o / mat vo cua ROM trung voi mot mat cua
 % luoi DFN. Nho vay:
@@ -13,6 +14,7 @@ function rom = rom_setup(par, opt)
 %     va stoich be mat "phia mang ngan" cua hai mo hinh so sanh tai CUNG mot vi tri.
 % Xem tai_lieu/mo_hinh_rut_gon.md.
 if nargin < 2 || isempty(opt), opt = struct(); end
+if ischar(opt), opt = rom_preset(opt); end
 g = par.grid;
 rom.cellsn = getopt(opt, 'cellsn', [9 6 4 1]);
 rom.cellss = getopt(opt, 'cellss', g.Ns);
@@ -20,6 +22,7 @@ rom.cellsp = getopt(opt, 'cellsp', [10 10]);
 rom.shn    = getopt(opt, 'shn', [0 20 32 40 46 51 55 58 60]);
 rom.shp    = getopt(opt, 'shp', [0 10 15 18 20]);
 rom.ngl    = getopt(opt, 'ngl', 8);
+rom.name   = getopt(opt, 'name', 'tuy_chinh');
 if sum(rom.cellsn) ~= g.Nn || sum(rom.cellss) ~= g.Ns || sum(rom.cellsp) ~= g.Np
     error('rom_setup: so o gop khong khop luoi DFN [%d %d %d]', g.Nn, g.Ns, g.Np);
 end
