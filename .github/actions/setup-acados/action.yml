@@ -22,7 +22,7 @@ inputs:
     description: "'true' to pip install -e acados_template into the current Python"
     default: 'false'
   codegen-dir:
-    description: directory where generated solvers will live (put on LD_RUN_PATH)
+    description: directory where generated solvers will live (put on LD_RUN_PATH and LD_LIBRARY_PATH)
     default: c_generated_code
 
 outputs:
@@ -82,9 +82,11 @@ runs:
           echo "ACADOS_INSTALL_DIR=$A"
           echo "ACADOS_SOURCE_DIR=$A"
           echo "ENV_RUN=true"
-          echo "LD_LIBRARY_PATH=$A/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+          # the generated solver .so must be on LD_LIBRARY_PATH when MATLAB starts
+          # (LD_RUN_PATH alone is not honoured by MATLAB's mex link on R2026b)
+          echo "LD_LIBRARY_PATH=$A/lib:$CG${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
           echo "LD_RUN_PATH=$CG"
-          echo "MATLABPATH=$A/interfaces/acados_matlab_octave:$A/interfaces/acados_matlab_octave/acados_template_mex:$A/external/casadi-matlab${MATLABPATH:+:$MATLABPATH}"
+          echo "MATLABPATH=$A/interfaces/acados_matlab_octave:$A/external/casadi-matlab${MATLABPATH:+:$MATLABPATH}"
         } >> "$GITHUB_ENV"
         ~/acados/bin/t_renderer --version || true
 

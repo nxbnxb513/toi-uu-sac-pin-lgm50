@@ -18,7 +18,6 @@ fprintf('LD_LIBRARY_PATH=%s\n', getenv('LD_LIBRARY_PATH'));
 fprintf('pwd=%s\n', pwd);
 acados_dir = getenv('ACADOS_INSTALL_DIR');
 addpath(fullfile(acados_dir, 'interfaces', 'acados_matlab_octave'));
-addpath(fullfile(acados_dir, 'interfaces', 'acados_matlab_octave', 'acados_template_mex'));
 addpath(fullfile(acados_dir, 'external', 'casadi-matlab'));
 
 %% 1. mex -setup C
