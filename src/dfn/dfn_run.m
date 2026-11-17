@@ -10,7 +10,8 @@ function out = dfn_run(par, y0, steps)
 %   .stop   struct dieu kien dung (truong nao vang mat = khong dung):
 %           .Vmin, .Vmax [V]; .Icut [A] (|I| giam xuong duoi); .Qstop [Ah] (Q cham gia tri)
 %   .tout   (tuy chon) cac thoi diem [s, tinh tu dau buoc] can xuat ket qua
-% out: .t, .V, .I, .T, .Q, .step, .xsn_min/.xsn_max ..., .y_end, .reason{k}, .stats
+% out: .t, .V, .I, .T, .Q, .step, .xsn, .xsp ([min max] stoich be mat), .y_end,
+%      .reason{k}, .nfev(k) (so lan goi ve phai)
 %
 % Tich phan: ode15s (NDF, ma tran khoi luong suy bien, JPattern thua), khoi
 % tao nhat quan bang dfn_consistent_init truoc moi buoc.
@@ -18,36 +19,42 @@ ix = par.ix;
 y = y0; t0 = 0;
 out.t = []; out.V = []; out.I = []; out.T = []; out.Q = []; out.step = [];
 out.xsn = []; out.xsp = []; out.eta_pl_min = []; out.Qgen = []; out.ce_min = []; out.ce_max = [];
-out.reason = cell(1, numel(steps)); out.nsteps = zeros(1, numel(steps));
-out.nfail = zeros(1, numel(steps)); out.nfev = zeros(1, numel(steps)); out.npd = zeros(1, numel(steps));
+out.reason = cell(1, numel(steps)); out.nfev = zeros(1, numel(steps));
 for k = 1:numel(steps)
     ctl = make_ctl(steps(k));
     [y, ok] = dfn_consistent_init(0, y, par, ctl);
     if ~ok
         error('dfn_run: khoi tao nhat quan that bai o buoc %d (mode %s)', k, ctl.mode);
     end
-    rhs = @(t, yy) dfn_rhs(t, yy, par, ctl);
-    f0 = rhs(0, y);
+    nfev = 0;
+    f0 = dfn_rhs(0, y, par, ctl);
     yp0 = zeros(ix.ny,1); yp0(par.id) = f0(par.id);
     opts = odeset('Mass', par.M, 'MassSingular', 'yes', 'MStateDependence', 'none', ...
         'JPattern', par.S, 'RelTol', 1e-6, 'AbsTol', par.atol, ...
         'InitialSlope', yp0, 'InitialStep', min(1e-3, ctl.tmax/10), ...
         'Events', @(t, yy) dfn_events(t, yy, par, ctl));
-    sol = ode15s(rhs, [0 ctl.tmax], y, opts);
-    tend = sol.x(end);
-    if isfield(sol, 'ie') && ~isempty(sol.ie) && abs(sol.xe(end) - tend) <= 1e-9*max(1, tend)
+    % Chi luu nghiem tai cac thoi diem xuat (khong luu moi buoc cua bo giai:
+    % cau truc sol cua ode15s ton ~8 x ny x so_buoc x 8 byte, tran bo nho voi luoi min).
+    if isempty(ctl.tout)
+        tq = [linspace(0, min(60, ctl.tmax/4), 61), linspace(min(60, ctl.tmax/4), ctl.tmax, 600)].';
+    else
+        tq = ctl.tout(ctl.tout >= 0 & ctl.tout <= ctl.tmax);
+    end
+    tq = unique([0; tq; ctl.tmax]);
+    [tt, Yt, te, ye, ie] = ode15s(@rhs, tq, y, opts);
+    Y = Yt.';
+    tend = tt(end);
+    if ~isempty(ie) && te(end) >= tend
         names = {'Vmin', 'Vmax', 'Icut', 'Qstop', 'ce_depleted', 'xsn_max', 'xsn_min', 'xsp_max', 'xsp_min'};
-        out.reason{k} = names{sol.ie(end)};
+        out.reason{k} = names{ie(end)};
+        if te(end) > tend
+            tt = [tt; te(end)]; Y = [Y, ye(end,:).']; tend = te(end); %#ok<AGROW>
+        end
     elseif tend >= ctl.tmax*(1 - 1e-10)
         out.reason{k} = 'time';
     else
         out.reason{k} = 'solver_failed';
     end
-    tt = sol.x(:);
-    if ~isempty(ctl.tout)
-        tt = unique([tt; ctl.tout(ctl.tout >= 0 & ctl.tout <= tend)]);
-    end
-    Y = deval(sol, tt);
     nt = numel(tt);
     V = zeros(nt,1); I = V; T = V; Q = V; xsn = zeros(nt,2); xsp = xsn; epl = V; Qg = V; cmin = V; cmax = V;
     for i = 1:nt
@@ -61,8 +68,7 @@ for k = 1:numel(steps)
     out.xsn = [out.xsn; xsn]; out.xsp = [out.xsp; xsp];
     out.eta_pl_min = [out.eta_pl_min; epl]; out.Qgen = [out.Qgen; Qg];
     out.ce_min = [out.ce_min; cmin]; out.ce_max = [out.ce_max; cmax];
-    out.nsteps(k) = sol.stats.nsteps; out.nfail(k) = sol.stats.nfailed; out.nfev(k) = sol.stats.nfevals;
-    out.npd(k) = sol.stats.npds;
+    out.nfev(k) = nfev;
     if strcmp(out.reason{k}, 'solver_failed')
         g = par.grid; yf = Y(:,end);
         thn = reshape(yf(ix.thn), g.Nrn, g.Nn); thp = reshape(yf(ix.thp), g.Nrp, g.Np);
@@ -77,6 +83,11 @@ for k = 1:numel(steps)
     if strcmp(out.reason{k}, 'solver_failed'), break; end
 end
 out.y_end = y;
+
+    function f = rhs(t, yy)
+        nfev = nfev + 1;
+        f = dfn_rhs(t, yy, par, ctl);
+    end
 end
 
 function ctl = make_ctl(s)

@@ -58,8 +58,8 @@ for s = 1:2
     st = struct('mode', 'I', 'value', 5, 'tmax', 600, 'Tamb', T25, 'stop', struct('Vmin', par.Vmin), 'tout', []);
     tic; o1 = dfn_run(par, y100, st); w1 = toc;
     ymid = o1.y_end;
-    p('- xa 1C 600 s: ket thuc "%s" tai t = %.1f s, V = %.4f V, T = %.2f degC; %d buoc ode, %d hong, %d Jacobian, %.1f s\n', ...
-        o1.reason{1}, o1.t(end), o1.V(end), o1.T(end) - 273.15, o1.nsteps(1), o1.nfail(1), o1.npd(1), w1);
+    p('- xa 1C 600 s: ket thuc "%s" tai t = %.1f s, V = %.4f V, T = %.2f degC; %d lan goi ve phai, %.1f s\n', ...
+        o1.reason{1}, o1.t(end), o1.V(end), o1.T(end) - 273.15, o1.nfev(1), w1);
     ctlI = struct('mode', 'I', 'value', 5, 'Tamb', T25);
     ctlV = struct('mode', 'V', 'value', 4.0, 'Tamb', T25);
     rng(1);
@@ -96,7 +96,7 @@ end
 for s = 1:2
     par = P{s};
     p('\n## 3.%d Chu trinh - bo `%s`: xa 1C toi 2.5 V -> nghi 30 phut -> sac CC 0.3C toi 4.2 V -> giu ap toi C/100 -> nghi 30 phut (25 C)\n\n', s, srcs{s});
-    p('| Buoc | Ly do dung | thoi luong (s) | V cuoi (V) | I cuoi (A) | T cuoi (degC) | Q da xa (Ah) | x_surf am [min, max] | so buoc ode | hong | Jacobian | thoi gian chay (s) |\n|---|---|---|---|---|---|---|---|---|---|---|---|\n');
+    p('| Buoc | Ly do dung | thoi luong (s) | V cuoi (V) | I cuoi (A) | T cuoi (degC) | Q da xa (Ah) | x_surf am [min, max] | so lan goi ve phai | thoi gian chay (s) |\n|---|---|---|---|---|---|---|---|---|---|\n');
     y = dfn_init_state(par, par.neg.x100, par.pos.y100, T25);
     nm = {'xa 1C', 'nghi', 'sac CC 0.3C', 'giu ap CV 4.2 V', 'nghi'};
     cc = dfn_cccv(0.3*par.Qnom, par.Vmax, par.Qnom/100, T25);
@@ -107,12 +107,12 @@ for s = 1:2
     prev = '';
     for k = 1:5
         if k == 4 && ~strcmp(prev, 'Vmax')
-            p('| %s | (bo qua: pha CC khong ket thuc o Vmax) | | | | | | | | | | |\n', nm{k}); continue;
+            p('| %s | (bo qua: pha CC khong ket thuc o Vmax) | | | | | | | | |\n', nm{k}); continue;
         end
         tic; o = dfn_run(par, y, stl{k}); w = toc;
         y = o.y_end; prev = o.reason{1};
-        p('| %s | %s | %.1f | %.4f | %.3f | %.2f | %.4f | [%.4f, %.4f] | %d | %d | %d | %.1f |\n', nm{k}, o.reason{1}, o.t(end), o.V(end), o.I(end), ...
-            o.T(end) - 273.15, o.Q(end), o.xsn(end,1), o.xsn(end,2), o.nsteps(1), o.nfail(1), o.npd(1), w);
+        p('| %s | %s | %.1f | %.4f | %.3f | %.2f | %.4f | [%.4f, %.4f] | %d | %.1f |\n', nm{k}, o.reason{1}, o.t(end), o.V(end), o.I(end), ...
+            o.T(end) - 273.15, o.Q(end), o.xsn(end,1), o.xsn(end,2), o.nfev(1), w);
         if k == 4
             p('\n- Pha CV: max|V - 4.2| = %.2e V\n\n', max(abs(o.V - par.Vmax)));
             assert(max(abs(o.V - par.Vmax)) < 1e-4, 'rang buoc giu ap khong thoa');
@@ -132,7 +132,7 @@ cases = {'xa 1C, 25 degC', 5, 25, par.neg.x100, par.pos.y100; ...
          'xa 2C, 0 degC', 10, 0, par.neg.x100, par.pos.y100; ...
          'sac 0.3C, 25 degC (tu 0 % SOC)', -1.5, 25, par.neg.x0, par.pos.y0; ...
          'sac 1C, 25 degC (tu 0 % SOC)', -5, 25, par.neg.x0, par.pos.y0};
-p('| Truong hop | Luoi | ly do dung | RMS(dV) (mV) | max(dV) (mV) | max(dT) (K) | Q cuoi (Ah) | x_surf am max | buoc ode | thoi gian chay (s) |\n|---|---|---|---|---|---|---|---|---|---|\n');
+p('| Truong hop | Luoi | ly do dung | RMS(dV) (mV) | max(dV) (mV) | max(dT) (K) | Q cuoi (Ah) | x_surf am max | so lan goi ve phai | thoi gian chay (s) |\n|---|---|---|---|---|---|---|---|---|---|\n');
 for ci = 1:size(cases,1)
     Ta = cases{ci,3} + 273.15; Ic = cases{ci,2};
     tg = linspace(0, 3600*5/abs(Ic)*1.1, 800).';
@@ -147,7 +147,7 @@ for ci = 1:size(cases,1)
         dV = interp1(res{m}.t, res{m}.V, tg(k)) - interp1(res{1}.t, res{1}.V, tg(k));
         dT = interp1(res{m}.t, res{m}.T, tg(k)) - interp1(res{1}.t, res{1}.T, tg(k));
         p('| %s | %s | %s | %.2f | %.2f | %.3f | %.4f | %.4f | %d | %.1f |\n', cases{ci,1}, lab{m}, res{m}.reason{1}, ...
-            1e3*sqrt(mean(dV.^2)), 1e3*max(abs(dV)), max(abs(dT)), res{m}.Q(end), max(res{m}.xsn(:,2)), res{m}.nsteps(1), wl(m));
+            1e3*sqrt(mean(dV.^2)), 1e3*max(abs(dV)), max(abs(dT)), res{m}.Q(end), max(res{m}.xsn(:,2)), res{m}.nfev(1), wl(m));
     end
 end
 fclose(fid);
