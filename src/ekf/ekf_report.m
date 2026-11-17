@@ -37,10 +37,27 @@ for i = 1:height(T)
         r.scen, r.noise, r.Tc, r.crate, 100*r.socerr, 1e3*r.lli_end, 1e3*r.s_lli_end, 1e3*r.lli_true, r.rf_end, r.s_rf_end, r.rf_true, ...
         r.Lsei_end_nm, r.Lsei_true_nm, r.ms_per_step, r.n, r.nproj);
 end
+% ---- tong hop truong hop xau nhat theo nhom (kich ban x nhieu) -------------------
+G = unique(T(:, {'scen', 'noise'}), 'rows');
+fprintf(fid, '\n## Tong hop theo nhom (xau nhat tren cac truong hop trong nhom, sau 600 s)\n\nBien an toan eta_Li >= 45 mV (GD-28). "Uoc cao" > 0 la phia NGUY HIEM.\n\n');
+fprintf(fid, '| kich ban | nhieu | so ca | dung giua chung | SOC RMSE max (%%) | SOC sai max (%%) | eta RMSE max (mV) | uoc cao eta max (mV) | uoc thap eta max (mV) | T RMSE max (K) | hoi tu SOC max (s) | hoi tu eta max (s) | NEES eta trung vi | eta_that >= eta_uoc - 3 sigma, min (%%) |\n|---|---|---|---|---|---|---|---|---|---|---|---|---|---|\n');
+for g = 1:height(G)
+    m = T.scen == G.scen(g) & string(T.noise) == string(G.noise(g));
+    r = T(m, :);
+    under = NaN; if ismember('eta_under_max', r.Properties.VariableNames), under = max(r.eta_under_max); end
+    fprintf(fid, '| %s | %s | %d | %d | %.2f | %.2f | %.1f | %.1f | %.1f | %.3f | %s | %s | %.1f | %.1f |\n', G.scen(g), string(G.noise(g)), height(r), ...
+        sum(r.failed_at > 0), max(r.soc_rmse_l), max(r.soc_max_l), max(r.eta_rmse_l), max(r.eta_over_max), under, max(r.T_rmse_l), ...
+        num(maxnan(r.tconv_soc)), num(maxnan(r.tconv_eta)), median(r.nees_eta, 'omitnan'), min(r.cover1s));
+end
 fclose(fid);
 type(outfile);
 end
 
 function s = num(v)
 if isnan(v), s = 'khong'; else, s = sprintf('%.0f', v); end
+end
+
+function v = maxnan(x)
+% thoi gian hoi tu: NaN = khong hoi tu => tra NaN neu co ca nao khong hoi tu
+if any(isnan(x)), v = NaN; else, v = max(x); end
 end

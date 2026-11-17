@@ -14,6 +14,9 @@ on:
       stage:
         description: "pilot | full"
         default: full
+      over:
+        description: "ghi de so dieu chinh cho stage=full (vd 't_hold=1e6'); de trong = mac dinh ekf_config"
+        default: ''
 
 concurrency:
   group: ekf-${{ github.ref }}-${{ github.event_name }}
@@ -92,18 +95,14 @@ jobs:
     timeout-minutes: 300
     strategy:
       fail-fast: false
-      max-parallel: 20
+      max-parallel: 18
       matrix:
-        temp: [10, 25]
+        temp: [10, 25, 40]
         crate: [0.5, 1]
         noise: [lab, bms, bms_off]
         socerr: [0.1, -0.1]
-        scen: [mismatch]
+        scen: [nominal, mismatch]
         include:
-          - {temp: 25, crate: 1,   noise: lab, socerr: 0.1, scen: nominal}
-          - {temp: 10, crate: 1,   noise: lab, socerr: 0.1, scen: nominal}
-          - {temp: 25, crate: 0.5, noise: lab, socerr: 0.1, scen: nominal}
-          - {temp: 10, crate: 0.5, noise: lab, socerr: 0.1, scen: nominal}
           - {temp: 25, crate: 1,   noise: bms, socerr: 0.1, scen: mismatch_Rc}
           - {temp: 10, crate: 1,   noise: bms, socerr: 0.1, scen: mismatch_Rc}
           - {temp: 25, crate: 0.5, noise: bms, socerr: 0.1, scen: mismatch_Rc}
@@ -121,7 +120,7 @@ jobs:
         with:
           command: >
             addpath('${{ github.workspace }}/src/dfn'); addpath('${{ github.workspace }}/src/nmpc'); addpath('${{ github.workspace }}/src/ekf');
-            ekf_run_case(${{ matrix.temp }}, ${{ matrix.crate }}, '${{ matrix.noise }}', ${{ matrix.socerr }}, '${{ matrix.scen }}', '${{ github.workspace }}/results/ekf');
+            ekf_run_case(${{ matrix.temp }}, ${{ matrix.crate }}, '${{ matrix.noise }}', ${{ matrix.socerr }}, '${{ matrix.scen }}', '${{ github.workspace }}/results/ekf', '${{ inputs.over }}');
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -104,6 +104,7 @@ S.nis = mean(R.nis(late), 'omitnan');         % ly tuong 2 (2 phep do)
 % an toan ma lithium: e = eta_uoc - eta_that > 0 la UOC LUONG CAO (nguy hiem)
 S.eta_over_max = 1e3*max(ee(late));
 S.eta_over_p997 = 1e3*qtl(ee(late), 0.997);
+S.eta_under_max = -1e3*min(ee(late));          % uoc THAP (an toan nhung ton thoi gian sac)
 near = late & eta_t < 0.1;
 if any(near), S.eta_over_near = 1e3*max(ee(near)); S.eta_rmse_near = 1e3*rmsv(ee(near)); else, S.eta_over_near = NaN; S.eta_rmse_near = NaN; end
 S.s_eta_med = 1e3*median(R.s_eta(late));

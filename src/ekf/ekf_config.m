@@ -55,14 +55,15 @@ c.q1h.rf = 0.1;         % R_film / R_film,BOL (tham so troi cham, Couto 2022: R_
 
 % ---- GD-74: hiep phuong sai ban dau P0 -----------------------------------------
 c.P0.soc = 0.10;        % SOC (1 sigma) theo duong can bang lithium (do sai SOC ban dau +/-10 %)
-c.P0.lli = 0.15;        % Ah   luong lithium mat (huong lech cuc duong khi cuc am co dinh)
-c.P0.rf  = 0.5;         % R_film / R_film,BOL
+c.P0.lli = 0.05;        % Ah   luong lithium mat (huong lech cuc duong khi cuc am co dinh); GD-75: tien nghiem tu lan sac truoc
+c.P0.rf  = 0.2;         % R_film / R_film,BOL; GD-75 (truoc 18/11/2026: 0.5)
 c.P0.T   = 1.0;         % K
 c.P0.ce  = 1e-3;        % c_e / c_e,ref
 c.P0.th  = 1e-4;        % stoich (tung vo, doc lap; trang thai nghi la deu nen nho)
 
 % ---- buoc thoi gian -------------------------------------------------------------
 c.n_iter = 5;           % so lan lap toi da cua buoc cap nhat (1 = EKF thuong; > 1 = EKF lap, GD-73)
-c.t_hold = 0;           % s  giu rf va LLI (khong cap nhat) trong t < t_hold (hai thang thoi gian, GD-74); 0 = tat
+c.t_hold = Inf;         % s  giu rf va LLI (khong cap nhat) trong t < t_hold (hai thang thoi gian, GD-74/GD-75);
+                        %    Inf = giu CA lan sac (chon 18/11/2026, GD-75), 0 = tat
 c.dt = 5;               % s chu ky lay mau cua EKF (lua chon so hoc; NMPC giai lai moi 30 s)
 end
