@@ -220,7 +220,7 @@ Pin "thật" = DFN đầy đủ (`src/dfn`, không sửa), chạy từng đoạn
 ## 9. Kết quả chạy thử và tình trạng (17/11/2026) — CHƯA CHẠY ĐƯỢC VÒNG KÍN
 
 **Đã làm được:**
-- CCCV 0.5C theo vùng trên DFN (`cccv_window.m`): 0→50 %: T_CCCV = 3500 s, dừng ở SOC đích trong pha CC, SEI 0.021 mAh, Li mạ 1.21 mAh; 25→75 %: 3500 s, SEI 0.064 mAh, Li mạ 2.75 mAh.
+- CCCV 0.5C theo vùng trên DFN (`cccv_window.m`; số dưới đây chạy với OCP cực âm CŨ, trước GD-40): 0→50 %: T_CCCV = 3500 s, dừng ở SOC đích trong pha CC, SEI 0.021 mAh, Li mạ 1.21 mAh; 25→75 %: 3500 s, SEI 0.064 mAh, Li mạ 2.75 mAh.
 - Bộ giải acados (DAE, z trong ràng buộc) sinh mã và biên dịch trong 40–60 s mỗi job; tích phân một khoảng bằng bộ tích phân độc lập khớp ode15s (mục 8.4).
 
 **Chưa làm được — vòng kín NMPC thất bại ở mọi lượt chạy thử** (lượt cuối: https://github.com/nxbnxb513/toi-uu-sac-pin-lgm50/actions/runs/44065100291 và …/44063937371):
