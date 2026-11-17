@@ -22,7 +22,7 @@ import casadi.*
 if nargin < 3, opt = struct(); end
 d = struct('N', 20, 'Imax', 2*par.Qnom, 'tf_min_h', 10/3600, 'tf_cap_h', 20, 'eps_cost', 1e-3, ...
     'name', 'rom_nmpc', 'codegen_dir', fullfile(pwd, 'c_generated_code'), 'max_iter', 60, ...
-    'num_stages', 2, 'num_steps', 2);
+    'num_stages', 2, 'num_steps', 2, 'lm', 1);
 fn = fieldnames(d);
 for i = 1:numel(fn), if ~isfield(opt, fn{i}), opt.(fn{i}) = d.(fn{i}); end, end
 nx = rom.nx; nX = nx + 2; iI = nx + 1; itf = nx + 2;
@@ -50,9 +50,9 @@ ocp.constraints.lh_e = -1e4*ones(2, 1); ocp.constraints.uh_e = zeros(2, 1);
 ocp.constraints.idxsh = 0:nh-1;
 ocp.constraints.idxsh_e = 0:1;
 % phat vi pham: [V (V), T (K), eta (V), x_s (-), t_f (h)] - xem mo_hinh_rut_gon.md muc 8.4
-zu = [1e5; 1e3; 1e5; 1e5; 1e2]; Zu = [1e6; 1e3; 1e6; 1e6; 1e2];
+zu = [1e4; 1e2; 1e4; 1e4; 1e2]; Zu = [1e5; 1e2; 1e5; 1e5; 1e2];
 ocp.cost.zl = zu; ocp.cost.zu = zu; ocp.cost.Zl = Zu; ocp.cost.Zu = Zu;
-zue = [1e4; 1e2]; Zue = [1e5; 1e2];
+zue = [1e3; 1e2]; Zue = [1e4; 1e2];
 ocp.cost.zl_e = zue; ocp.cost.zu_e = zue; ocp.cost.Zl_e = Zue; ocp.cost.Zu_e = Zue;
 ocp.parameter_values = [298.15; 0.5; 1; 10; 1e-4; 318.15; 0.01; 0.99];
 
@@ -71,7 +71,11 @@ so.nlp_solver_max_iter = opt.max_iter;
 so.nlp_solver_tol_stat = 1e-6; so.nlp_solver_tol_eq = 1e-7;
 so.nlp_solver_tol_ineq = 1e-7; so.nlp_solver_tol_comp = 1e-7;
 so.qp_solver_iter_max = 200;
-so.levenberg_marquardt = 1e-3;   % giam buoc SQP (khong co tim kiem duong, xem nmpc_solve.m)
+% Levenberg-Marquardt dong vai tro vung tin cay: Hessian Gauss-Newton gan bang
+% 0 (muc tieu gan tuyen tinh) nen khong co no buoc QP nhay "bang-bang" va dua
+% trang thai ra ngoai vung vat ly (da thay tren CI). Khong co tim kiem duong
+% (acados v0.6 chua ho tro khi h phu thuoc z).
+so.levenberg_marquardt = opt.lm;
 so.print_level = 0;
 ocp.solver_options = so;
 ocp.code_gen_options.code_export_directory = opt.codegen_dir;
