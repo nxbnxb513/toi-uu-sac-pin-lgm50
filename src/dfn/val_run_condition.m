@@ -58,6 +58,10 @@ for fi = 1:numel(files)
             continue;
         end
         T0 = s.T0 + 273.15;
+        % Co nghi ngo cam bien nhiet: T truoc khi xa lech > 5 K so voi danh dinh,
+        % hoac nhiet do nhay > 5 K giua hai mau lien tiep.
+        tflag = double(abs(s.T0 - Tdeg) > 5 || max(abs(diff(s.T))) > 5);
+        if tflag, fprintf('  ! cell %s xa %d: so lieu nhiet do bat thuong (T0 = %.1f C, buoc nhay lon nhat %.1f K)\n', cellid, si, s.T0, max(abs(diff(s.T)))); end
         sims = cell(1, nv);
         for v = 1:nv
             try
@@ -66,7 +70,7 @@ for fi = 1:numel(files)
                 fprintf('  !!! LOI o %s cell %s xa %d bien the %s: %s\n', tag, cellid, si, vname{v}, ME.message);
                 rows(end+1,:) = {tag, vname{v}, crate, Tdeg, str2double(cellid), si, s.Vrest0, s.T0, s.Imean, NaN, ...
                     NaN, NaN, NaN, NaN, NaN, NaN, s.cap, NaN, s.T(end), NaN, s.dTpos, s.dTneg, pars{v}.th.h, ...
-                    'error', NaN, NaN}; %#ok<AGROW>
+                    NaN, tflag, 'error', NaN, NaN}; %#ok<AGROW>
                 continue;
             end
             m = metrics(sim, s);
@@ -80,7 +84,7 @@ for fi = 1:numel(files)
             rows(end+1,:) = {tag, vname{v}, crate, Tdeg, str2double(cellid), si, s.Vrest0, s.T0, s.Imean, sim.q0, ...
                 1e3*m.rmseV, 1e3*m.maxV, m.rmseT, m.maxT, 1e3*m.rmseVr, m.rmseTr, ...
                 s.cap, m.cap_sim, m.Tend_exp, m.Tend_sim, s.dTpos, s.dTneg, pars{v}.th.h, ...
-                sim.out.reason{1}, wall, sum(sim.out.nfev)}; %#ok<AGROW>
+                1e3*m.rmseV90, tflag, sim.out.reason{1}, wall, sum(sim.out.nfev)}; %#ok<AGROW>
             sims{v} = sim;
         end
         runs(end+1) = struct('cell', cellid, 'idis', si, 'seg', s, 'sims', {sims}); %#ok<AGROW>
@@ -91,7 +95,7 @@ if isempty(rows), error('Khong co lan xa hop le nao cho %s', tag); end
 vn = {'cond', 'variant', 'crate', 'T_degC', 'cell', 'discharge', 'Vrest_V', 'T0_degC', 'I_A', 'q0_Ah', ...
       'rmseV_mV', 'maxerrV_mV', 'rmseT_K', 'maxerrT_K', 'rmseV_rest_mV', 'rmseT_rest_K', ...
       'cap_exp_Ah', 'cap_sim_Ah', 'Tend_exp_degC', 'Tend_sim_degC', 'dTpos_exp_K', 'dTneg_exp_K', 'h_W_m2K', ...
-      'stop_reason', 'wall_s', 'rhs_evals'};
+      'rmseV90_mV', 'T_flag', 'stop_reason', 'wall_s', 'rhs_evals'};
 Tb = cell2table(rows, 'VariableNames', vn);
 writetable(Tb, fullfile(od, 'metrics.csv'));
 
@@ -127,7 +131,7 @@ end
 function m = metrics(sim, s)
 % Pha xa: so sanh tren khoang thoi gian chung [0, min(t_sim, t_exp)]
 te = s.t - s.t(1);
-m.rmseV = NaN; m.maxV = NaN; m.rmseT = NaN; m.maxT = NaN; m.rmseVr = NaN; m.rmseTr = NaN;
+m.rmseV90 = NaN; m.rmseV = NaN; m.maxV = NaN; m.rmseT = NaN; m.maxT = NaN; m.rmseVr = NaN; m.rmseTr = NaN;
 m.cap_sim = sim.out.Q(find(sim.out.step == 1, 1, 'last'));
 m.Tend_exp = s.T(end); m.Tend_sim = sim.Tdis(end) - 273.15;
 if numel(sim.tdis) < 3 || sim.tend <= 0, return; end
@@ -137,6 +141,9 @@ Vs = interp1(sim.tdis, sim.Vdis, te(k));
 Ts = interp1(sim.tdis, sim.Tdis, te(k)) - 273.15;
 m.rmseV = sqrt(mean((Vs - s.V(k)).^2));
 m.maxV  = max(abs(Vs - s.V(k)));
+k9 = te(k) <= 0.9*te(end);                    % 90 % dau cua thoi gian xa do duoc (bo doan "goi" cuoi)
+dV = Vs - s.V(k);
+m.rmseV90 = sqrt(mean(dV(k9).^2));
 m.rmseT = sqrt(mean((Ts - s.T(k)).^2));
 m.maxT  = max(abs(Ts - s.T(k)));
 % Pha nghi sau khi xa: thoi gian tinh tu luc ngat dong cua tung ben
