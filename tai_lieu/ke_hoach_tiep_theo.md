@@ -217,3 +217,10 @@ Với mỗi trường hợp (vùng sạc × mức dòng CCCV × nhiệt độ m�
 - **Đang chạy:** run 44120710755 (IEKF n_iter = 5, các biến thể P0 nhỏ, q1h.rf, sV_model = 10 mV, t_hold = 600 s giữ rf/LLI). Run 44120144673 hỏng vì lỗi cú pháp (đã sửa).
 - **Việc tiếp:** đọc run 44120710755 (`/tmp` script: lấy log từng job, dòng "KET QUA"); chọn cấu hình; chạy `stage=full` (32 job) bằng workflow_dispatch; điền bảng vào bo_uoc_luong_ekf.md; đánh giá biên 45 mV (σ_η từ P đang quá tự tin → cần biên lùi theo sai số thực nghiệm); ghi chú tích hợp NMPC (truyền chuỗi mẫu đo, NMPC nên nhận rf ước lượng làm tham số).
 - **Vấn đề mở:** LLI và rf quan sát yếu trong một lần sạc, lẫn với sai SOC đầu và lệch j₀/D_s; lệch j₀/D_s gây sai η_Li có hệ thống mà EKF không thấy.
+
+## Ghi chú bàn giao NMPC pilot (17/11/2026, viết bởi điều phối)
+
+- Luồng NMPC bị dừng khi tắt máy, trước khi kịp viết ghi chú. Commit cuối của nó: cf85569. Commit 33a0adf: mỗi job = một vùng × một dòng CCCV, chạy đủ 7 mức k; có báo vi phạm của CCCV; tự dùng lão hoá của DFN khi bật (`aging_from_plant`).
+- **Chưa có kết quả chạy thử NMPC nào.** Việc dở dang lúc dừng: nối `plant_run` (dòng cuối của luồng: "Now wire it into plant_run"). Kiểm tra `git diff cf85569 -- src/nmpc` không còn gì dang dở trước khi chạy.
+- Việc tiếp: chạy `nmpc.yml` (workflow_dispatch, chế độ pilot), đọc log, báo bảng kết quả vào `tai_lieu/ket_qua_pilot_nmpc.md`.
+- Lượt NMPC cũ 44068312720 nằm chờ rất lâu; người dùng có thể huỷ trong tab Actions.
