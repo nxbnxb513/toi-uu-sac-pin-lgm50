@@ -159,6 +159,32 @@ Với mỗi trường hợp (vùng sạc × mức dòng CCCV × nhiệt độ m�
 - Mô hình nhiệt chỉ có một nhiệt độ cho cả cell. Số đo cho thấy bề mặt không đều: ở 2C, giữa thân nóng lên 33–42 K, đầu dương chỉ khoảng 41 % mức đó.
 - Một bài khác loại pin (Karger 2024) cho thấy dòng sạc không nằm trong ba yếu tố lão hoá chính. Mức cải thiện so với CCCV có thể nhỏ ở nhiều vùng; nếu vậy vẫn báo đúng như thế.
 
+## 6b. Trạng thái khi tắt máy (17/11/2026, tối)
+
+**Đã xong và đã đẩy lên:**
+- DFN với bộ tham số "approved"; kiểm chứng xả: 35 mV (90 % đầu), nhiệt độ 2.1 K.
+- A/B/C, tham số `par.V_cv` (xem "Ghi chú bàn giao DFN A/B/C + V_cv" ở cuối file).
+- Mô hình rút gọn (src/nmpc/, tai_lieu/mo_hinh_rut_gon.md), khớp DFN 1–9 mV.
+- NMPC acados, đã khử biến đại số (commit d8d667c). **Chưa chạy thử thành công lần nào.**
+- Commit a88fcf4 là WIP của luồng NMPC (lưới 20 %, pilot_run), lưu vội trước khi tắt máy, chưa chạy CI.
+
+**Quyết định của người dùng (17/11/2026):**
+- Lão hoá chỉ tính phần mất vĩnh viễn (SEI + lithium chết). Lithium mạ tạm thời chỉ thống kê và giải thích.
+- Giả định đã xác nhận: I_max 2C; T_max 45 °C; δ = 10 + 35 mV; x_s,max 0.99.
+- Coi sai số điện áp mô hình ~1 % là chấp nhận được. Ngưỡng giữ áp `par.V_cv` = 4.2 V × (1 − f), chọn f từ phép quét.
+- Lưới vùng sạc bước 20 % (15 vùng).
+- Ngân sách thời gian là giới hạn trên (t ≤ k·T_CCCV).
+- Chấm ngay khi sạc xong, không cho CCCV nghỉ thêm.
+- Thêm phương án bảng sạc nhiều bậc và phân tích tách hiệu ứng.
+
+**Việc dở dang, làm theo thứ tự khi mở lại:**
+1. **Đọc kết quả phép quét V_cv** (run 44069154814, artifact `diag-all`). Chọn f trên dữ liệu 25 °C, kiểm tra ở 0 và 10 °C, rồi **báo người dùng** (không tự đổi mặc định).
+   - Lưu ý: với mặc định mới, cả ba nhiệt độ trên dữ liệu mở vẫn dừng vì bề mặt hạt đầy trước 4.2 V; độ lệch cuối CC khoảng −52 đến −55 mV. Vì vậy cần xem f nào chạm được ngưỡng trước khi hạt đầy.
+2. **Đọc kiểm chứng xả** (run 44065810310, artifact `validation-report`), so approved-new với approved-old.
+3. **Cập nhật gia_dinh.md** (GD-40 A, GD-41 B, GD-42 C, GD-43 V_cv là sai số mô hình chứ không phải độ chính xác cảm biến, trạng thái GD-16) và mục DFN trong README.
+4. **NMPC:** chuyển `cccv_window.m`, `nmpc_model.m` sang `par.V_cv` qua `v_limit.m`; chạy thử trên 3 vùng thuộc lưới 20 %, đủ 7 mức k; báo bảng thời gian ↔ lão hoá, thời gian giải, vi phạm ràng buộc.
+5. Tiếp tục các bước B, C, D, F, H… như mục 5.
+
 ## 7. Cách làm việc gợi ý
 
 - Việc lớn và độc lập thì giao cho luồng phụ chạy song song, mỗi luồng ghi vào thư mục riêng để không đè file của nhau. Chỉ một luồng được commit vào `src/dfn/` tại một thời điểm.
