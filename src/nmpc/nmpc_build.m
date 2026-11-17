@@ -71,7 +71,7 @@ so.nlp_solver_max_iter = opt.max_iter;
 so.nlp_solver_tol_stat = 1e-6; so.nlp_solver_tol_eq = 1e-7;
 so.nlp_solver_tol_ineq = 1e-7; so.nlp_solver_tol_comp = 1e-7;
 so.qp_solver_iter_max = 200;
-so.levenberg_marquardt = 1e-6;
+so.levenberg_marquardt = 1e-3;   % giam buoc SQP (khong co tim kiem duong, xem nmpc_solve.m)
 so.print_level = 0;
 ocp.solver_options = so;
 ocp.code_gen_options.code_export_directory = opt.codegen_dir;
