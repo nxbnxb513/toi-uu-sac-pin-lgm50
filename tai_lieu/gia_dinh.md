@@ -26,6 +26,10 @@ Các mục mà cả ba bộ giống nhau: GD-06, GD-08, GD-08b, GD-18, GD-21, GD
 | GD-21 | Butler–Volmer j = 2·j₀·sinh(F·η/(2RT)); j₀ theo Li 2025 SI (S26)–(S27), ⟨c_e⟩ = 1000 mol/m³ | O'Kane 2022 Table S1; von Kolzenberg 2020 pt. (9). Li 2025 SI Table 2 chép lỗi in từ SI Table S2 của O'Regan 2022 (doi_chieu B1). |
 | GD-08 | Hệ số entropy (S5)–(S6) có đơn vị mV/K (nhân 10⁻³) | Số liệu đo gốc của O'Regan (Zenodo 5171874, header "mV K-1"); hàm in khớp số đo với RMSE 0.009 / 0.074 mV/K (doi_chieu B7). |
 | GD-22 | D_e (S13): 1010 × 10⁻¹⁰ m²/s | Landesfeind 2019 Table II, p1 = 1.01E+03 (doi_chieu E3). |
+| GD-40 | **(A) Cực âm luôn dùng nhánh OCP delithiation (S4)** (= nhánh xả), cả khi sạc lẫn khi xả; không chuyển nhánh hysteresis ở cực âm. Cực dương giữ hysteresis (S46)–(S47). `par.ocp_n_branch = 'delith'` (mặc định; `'hyst'` = hành vi cũ). | **Trái Li 2025 SI Note 7** (bài chính in zero-state hysteresis S46–S47 cho cả hai cực). Theo O'Kane 2022 SI (nhánh xả như Chen), Chen 2020 tr. 10–11, 16, 22 (chỉ tham số hoá nhánh xả), O'Regan 2022 tr. 18 (đo theo chiều xả). Lý do: bước nhảy áp đầu pha sạc mô hình +287…+342 mV, đo +69…+109 mV; RMSE pha CC 68 → 32 mV (25 °C) (`tai_lieu/dieu_tra_dien_ap_sac.md` mục 3c, 4). Người dùng chấp nhận lệch khỏi bài chính ở điểm này. **Không ảnh hưởng pha xả:** kiểm chứng 12 điều kiện cho `approved_A_only` trùng từng lần xả với `approved_old` (lệch 0.0 mV; validate run 44102112653). |
+| GD-41 | **(B) Biên an toàn mạ lithium tăng thêm 35 mV:** δ_total = δ_cơ bản + `par.ctrl.delta_pl_extra` (= 35 mV, đặt duy nhất trong `dfn_params.m`). | Bù phần điện áp sạc mô hình thấp hơn đo ≈ 30–38 mV ở ≈ 1 Ah trên cùng mà không thay đổi đơn lẻ nào có nguồn giải thích được (`dieu_tra_dien_ap_sac.md` mục 0.2–0.3). Giả định, người dùng duyệt. Dùng trong GD-28. |
+| GD-42 | **(C) Chỉ cho kiểm chứng:** cell kiểm chứng (LG M50, O'Regan / Brosa Planella, Zenodo 4864437) dùng đường cân bằng lithium qua x100 = 0.9014 (`par.val.x100_fresh`, áp trong `val_run_condition.m`, `x100mode = 'fresh'`). Bộ mặc định của dự án (cell M50T, mô hình lão hoá) **giữ** x100 = 0.8771. | Li 2025 SI Note 8 (cân bằng 5 Ah "fresh") / Chen 2020 tr. 13. Khép Ah −0.13…−0.18 → −0.01…−0.05 Ah; dung lượng C/10 ở 25 °C 4.829 → 4.965 Ah (đo 4.922). **Chính C làm sai số xả tăng:** RMSE V 90 % đầu 35.3 → 39.4 mV, ở 0 °C RMSE toàn pha 93.7 → 115.5 mV (xem bảng tách A/C ở GD-16). |
+| GD-43 | **Ngưỡng chuyển CC → CV và áp giữ CV trong mọi mô phỏng: V_cv = 4.2 V × (1 − 0.02) = 4.116 V** (`par.V_cv`; NMPC đọc qua `src/nmpc/v_limit.m`: `cccv_window`, `nmpc_model`, `nmpc_closed_loop`, `rom_validate`). `par.Vmax` = 4.2 V chỉ còn là giới hạn danh định của cell (ghi chép, đọc dữ liệu đo). | **Người dùng quyết định 17/11/2026:** chấp nhận **sai số điện áp mô hình cố định 2 %**. Đây là **phần dư cho sai số mô hình**, **không** phải độ chính xác cảm biến. Căn cứ: phép quét f trên dữ liệu sạc mở (bảng ở GD-16): với f = 0…1.25 % (diag run 44069154814) pha CV không bắt đầu, hoặc dừng vì bề mặt hạt bão hoà, trừ f = 1.25 % ở 25 °C; với f = 2 % (diag run 44102120421) mọi lần sạc ở 0/10/25 °C đều CC → V_cv rồi CV → I_cut, không lần nào chạm x = 1 − 10⁻⁴. |
 
 ## 1. Theo bài gốc (bài in sai)
 
@@ -81,7 +85,37 @@ Các mục "CHƯA GIẢI QUYẾT" trong `doi_chieu_tham_so.md`. Dùng mã nguồ
 
 | Mã | Nội dung | Tình trạng |
 |---|---|---|
-| GD-16 | Chặn số học và sự kiện dừng khi bề mặt hạt bão hoà | Code hiện tại: stoichiometry bề mặt kẹp trong [10⁻⁸, 1 − 10⁻⁸] khi tính j₀, OCP (như PyBaMM); c_e ≥ 0.01 mol/m³ trong log/căn; mô phỏng **dừng** nếu c_e < 1 mol/m³ hoặc stoichiometry bề mặt chạm 10⁻⁴ / 1 − 10⁻⁴. **Khác mã nguồn:** PyBaMM v23.4.1 của tác giả chỉ kẹp mà không dừng, tức cho phép nồng độ bề mặt vượt c_max. Hệ quả: sạc CC 0.3C ở 25 °C làm bề mặt hạt cực âm phía màng ngăn chạm x = 1 trước khi áp đạt 4.2 V (ở ≈ 4.16 V, còn thiếu ≈ 0.3–0.4 Ah; xem `selftest.md` mục 3 và 4). **Chưa quyết định; đang được chẩn đoán riêng** (`src/dfn/diag/`). |
+| GD-16 | Chặn số học và sự kiện dừng khi bề mặt hạt bão hoà | Code: stoichiometry bề mặt kẹp trong [10⁻⁸, 1 − 10⁻⁸] khi tính j₀, OCP (như PyBaMM); c_e ≥ 0.01 mol/m³ trong log/căn; mô phỏng **dừng** nếu c_e < 1 mol/m³ hoặc stoichiometry bề mặt chạm 10⁻⁴ / 1 − 10⁻⁴ (PyBaMM v23.4.1 của tác giả chỉ kẹp mà không dừng). **Trạng thái 17/11/2026: sự kiện dừng giữ nguyên; trên thực tế đã tránh được nhờ GD-43** (V_cv = 4.116 V): với 4.2 V, mọi lần sạc trên dữ liệu mở dừng vì bề mặt hạt cực âm phía màng ngăn bão hoà trước khi tới 4.2 V; với 4.116 V thì không lần nào dừng như vậy (bảng dưới). Self-test 0.3C, 25 °C (validate run 44102112653): CC tới 4.116 V sau 9386 s, CV 3181 s tới C/100, nạp 4.422 Ah, x_surf max 0.981, min(φs − φe) phía màng ngăn 74.5 mV (với 4.2 V: CC 10833 s, CV 1126 s, 4.641 Ah, x_surf 0.99957, 67.7 mV). |
+
+**Bằng chứng cho GD-16 / GD-43: sạc trên dữ liệu mở** (Zenodo 4864437; CC 1.67 A, CV tới 0.25 A; chỉ các lần sạc sau một lần xả, 15/16/15 lần ở 0/10/25 °C; trung vị theo cell; biến thể `val_new_fXXX` = mặc định mới A + C, V_cv = 4.2(1 − f); dữ liệu đo vẫn có CV ở 4.2 V).
+
+| f (V_cv) | T (°C) | t_CC mô hình / đo (s) | t_CV mô hình / đo (s) | Ah pha CC mô hình / đo | Ah tổng mô hình / đo | CC dừng vì | CV dừng vì |
+|---|---|---|---|---|---|---|---|
+| 0 % (4.200 V) | 0 / 10 / 25 | 8220 / 7681; 8908 / 8447; 9602 / 9197 | không có CV | 3.812 / 3.563; 4.132 / 3.918; 4.453 / 4.265 | – | bão hoà bề mặt (xsn_max), mọi T | – |
+| 0.5 % (4.179 V) | 0 | 8220 / 7681 | 18 / 4313 | 3.812 / 3.563 | 3.798 / 4.402 | 14 lần chạm V_cv | xsn_max |
+| 0.5 % | 10 / 25 | như f = 0 | không có CV | | | xsn_max | – |
+| 0.75 % (4.169 V) | 0 | 8092 / 7681 | 167 / 4313 | 3.753 / 3.563 | 3.814 / 4.402 | chạm V_cv | xsn_max |
+| 0.75 % | 10 / 25 | như f = 0 | không có CV | | | xsn_max | – |
+| 1 % (4.158 V) | 0 / 10 | 7954 / 7681; 8766 / 8447 | 340 / 4313; 177 / 3216 | 3.689 / 3.563; 4.066 / 3.918 | 3.820 / 4.402; 4.135 / 4.647 | chạm V_cv | xsn_max |
+| 1 % | 25 | 9602 / 9197 | (14/15 không có CV) | 4.453 / 4.265 | – | 14 lần xsn_max | – |
+| 1.25 % (4.1475 V) | 0 / 10 | 7825 / 7681; 8572 / 8447 | 541 / 4313; 446 / 3216 | 3.629 / 3.563; 3.976 / 3.918 | 3.830 / 4.402; 4.152 / 4.647 | chạm V_cv | xsn_max |
+| 1.25 % | 25 | 9393 / 9197 | 1200 / 2177 | 4.356 / 4.265 | 4.656 / 4.805 | chạm V_cv | **I_cut** |
+| **2 % (4.116 V)** | **0** | 7462 / 7681 | 4729 / 4313 | 3.460 / 3.563 | 4.216 / 4.402 | chạm V_cv (15/15) | **I_cut** (15/15) |
+| **2 %** | **10** | 8153 / 8447 | 3533 / 3216 | 3.781 / 3.918 | 4.431 / 4.647 | chạm V_cv (16/16) | **I_cut** (16/16) |
+| **2 %** | **25** | 8667 / 9197 | 2385 / 2177 | 4.019 / 4.265 | 4.544 / 4.805 | chạm V_cv (15/15) | **I_cut** (15/15) |
+
+Với f = 2 %: stoichiometry bề mặt cực âm lớn nhất 0.9994 / 0.9938 / 0.9871; min(φs − φe) phía màng ngăn 37.4 / 55.6 / 71.3 mV; RMSE pha CC 17.5 / 23.0 / 31.9 mV (0/10/25 °C). Ah tổng mô hình thấp hơn đo 0.19–0.26 Ah (4–5 %). Với f = 0…1.25 %, stoichiometry bề mặt lớn nhất là 0.9999 (chạm sự kiện dừng), trừ f = 1.25 % ở 25 °C (0.9991).
+
+**Tách A / C trong kiểm chứng xả** (validate run 44102112653, 90 lần xả, bỏ 3 lần bất thường GD-23; RMSE điện áp, mV; "90 %" = 90 % đầu thời gian xả, "toàn" = cả pha xả):
+
+| Biến thể | A (cực âm delith) | C (x100 = 0.9014) | 90 % (tất cả T) | 0 °C: 90 % / toàn | 10 °C: 90 % / toàn | 25 °C: 90 % / toàn | toàn (tất cả T) |
+|---|---|---|---|---|---|---|---|
+| `approved_old` | không | không | 35.3 | 37.1 / 93.7 | 31.3 / 58.2 | 37.6 / 63.5 | 71.4 |
+| `approved_A_only` | có | không | 35.3 | 37.1 / 93.7 | 31.3 / 58.2 | 37.6 / 63.5 | 71.4 |
+| `approved_C_only` | không | có | 39.4 | 43.5 / 115.5 | 35.5 / 92.5 | 39.4 / 49.6 | 85.6 |
+| `approved` (mặc định) | có | có | 39.4 | 43.5 / 115.5 | 35.5 / 92.5 | 39.4 / 49.6 | 85.6 |
+
+→ **Toàn bộ phần tăng sai số xả là do C** (x100 = 0.9014); A không đổi pha xả (lệch 0.0 mV từng lần xả, vì khi xả và nghỉ cực âm vốn đã dùng nhánh delithiation). C làm tốt hơn ở 25 °C (toàn pha 63.5 → 49.6 mV) nhưng kém hơn ở 0 và 10 °C. RMSE nhiệt độ 2.11 K ở cả bốn biến thể. V_cv (GD-43) không ảnh hưởng pha xả: `approved` trùng với lượt chạy trước khi đổi V_cv (validate run 44065810310).
 
 Các mục còn mở thuộc phần lão hoá (đơn vị β, t_0, k_cr — doi_chieu P2) nằm trong `tai_lieu/dac_ta_lao_hoa.md` và sẽ được bổ sung vào đây ở bước B/C.
 
@@ -92,7 +126,7 @@ Các giá trị dưới đây **không có trong bài báo nào**: là giả đ�
 | Mã | Nội dung | Giá trị dùng | Loại / lý do |
 |---|---|---|---|
 | GD-24 | Định nghĩa SOC và trạng thái đầu vùng sạc | SOC = (x̄_n − x₀)/(x₁₀₀ − x₀) của cực âm (x₀ = 0.0279, x₁₀₀ = 0.8771, Li 2025 SI Note 8), dung lượng tương ứng 4.861 Ah; trạng thái đầu là trạng thái nghỉ cân bằng trên đường lithium đi qua điểm 100 % SOC (như GD-13), T = T_môi trường | Lựa chọn. Cặp (x₀, y₀) in trong SI không cùng lượng lithium với (x₁₀₀, y₁₀₀) (lệch ≈ 0.02 theo y); giữ lượng lithium không đổi giữa các vùng. C-rate tính theo 5 A (SI Note 9). |
-| GD-25 | Điều kiện dừng CCCV cho vùng sạc một phần | CC tới 4.2 V **hoặc** SOC cuối vùng; CV 4.2 V tới I ≤ C/50 = 0.1 A **hoặc** SOC cuối vùng; cái nào tới trước | Theo yêu cầu người dùng. Vùng kết thúc < 100 % thường dừng ngay trong pha CC. Nếu DFN dừng vì bề mặt hạt bão hoà (GD-16) thì CCCV **không hoàn thành** vùng và được báo nguyên trạng. |
+| GD-25 | Điều kiện dừng CCCV cho vùng sạc một phần | CC tới V_cv = 4.116 V (GD-43) **hoặc** SOC cuối vùng; CV giữ V_cv tới I ≤ C/50 = 0.1 A **hoặc** SOC cuối vùng; cái nào tới trước | Theo yêu cầu người dùng. Vùng kết thúc < 100 % thường dừng ngay trong pha CC. Nếu DFN dừng vì bề mặt hạt bão hoà (GD-16) thì CCCV **không hoàn thành** vùng và được báo nguyên trạng. |
 | GD-26 | Dòng sạc tối đa của NMPC | I_max = 2C = 10 A | **Giả định, người dùng xác nhận 17/11/2026.** Không có nguồn cho phép sạc 2C với LG M50 trong các bài đã đọc; NMPC còn bị chặn bởi các ràng buộc V, T, η_Li, x_s. |
 | GD-27 | Nhiệt độ cell tối đa | T_max = 45 °C | **Giả định, người dùng xác nhận 17/11/2026.** |
 | GD-28 | Biên an toàn thế mạ lithium | η_Li (phía màng ngăn) ≥ δ = δ_cơ bản + 35 mV = 10 + 35 = 45 mV | **Giả định, người dùng xác nhận 17/11/2026.** Phần 35 mV: người dùng duyệt 17/11/2026 vì điện áp sạc của mô hình thấp ≈ 30–38 mV ở ≈ 1 Ah cuối (tai_lieu/dieu_tra_dien_ap_sac.md); đọc từ `par.ctrl.delta_pl_extra` (dfn_params.m, GD-41). Sai số η_Li của ROM so với DFN khi sạc: RMS 0.5–3.3 mV, lớn nhất 1.1–12.8 mV (cấu hình D, mo_hinh_rut_gon.md mục 7). |

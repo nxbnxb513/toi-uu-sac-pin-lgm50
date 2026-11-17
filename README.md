@@ -48,7 +48,34 @@ Thư mục `src/dfn/` chứa mô hình Doyle–Fuller–Newman đầy đủ ghé
 | `dfn_aging_state.m`, `dfn_side_reactions.m` | Chỗ móc cho lão hoá ở bước sau (ε, a, màng SEI theo nút; j_tot = j_int + j_phụ) |
 | `val_selftest.m`, `val_run_condition.m`, `val_report.m` | Tự kiểm tra và kiểm chứng với dữ liệu xả mở (Zenodo 4864437) |
 
-Workflow `.github/workflows/validate.yml` chạy kiểm chứng (12 điều kiện xả song song) cho các biến thể `approved`, `approved_no_stress`, `approved_h_tau` (h nhận dạng từ τ nguội đo được 582 s), `approved_Rc_heat`, `paper`, `code`, và xuất `validation.md`, CSV, hình trong artifact `validation-report`. Sai số báo cho cả "tất cả lần xả" và "bỏ lần xả có số liệu nhiệt bất thường" (GD-23).
+Workflow `.github/workflows/validate.yml` chạy kiểm chứng (12 điều kiện xả song song) cho các biến thể `approved`, `approved_old` (bộ cũ trước 17/11/2026), `approved_no_stress`, `approved_h_tau` (h nhận dạng từ τ nguội đo được 582 s), `approved_Rc_heat`, `paper`, `code` (thêm `approved_A_only`, `approved_C_only` khi chạy tay với `extra = AC`), và xuất `validation.md`, CSV, hình trong artifact `validation-report`. Sai số báo cho cả "tất cả lần xả" và "bỏ lần xả có số liệu nhiệt bất thường" (GD-23).
+
+**Các điểm đã duyệt ngày 17/11/2026** (chi tiết: `tai_lieu/gia_dinh.md` mục 0):
+- GD-40 (A): cực âm luôn dùng nhánh OCP delithiation (trái Li 2025 SI Note 7).
+- GD-41 (B): biên an toàn mạ lithium cộng thêm 35 mV (`par.ctrl.delta_pl_extra`).
+- GD-42 (C): x100 = 0.9014, chỉ dùng cho cell kiểm chứng.
+- GD-43: ngưỡng CC → CV và áp giữ CV trong mọi mô phỏng là `par.V_cv` = 4.2 V × (1 − 2 %) = **4.116 V**. Đây là phần dư cho sai số mô hình, không phải độ chính xác cảm biến. `par.Vmax` = 4.2 V chỉ dùng để ghi chép.
+
+**Kết quả kiểm chứng hiện tại** (bộ `approved` mặc định, validate run 44102112653; 90 lần xả, bỏ 3 lần bất thường):
+
+| | Toàn pha xả | 90 % đầu | 0 °C (toàn / 90 %) | 10 °C | 25 °C | Nhiệt độ |
+|---|---|---|---|---|---|---|
+| `approved` (A + C) | 85.6 mV | 39.4 mV | 115.5 / 43.5 mV | 92.5 / 35.5 mV | 49.6 / 39.4 mV | 2.11 K |
+| `approved_old` (trước 17/11) | 71.4 mV | 35.3 mV | 93.7 / 37.1 mV | 58.2 / 31.3 mV | 63.5 / 37.6 mV | 2.11 K |
+
+- Toàn bộ phần chênh giữa hai dòng là do C (x100 = 0.9014). A không đổi pha xả.
+- Sạc trên dữ liệu mở (CC 1.67 A, V_cv = 4.116 V; trung vị theo cell, mô hình / đo):
+
+| T | t_CC (s) | t_CV (s) | Ah tổng |
+|---|---|---|---|
+| 0 °C | 7462 / 7681 | 4729 / 4313 | 4.216 / 4.402 |
+| 10 °C | 8153 / 8447 | 3533 / 3216 | 4.431 / 4.647 |
+| 25 °C | 8667 / 9197 | 2385 / 2177 | 4.544 / 4.805 |
+
+  Mọi lần sạc đều kết thúc CV ở dòng cắt; không lần nào dừng vì bề mặt hạt bão hoà (GD-16).
+- Self-test 0.3C, 25 °C:
+  - CC 9386 s, CV 3181 s, nạp 4.422 Ah.
+  - x_surf lớn nhất 0.981.
 
 ## Chạy trên GitHub
 
