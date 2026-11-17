@@ -113,7 +113,8 @@ Quy tắc công bằng:
 Với mỗi trường hợp (vùng sạc × mức dòng CCCV × nhiệt độ môi trường):
 1. Chạy CCCV, lấy thời gian sạc T_CCCV và mức lão hoá.
 2. Chạy phương pháp đề xuất với **ngân sách thời gian** k·T_CCCV, k ∈ {0.8; 1; 1.25; 1.5; 2; 3; không giới hạn}.
-   - k = 1: "sạc đúng bằng thời gian của CCCV".
+   - **Ngân sách là thời gian TỐI ĐA, không bắt buộc dùng hết** (người dùng chốt 17/11/2026): thời gian sạc t ≤ k·T_CCCV. Ví dụ cho tối đa 60 phút mà sạc xong trong 30 phút cũng được.
+   - k = 1: "không lâu hơn CCCV".
    - "Không giới hạn": chỉ tối thiểu lão hoá. Sẽ có điểm tối ưu, vì sạc quá chậm thì SEI lại tăng theo thời gian.
 3. Kết quả mỗi trường hợp là một đường "thời gian sạc ↔ lão hoá", trên đó có điểm CCCV.
 
