@@ -98,6 +98,30 @@ Mỗi bước: viết code → đẩy lên → đọc kết quả CI → sửa �
 
 So sánh phải công bằng: cùng thời gian sạc, hoặc báo cả thời gian và lão hoá.
 
+**Thiết kế so sánh do người dùng chốt (17/11/2026)**
+
+Với mỗi trường hợp (vùng sạc × mức dòng CCCV × nhiệt độ môi trường):
+1. Chạy CCCV, lấy thời gian sạc T_CCCV và mức lão hoá.
+2. Chạy phương pháp đề xuất với **ngân sách thời gian** k·T_CCCV, k ∈ {0.8; 1; 1.25; 1.5; 2; 3; không giới hạn}.
+   - k = 1: "sạc đúng bằng thời gian của CCCV".
+   - "Không giới hạn": chỉ tối thiểu lão hoá. Sẽ có điểm tối ưu, vì sạc quá chậm thì SEI lại tăng theo thời gian.
+3. Kết quả mỗi trường hợp là một đường "thời gian sạc ↔ lão hoá", trên đó có điểm CCCV.
+
+| Chiều của lưới | Giá trị | Số mức |
+|---|---|---|
+| Vùng sạc | bắt đầu 0–90 %, kết thúc cao hơn, bước 10 % (bước 5 % nếu người dùng xác nhận) | 55 (210) |
+| Dòng CCCV | 0.3C, 0.5C, 1C (2C nếu có nguồn cho phép) | 3–4 |
+| Nhiệt độ môi trường | 10, 25, 40 °C | 3 |
+| Ngân sách thời gian k | 0.8; 1; 1.25; 1.5; 2; 3; không giới hạn | 7 |
+| Phương pháp | tối ưu tính sẵn; NMPC biết hết trạng thái; NMPC + EKF | 3 |
+
+**Chạy trên GitHub Actions, tận dụng 20 job song song**
+- Repo công khai: tối đa 20 job Linux chạy cùng lúc; mỗi job tối đa 6 giờ; một workflow tối đa 256 job trong ma trận. Đặt `max-parallel: 20`; một lượt chạy xếp hàng được 256 job, tức tối đa khoảng 20 × 6 h mỗi đợt 20 job.
+- Chia việc: mỗi job nhận một "lô" trường hợp, ví dụ một nhiệt độ × một mức dòng × một nhóm vùng sạc. Mỗi job ghi CSV riêng; một job cuối gộp kết quả.
+- Mỗi lô phải chạy xong dưới khoảng 5 giờ. Nếu không, chia nhỏ hơn hoặc dùng nhiều lượt chạy nối tiếp. Kết quả từng lô được lưu, để chạy lại thì bỏ qua lô đã xong.
+- Tối ưu dùng mô hình rút gọn; chấm điểm cuối dùng DFN đầy đủ cho mọi trường hợp.
+- Hai đợt: đợt 1 là lát cắt nhỏ (vài vùng, 25 °C, đủ 7 mức k, đủ 3 phương pháp) để đo thời gian chạy thật; báo người dùng tổng thời gian dự kiến trước khi chạy đợt 2 (toàn lưới).
+
 **Bước I. Đường Pareto thời gian – lão hoá**
 - Thay đổi trọng số trong hàm mục tiêu, vẽ cho một số vùng đại diện.
 
