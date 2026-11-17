@@ -208,3 +208,12 @@ Với mỗi trường hợp (vùng sạc × mức dòng CCCV × nhiệt độ m�
 - **Tiếp theo:** khi smoke đạt → `gh workflow run aging.yml -f mode=full` (12 job: Expt 2/3 × 10/25/40 °C × V_cv 4.116/4.2, 3 chặng checkpoint, jumpcheck Jmax 20/50) → đọc artifact `aging-report` (`aging_validation.md`), điền bảng kết quả vào README (chỗ `KETQUA_LAO_HOA`).
 - **Validate (hồi quy, aging tắt):** run 44115694736 — kiểm tra số trùng 44102112653.
 - **Cần người dùng quyết:** GD-55 (Table 4 mâu thuẫn (S41), đã chọn (S41) bảo toàn Li), GD-56 (thấm ướt lại có trần A_max), GD-60 (SOH chuẩn hoá theo RPT0), V_cv 4.116 V vs 4.2 V của giao thức (chạy cả hai).
+
+## Ghi chú bàn giao EKF (17/11/2026)
+
+- **Đã xong:** `src/ekf/` (ekf_build: dùng nguyên `rom_equations` của NMPC, R_film thành tham số rf; tích phân CasADi collocation + Jacobian giải tích; ekf_step = IEKF 5 lần lặp, Joseph; ekf_init/P0; ekf_outputs: SOC, η_Li sep, T, LLI, R_film/L_SEI kèm σ; ekf_sensor; ekf_plant_par (GD-72); ekf_run_case; ekf_report; ekf_estimator = bộ bọc handle cho `cfg.estimator` của nmpc_closed_loop), workflow `.github/workflows/ekf.yml`, GD-70…74 trong `gia_dinh.md` mục 7, bản nháp `tai_lieu/bo_uoc_luong_ekf.md` (mục 5–8 còn chỗ trống KQ_*).
+- **Tự kiểm tra đạt** (run 44112714209, job selftest): dự đoán EKF = rom_sim lệch 1.2e-6 (V 0.000 mV); Jacobian A lệch 2e-5, H lệch 7e-9 so với sai phân; 0.54 s/bước (IDAS 4 s/bước).
+- **Kết quả thử v1 (EKF thường, run 44112714209) XẤU:** bước cập nhật đầu (sai SOC 10 %) dồn sai số vào rf và LLI rồi kẹt: nominal 25 °C 1C rf → 5.6 (thật 1), SOC lệch 0.7 %, η_Li max 13.5 mV, NEES η 265; mismatch: rf → 10 (thật 1.5), SOC lệch 1.8 %, η_Li max 23 mV (ước CAO = phía nguy hiểm); bms −10 %: SOC lệch −6 %, LLI 0.77 Ah (thật 0.097); 10 °C bms_off: dừng vì g_z suy biến (đã thêm chia đôi khoảng + kiểm tra).
+- **Đang chạy:** run 44120710755 (IEKF n_iter = 5, các biến thể P0 nhỏ, q1h.rf, sV_model = 10 mV, t_hold = 600 s giữ rf/LLI). Run 44120144673 hỏng vì lỗi cú pháp (đã sửa).
+- **Việc tiếp:** đọc run 44120710755 (`/tmp` script: lấy log từng job, dòng "KET QUA"); chọn cấu hình; chạy `stage=full` (32 job) bằng workflow_dispatch; điền bảng vào bo_uoc_luong_ekf.md; đánh giá biên 45 mV (σ_η từ P đang quá tự tin → cần biên lùi theo sai số thực nghiệm); ghi chú tích hợp NMPC (truyền chuỗi mẫu đo, NMPC nên nhận rf ước lượng làm tham số).
+- **Vấn đề mở:** LLI và rf quan sát yếu trong một lần sạc, lẫn với sai SOC đầu và lệch j₀/D_s; lệch j₀/D_s gây sai η_Li có hệ thống mà EKF không thấy.
