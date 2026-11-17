@@ -16,6 +16,15 @@ for k = 0:N-1
     end
 end
 fprintf('nmpc_diag: cac nut co NaN/Inf trong dong luc QP: %s\n', mat2str(bad));
+r = C.rom; ix = r.ix;
+fprintf('nmpc_diag: nut | thn [min max] | thp [min max] | ce/ref [min max] | T | soc | cLi max | Ich | tf_h | u\n');
+for k = 0:N
+    x = X(:, k+1);
+    if k < N, uk = U(k+1); else, uk = NaN; end
+    fprintf('  %2d | %.3f %.3f | %.3f %.3f | %.3f %.3f | %.2f | %.4f | %.3g | %.3f | %.4f | %.3g\n', k, ...
+        min(x(ix.thn)), max(x(ix.thn)), min(x(ix.thp)), max(x(ix.thp)), min(x(ix.ce)), max(x(ix.ce)), ...
+        x(ix.T), x(ix.soc), max(x(ix.cLi)), x(C.iI), x(C.itf), uk);
+end
 try
     z = s.get('z', 0); fprintf('nmpc_diag: z nut 0 = %s\n', mat2str(z.', 4));
 catch

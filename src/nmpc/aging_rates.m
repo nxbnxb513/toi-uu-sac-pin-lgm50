@@ -16,9 +16,18 @@ function [rsei, jpl, etapl] = aging_rates(ap, par, dphi, jtot, ce, T, cLi)
 %         F k_Li [ cLi exp(alpha_a F eta/(RT)) - ce exp(-alpha_c F eta/(RT)) ]
 %   etapl [V] the ma lithium eta_Li = phi_s - phi_e - rho_SEI L_SEI j_tot
 %         (= aux.eta_pl_min cua dfn_rhs.m tai tung nut)
+%
+% So mu duoc chan tren TRON o 40 (exp(40) = 2e17; tuong ung |eta| > 3 V hoac
+% phi_s - phi_e < -1 V - ngoai xa vung vat ly) de bieu thuc khong tran so
+% (0 x Inf = NaN) khi bo giai thu cac diem lap xa. Trong vung vat ly
+% (so mu < 30) so mu lech < 3e-6, tuc sai lech tuong doi < 3e-6.
 f     = par.F/(par.R*T);
 arr   = exp(ap.E_SEI/par.R*(1/par.Tref - 1/T));
-rsei  = (ap.as_n*ap.S0*ap.D_int*ap.c_int/ap.L_outer0*arr)*exp(-f*dphi);
+rsei  = (ap.as_n*ap.S0*ap.D_int*ap.c_int/ap.L_outer0*arr)*exp(capx(-f*dphi));
 etapl = dphi - ap.Rfilm*jtot;
-jpl   = par.F*ap.k_Li*(cLi.*exp(ap.alpha_a*f*etapl) - ce.*exp(-ap.alpha_c*f*etapl));
+jpl   = par.F*ap.k_Li*(cLi.*exp(capx(ap.alpha_a*f*etapl)) - ce.*exp(capx(-ap.alpha_c*f*etapl)));
+end
+
+function v = capx(a)
+v = rom_smin(a, 40, 0.01);
 end
