@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "selftest | full (selftest + mo phong + jumpcheck + bao cao)"
+        description: "selftest | smoke (chi chay thu ngan) | full (selftest + mo phong + jumpcheck + bao cao)"
         required: false
         default: 'full'
       variants:
@@ -48,6 +48,7 @@ jobs:
           release: R2024b
           cache: true
       - name: Tu kiem tra lao hoa
+        if: ${{ github.event.inputs.mode != 'smoke' }}
         uses: matlab-actions/run-command@v2
         with:
           command: addpath('src/dfn'); addpath('src/dfn/aging'); ag_selftest('results/aging_selftest');
@@ -66,7 +67,7 @@ jobs:
 
   run1:
     needs: selftest
-    if: ${{ github.event.inputs.mode != 'selftest' }}
+    if: ${{ github.event.inputs.mode == 'full' }}
     runs-on: ubuntu-latest
     timeout-minutes: 350
     strategy:
@@ -95,7 +96,7 @@ jobs:
 
   run2:
     needs: run1
-    if: ${{ always() && github.event.inputs.mode != 'selftest' }}
+    if: ${{ always() && github.event.inputs.mode == 'full' }}
     runs-on: ubuntu-latest
     timeout-minutes: 350
     strategy:
@@ -133,7 +134,7 @@ jobs:
 
   run3:
     needs: run2
-    if: ${{ always() && github.event.inputs.mode != 'selftest' }}
+    if: ${{ always() && github.event.inputs.mode == 'full' }}
     runs-on: ubuntu-latest
     timeout-minutes: 350
     strategy:
@@ -171,7 +172,7 @@ jobs:
 
   jumpcheck:
     needs: selftest
-    if: ${{ github.event.inputs.mode != 'selftest' && github.event.inputs.jumpcheck != '[]' }}
+    if: ${{ github.event.inputs.mode == 'full' && github.event.inputs.jumpcheck != '[]' }}
     runs-on: ubuntu-latest
     timeout-minutes: 350
     strategy:
@@ -199,7 +200,7 @@ jobs:
 
   report:
     needs: [run3, jumpcheck]
-    if: ${{ always() && github.event.inputs.mode != 'selftest' }}
+    if: ${{ always() && github.event.inputs.mode == 'full' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
