@@ -36,7 +36,7 @@ File PDF và toàn văn của các bài báo không nằm trong repo vì lý do 
 
 ## Mô hình DFN (bước 1 của bản làm lại)
 
-Thư mục `src/dfn/` chứa mô hình Doyle–Fuller–Newman đầy đủ ghép với mô hình nhiệt lumped, bộ tham số Li et al. 2025 (O'Regan 2022 + các mục đánh dấu *), chưa có lão hoá.
+Thư mục `src/dfn/` chứa mô hình Doyle–Fuller–Newman đầy đủ ghép với mô hình nhiệt lumped, bộ tham số Li et al. 2025 (O'Regan 2022 + các mục đánh dấu *). Lão hoá "5 coupled" (bước C) là tuỳ chọn `aging = true`, mặc định tắt — xem mục dưới.
 
 **Bộ tham số mặc định `src = 'approved'`:** theo bài in; chỗ bài in sai thì theo bài gốc (Landesfeind & Gasteiger 2019 Table II cho điện giải: 0.353, −6.12, thermodynamic factor theo pt. [2]; Butler–Volmer 2·j₀·sinh(Fη/2RT) theo O'Kane 2022; ∂U/∂T theo mV/K; mật độ khô theo O'Regan 2022 Table 7); chỗ không bài nào ghi thì theo mã nguồn tác giả (L_SEI,0, khuếch tán do ứng suất, vị trí R_0, dạng nhiệt 0D — đều có tuỳ chọn đổi). `src = 'paper'` (đúng như bài in, kể cả lỗi in) và `src = 'code'` chỉ để so sánh. Chi tiết: [tai_lieu/gia_dinh.md](tai_lieu/gia_dinh.md), [tai_lieu/doi_chieu_tham_so.md](tai_lieu/doi_chieu_tham_so.md).
 
@@ -45,7 +45,7 @@ Thư mục `src/dfn/` chứa mô hình Doyle–Fuller–Newman đầy đủ ghé
 | `dfn_params.m` | Tham số, mỗi số ghi nguồn (bài + bảng/phương trình); `src = 'approved'` (mặc định), `'paper'`, `'code'` |
 | `dfn_rhs.m` | Vế phải của hệ DAE (khuếch tán trong hạt tại mọi nút x, điện giải, Butler–Volmer, nhiệt) |
 | `dfn_run.m`, `dfn_cccv.m` | Chạy chuỗi bước: dòng cho trước, giữ áp (ràng buộc đại số), nghỉ |
-| `dfn_aging_state.m`, `dfn_side_reactions.m` | Chỗ móc cho lão hoá ở bước sau (ε, a, màng SEI theo nút; j_tot = j_int + j_phụ) |
+| `dfn_aging_state.m`, `dfn_side_reactions.m`, `dfn_aging_rhs.m` | Lão hoá (khi `aging = true`): ε, a, màng SEI theo nút; j_tot = j_int + j_phụ; vế phải các trạng thái lão hoá |
 | `val_selftest.m`, `val_run_condition.m`, `val_report.m` | Tự kiểm tra và kiểm chứng với dữ liệu xả mở (Zenodo 4864437) |
 
 Workflow `.github/workflows/validate.yml` chạy kiểm chứng (12 điều kiện xả song song) cho các biến thể `approved`, `approved_old` (bộ cũ trước 17/11/2026), `approved_no_stress`, `approved_h_tau` (h nhận dạng từ τ nguội đo được 582 s), `approved_Rc_heat`, `paper`, `code` (thêm `approved_A_only`, `approved_C_only` khi chạy tay với `extra = AC`), và xuất `validation.md`, CSV, hình trong artifact `validation-report`. Sai số báo cho cả "tất cả lần xả" và "bỏ lần xả có số liệu nhiệt bất thường" (GD-23).
@@ -76,6 +76,22 @@ Workflow `.github/workflows/validate.yml` chạy kiểm chứng (12 điều ki�
 - Self-test 0.3C, 25 °C:
   - CC 9386 s, CV 3181 s, nạp 4.422 Ah.
   - x_surf lớn nhất 0.981.
+
+## Lão hoá "5 coupled" trong DFN (bước C)
+
+Bật bằng `par = dfn_params(struct('aging', true))`. Đủ năm cơ chế của Li et al. 2025 và mọi hồi tiếp: SEI hai lớp giới hạn bởi khuếch tán interstitial (cả trên vết nứt), mạ lithium bán thuận nghịch + lithium chết, nứt hạt (luật Paris), LAM do ứng suất ở cả hai cực, tiêu thụ dung môi / cạn khô với reservoir (5 trường hợp), điện trở màng, độ xốp, LLI, LAM → ε_s và a. Tham số: cột "5 coupled" của Li 2025 Table 3. Mỗi phương trình và tham số có nhãn theo bài báo / theo bài gốc (bài in sai) / theo code (bài không ghi) / giả định: [tai_lieu/dac_ta_lao_hoa.md](tai_lieu/dac_ta_lao_hoa.md); giả định GD-50 … GD-64 ở [tai_lieu/gia_dinh.md](tai_lieu/gia_dinh.md).
+
+| File | Vai trò |
+|---|---|
+| `dfn_dryout_update.m`, `dfn_dryout_init.m`, `dfn_set_area.m` | Cạn khô (SI Note 6, (S24)–(S43)), cập nhật trước mỗi ageing set và RPT |
+| `dfn_li_inventory.m` | Sổ sách lithium: hạt, điện giải, SEI, SEI vết nứt, mạ, chết, LAM (bảo toàn chính xác) |
+| `dfn_perm_loss.m` | Mất lithium vĩnh viễn (SEI + SEI vết nứt + Li chết + Li trong vật liệu mất do LAM) của một lần sạc rồi xả về SOC đầu — dùng cho lưới so sánh |
+| `aging/ag_run.m`, `ag_rpt.m`, `ag_cycle.m`, `ag_set.m` | Mô phỏng Expt 2 (70–85 %) và Expt 3 (85–100 %) của Li 2025 / Kirkaldy 2024, có checkpoint; tuỳ chọn nhảy chu kỳ |
+| `aging/ag_selftest.m`, `ag_report.m` | Tự kiểm tra (tương đương DFN khi tốc độ = 0, JPattern, bảo toàn Li, cạn khô) và so sánh với Kirkaldy 2024 / sai số Li 2025 |
+
+Workflow `.github/workflows/aging.yml` (chạy tay): selftest → 12 job song song (2 thí nghiệm × 10/25/40 °C × 2 biến thể V_cv: 4.116 V mặc định và 4.2 V của giao thức), mỗi job tối đa 3 chặng × 5.1 h nối bằng checkpoint → báo cáo `aging_validation.md` (artifact `aging-report`).
+
+KETQUA_LAO_HOA
 
 ## Chạy trên GitHub
 
