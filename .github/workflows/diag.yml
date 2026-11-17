@@ -1,6 +1,8 @@
 name: Chan doan GD-16 (bao hoa be mat hat cuc am khi sac)
 
-# Chan doan: sac CC-CV tu 0 % SOC cho tung bien the tham so (doi mot thu moi lan).
+# Chan doan: (1) sac CC-CV tu 0 % SOC cho tung bien the tham so (doi mot thu moi lan);
+# (2) so cac bien the D_s,n voi du lieu mo Zenodo 4864437: pha SAC CC-CV (chua tung
+# dung de chinh tham so) va pha XA.
 on:
   push:
     branches: [main]
@@ -10,7 +12,11 @@ on:
   workflow_dispatch:
     inputs:
       variants:
-        description: 'Danh sach bien the (JSON), de trong = mac dinh'
+        description: 'Bien the cho phan (1), JSON; de trong = mac dinh'
+        required: false
+        default: ''
+      data_variants:
+        description: 'Bien the cho phan (2), JSON; de trong = mac dinh; [] = bo qua'
         required: false
         default: ''
 
@@ -26,7 +32,7 @@ jobs:
       fail-fast: false
       max-parallel: 20
       matrix:
-        variant: ${{ fromJSON(github.event.inputs.variants || '["base","src_paper","src_code","no_stress","EDs_6e4","Dx2","Dx5","Dx10","Dx30","Dconst","hys_delith","hys_lith","no_film","j0n_x10","brug0","start_y0","grid_fine","grid_li"]') }}
+        variant: ${{ fromJSON(github.event.inputs.variants || '["base","src_paper","no_stress","EDs_6e4","Dx2","Dx3","Dx5","Dx10","Dx30","Dconst","fit_clamp","ocp_end","hys_delith","no_film","j0n_x10","brug0","start_y0","grid_fine"]') }}
     steps:
       - uses: actions/checkout@v4
       - uses: matlab-actions/setup-matlab@v2
@@ -44,23 +50,55 @@ jobs:
           path: results/diag
           if-no-files-found: warn
 
+  data:
+    if: ${{ github.event.inputs.data_variants != '[]' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        variant: ${{ fromJSON(github.event.inputs.data_variants || '["base","Dx2","Dx3","Dx5","Dx10","Dconst"]') }}
+        temp: [0, 10, 25]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tai du lieu mo (Zenodo 10.5281/zenodo.4864437, BSD-3) - khong luu vao repo
+        run: |
+          set -e
+          mkdir -p ext
+          curl -sSL --retry 5 --retry-delay 10 -o ext/tec.zip \
+            "https://zenodo.org/api/records/4864437/files/brosaplanella/TEC-reduced-model-v1.0.zip/content"
+          echo "f9306803d4a2e2a5e27ad9b43596fa12  ext/tec.zip" | md5sum -c -
+          unzip -q ext/tec.zip -d ext/tec
+          mv ext/tec/*/data ext/data
+      - uses: matlab-actions/setup-matlab@v2
+        with:
+          release: R2024b
+          cache: true
+      - name: Du lieu ${{ matrix.variant }} ${{ matrix.temp }} degC
+        uses: matlab-actions/run-command@v2
+        with:
+          command: addpath('src/dfn'); addpath('src/dfn/diag'); diag_data('${{ matrix.variant }}', ${{ matrix.temp }}, 'ext/data', 'results/data');
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: data-${{ matrix.variant }}-${{ matrix.temp }}
+          path: results/data
+          if-no-files-found: warn
+
   report:
-    needs: diag
+    needs: [diag, data]
     if: always()
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
         with:
           path: results
-          pattern: diag-*
           merge-multiple: true
       - name: Tom tat
         run: |
-          for f in results/diag_base.md results/diag_*.md; do
-            [ -f "$f" ] || continue
-            if [ "$f" != results/diag_base.md ] || [ -z "$done" ]; then cat "$f" >> "$GITHUB_STEP_SUMMARY"; echo >> "$GITHUB_STEP_SUMMARY"; fi
-            [ "$f" = results/diag_base.md ] && done=1
-          done
+          ls results | head -100
+          for f in results/diag_*.md; do [ -f "$f" ] && { cat "$f"; echo; } >> "$GITHUB_STEP_SUMMARY"; done
       - uses: actions/upload-artifact@v4
         with:
           name: diag-all

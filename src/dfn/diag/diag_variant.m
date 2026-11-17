@@ -19,7 +19,7 @@ switch name
 end
 par = dfn_params(opt);
 switch name
-    case {'Dx2', 'Dx5', 'Dx10', 'Dx30'}
+    case {'Dx2', 'Dx3', 'Dx5', 'Dx10', 'Dx30'}
         k = str2double(name(3:end));
         par.neg.Ds.Rcor = par.neg.Ds.Rcor*k; par.neg = dfn_Ktable(par.neg);
         desc = sprintf('D_s,n x %g (chi de chan doan)', k);
@@ -28,6 +28,19 @@ switch name
         par.neg.Ds.a = [0 0 0 0 0]; par.neg.Ds.b(1) = log10(3.3e-14); par.neg.Ds.Rcor = 1;
         par.neg = dfn_Ktable(par.neg);
         desc = 'D_s,n = 3.3e-14 m2/s hang so (Chen 2020 T.IX, O''Kane 2022 T.S2), giu E_act va ung suat';
+    case 'fit_clamp'
+        % Ung vien B: ham (S17) x R_cor nhu in, nhung chi dung trong khoang x co so
+        % lieu GITT tho cua O'Regan (data/derived/B_diffusivity.csv, cuc am, moi
+        % nhiet do: x = 0.0085-0.9914); ngoai khoang giu hang so (gia tri tai mep).
+        % Luu y: dfn_Ds (chi dung de in bao cao) van tinh theo ham goc.
+        par.neg = diag_Ktable(par.neg, 0.0084693, 0.99138);
+        desc = 'D_s,n (S17) chi trong khoang x co so lieu tho [0.0085, 0.9914], hang so ngoai khoang';
+    case 'ocp_end'
+        % CHI CHAN DOAN: them vao U_n (ca hai nhanh) so hang (RT/F) ln((1-x)/(1-x+0.01)),
+        % ~0 khi x < 0.95, -> -inf khi x -> 1 (diem ky di "het cho" o x = 1 ma ham (S3)
+        % khong co). Thuc hien bang ban dfn_ocp_neg.m rieng trong diag/ocp_end/.
+        addpath(fullfile(fileparts(mfilename('fullpath')), 'ocp_end'));
+        desc = 'U_n + (RT/F) ln((1-x)/(1-x+0.01)) - chi de chan doan';
     case 'hys_delith'
         par.hys.offset = 1e4;  desc = 'luon dung nhanh delithiation cuc am (m = 1) ca khi sac';
     case 'hys_lith'
