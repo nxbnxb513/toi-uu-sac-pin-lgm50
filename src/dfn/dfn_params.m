@@ -5,7 +5,8 @@ function par = dfn_params(opt)
 %   par = dfn_params(opt)     opt la struct ghi de: Nn, Ns, Np, Nrn, Nrp,
 %                             src ('approved'|'paper'|'code'), E_Ds_n, V_SEI, contact_heat, h,
 %                             Rcontact, stress_diffusion, sei_init ('code'|'paper'), use_tdf,
-%                             dUdT_scale, L_SEI_layer0, ocp_n_branch ('delith'|'hyst'), V_cv
+%                             dUdT_scale, L_SEI_layer0, ocp_n_branch ('delith'|'hyst'), V_cv,
+%                             aging (false|true: bat mo hinh lao hoa "5 coupled", buoc C)
 %
 % BO THAM SO: baseline cua Li et al. 2025 (Nat. Commun. 16:2776) = O'Regan
 % et al. 2022 (Electrochim. Acta 425:140700) + cac muc danh dau * trong
@@ -307,11 +308,72 @@ par.th.contact_heat = getopt(opt, 'contact_heat', false);
 par.th.Ltot  = par.th.Lcc_n + par.neg.L + par.sep.L + par.pos.L + par.th.Lcc_p;
 par.th.hA_V  = par.th.h*par.th.Acool/par.th.Vcell;       % W/m3/K
 
+% ---- LAO HOA "5 coupled" (buoc C; tai_lieu/dac_ta_lao_hoa.md) -----------
+% MAC DINH TAT (aging = false): vector trang thai, ve phai va moi ket qua khong doi so voi
+% truoc buoc C (src/nmpc, src/ekf doc dfn_params/dfn_rhs). aging = true: them cac trang
+% thai lao hoa sau Q (dfn_mesh.m) va bat SEI hai lop (+ tren vet nut), ma lithium ban
+% thuan nghich + lithium chet, ung suat/nut hat (Paris), LAM do ung suat hai cuc, doi do
+% xop, dien tro mang; can kho (dry-out) la buoc cap nhat roi rac giua cac doan
+% (dfn_dryout_update.m). Nhan nguon tung muc: dac_ta_lao_hoa.md (theo bai bao / theo bai
+% goc (bai in sai) / theo code (bai khong ghi) / gia dinh).
+par.aging.on = logical(getopt(opt, 'aging', false));
+ag = struct();
+% [Li-T3] cot "5 coupled" (theo bai bao)
+ag.D_int  = 9.81e-19;     % m2/s  inner SEI lithium interstitial diffusivity
+ag.E_SEI  = 5e3;          % J/mol SEI growth activation energy
+ag.gamma0 = 1e-7;         % 1/s   dead lithium decay constant
+ag.k_Li   = 1e-10;        % m/s   lithium plating kinetic rate constant
+ag.beta_p = 2.98e-18;     % 1/s   positive LAM proportional term
+ag.beta_n = 2.84e-9;      % 1/s   negative LAM proportional term
+ag.k_cr   = 5.29e-25;     % (m/(Pa m^0.5)^m_cr) moi t0 - negative cracking rate (don vi khong in; GD-53)
+% (V_SEI = par.sei.V = 5.22e-5, E_Ds,n = 2e4: o tren, [Li-T3])
+% [Li-T8] (theo bai bao)
+ag.c_int  = 15;           % mol/m3 lithium interstitial reference concentration
+ag.alpha  = par.sei.growth.alpha_layer;   % 0.5 inner SEI reaction proportion
+ag.V_in   = par.sei.V;    % m3/mol (inner = outer, [Li-T3])
+ag.V_out  = par.sei.V;
+ag.V_Li   = 1.3e-5;       % m3/mol lithium metal partial molar volume
+ag.V_EC   = 6.667e-5;     % m3/mol EC partial molar volume
+ag.cEC0   = 4541;         % mol/m3 EC trong jelly roll [Li-T6], reservoir [Li-T8]
+ag.ce_res0 = 1000;        % mol/m3 Li+ trong reservoir [Li-T8]
+ag.R_exc  = 1.0;          % "Initial excessive electrolyte amount" [Li-T8]; V_tot = R_exc.V_pore,0 (GD-54, theo code)
+% Ma lithium (S10): hoa tan alpha_a = 0.35, ma alpha_c = 0.65 (theo bai goc O'Kane 2022; [Li-T8] nhan sai)
+ag.alpha_a = par.lp.alpha_a;
+ag.alpha_c = par.lp.alpha_c;
+% [Li-T9] (theo bai bao): LAM, nut
+ag.m2_n = 2;  ag.m2_p = 2;            % LAM exponential term
+ag.sigc_n = 60e6; ag.sigc_p = 375e6;  % Pa critical stress
+ag.b_cr = 1.12;           % stress intensity factor correction (am)
+ag.m_cr = 2.2;            % Paris' law exponent (am)
+ag.rho_cr = par.crk.rho;  % 1/m2
+ag.l_cr0  = par.crk.l0;   % m
+ag.w_cr   = par.crk.w0;   % m (hang so)
+% t0 trong (S18): bai in "time for one cycle" nhung khong cho gia tri -> 3600 s theo code (GD-53)
+ag.t0_cr = 3600;          % s
+% (S21): bai in beta/t0 nhung khong cho t0; beta co don vi 1/s ([Li-T3]) -> dung truc tiep
+% nhu code (GD-53). Dau: GIAM (O'Kane 2022 chu "decrease"; (S21) in thieu dau tru).
+ag.t0_lam = 1;            % s (beta [1/s] dung truc tiep)
+% nut chi o cuc am (cuc duong khong co k_cr trong bai; code "swelling only") (GD-52)
+% he so ung suat be mat: sigma_t(R) = Omega E/(3(1-nu)) (c_rav - c_surf)  ((S15) tai r = R)
+ag.kst_n = par.neg.Omega*par.neg.E/(3*(1 - par.neg.nu));
+ag.kst_p = par.pos.Omega*par.pos.E/(3*(1 - par.pos.nu));
+% Trang thai dau (BOL)
+ag.L0     = par.sei.L_layer0;       % m moi lop, ca tren be mat va tren vet nut ((S7); GD-02)
+ag.Ltot0  = par.sei.L0;             % m L_SEI,0 = inner + outer (dung trong gamma (S13))
+ag.epsn0  = par.neg.eps_s;          % [Li-T6]
+ag.epsp0  = par.pos.eps_s;
+S0 = 1 + 2*ag.l_cr0*ag.w_cr*ag.rho_cr;
+% L_total.a_n luc dau ((S24)-(S25)); do xop eps_n(t) = eps_n,0 - (L_total.a_n - (L_total.a_n)_0)
+ag.Lta0 = (2*ag.L0 + (S0 - 1)*2*ag.L0)*(3*ag.epsn0/par.neg.Rp);
+ag.Ty_min = 1e-14;        % m chan duoi do day trong mau so (chi de an toan so hoc)
+par.ag = ag;
+
 % ---- Dai luong dan xuat -------------------------------------------------
 % Dung luong moi dien cuc tren mot don vi stoich [Ah]
 par.neg.Qcap = par.neg.cmax*par.neg.eps_s*par.neg.L*par.A*par.F/3600;
 par.pos.Qcap = par.pos.cmax*par.pos.eps_s*par.pos.L*par.A*par.F/3600;
 
+par.opt = opt;                   % tuy chon da dung (de dung lai bo tham so co lao hoa: dfn_perm_loss)
 par.neg = dfn_Ktable(par.neg);   % bang tich phan Kirchhoff cua D_s (GD-15)
 par.pos = dfn_Ktable(par.pos);
 par = dfn_mesh(par);

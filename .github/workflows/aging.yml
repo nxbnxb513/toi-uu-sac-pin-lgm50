@@ -1,0 +1,226 @@
+name: Lao hoa DFN 5 coupled (buoc C)
+
+# Tu kiem tra mo hinh lao hoa (ag_selftest) + mo phong Expt 2 (70-85 %) / Expt 3 (85-100 %)
+# o 10/25/40 C (Li 2025 / Kirkaldy 2024), moi truong hop mot job, chay noi tiep toi 3 chang
+# (checkpoint), so voi du lieu Kirkaldy 2024 va sai so Li 2025 cong bo.
+# jumpcheck: kiem chung phuong phap nhay chu ky (Jmax = 0 = brute force) tren set 1, 25 C.
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "selftest | full (selftest + mo phong + jumpcheck + bao cao)"
+        required: false
+        default: 'full'
+      variants:
+        description: 'Bien the, JSON (default = V_cv 4.116 V; vcv42 = 4.2 V)'
+        required: false
+        default: '["default","vcv42"]'
+      expts:
+        description: 'Thi nghiem, JSON'
+        required: false
+        default: '[2,3]'
+      temps:
+        description: 'Nhiet do (degC), JSON'
+        required: false
+        default: '[10,25,40]'
+      jmax:
+        description: 'Jmax cua phuong phap nhay chu ky (0 = brute force)'
+        required: false
+        default: '20'
+      jumpcheck:
+        description: 'Danh sach Jmax cho kiem chung nhay chu ky (set 1, 25 C, bien the default), JSON; [] = bo qua'
+        required: false
+        default: '[0,50]'
+
+concurrency:
+  group: aging-${{ github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  selftest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+      - uses: matlab-actions/setup-matlab@v2
+        with:
+          release: R2024b
+          cache: true
+      - name: Tu kiem tra lao hoa
+        uses: matlab-actions/run-command@v2
+        with:
+          command: addpath('src/dfn'); addpath('src/dfn/aging'); ag_selftest('results/aging_selftest');
+      - name: Tom tat
+        if: always()
+        run: if [ -f results/aging_selftest/aging_selftest.md ]; then cat results/aging_selftest/aging_selftest.md >> "$GITHUB_STEP_SUMMARY"; fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: aging-selftest
+          path: results/aging_selftest
+
+  run1:
+    needs: selftest
+    if: ${{ github.event.inputs.mode != 'selftest' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        expt: ${{ fromJSON(github.event.inputs.expts || '[2,3]') }}
+        temp: ${{ fromJSON(github.event.inputs.temps || '[10,25,40]') }}
+        variant: ${{ fromJSON(github.event.inputs.variants || '["default","vcv42"]') }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: matlab-actions/setup-matlab@v2
+        with:
+          release: R2024b
+          cache: true
+      - name: Expt ${{ matrix.expt }}, ${{ matrix.temp }} C, ${{ matrix.variant }} (chang 1)
+        uses: matlab-actions/run-command@v2
+        with:
+          command: addpath('src/dfn'); addpath('src/dfn/aging'); ag_run(${{ matrix.expt }}, ${{ matrix.temp }}, 'results/run', struct('variant', '${{ matrix.variant }}', 'Jmax', ${{ github.event.inputs.jmax || 20 }}, 'budget_s', 5.1*3600));
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ck1-e${{ matrix.expt }}-T${{ matrix.temp }}-${{ matrix.variant }}
+          path: results/run
+          retention-days: 14
+
+  run2:
+    needs: run1
+    if: ${{ always() && github.event.inputs.mode != 'selftest' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        expt: ${{ fromJSON(github.event.inputs.expts || '[2,3]') }}
+        temp: ${{ fromJSON(github.event.inputs.temps || '[10,25,40]') }}
+        variant: ${{ fromJSON(github.event.inputs.variants || '["default","vcv42"]') }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: ck1-e${{ matrix.expt }}-T${{ matrix.temp }}-${{ matrix.variant }}
+          path: results/run
+      - name: Da xong o chang truoc?
+        id: st
+        run: if grep -q '^done' results/run/status.txt 2>/dev/null; then echo "done=true" >> "$GITHUB_OUTPUT"; else echo "done=false" >> "$GITHUB_OUTPUT"; fi
+      - uses: matlab-actions/setup-matlab@v2
+        if: steps.st.outputs.done != 'true'
+        with:
+          release: R2024b
+          cache: true
+      - name: Chang 2
+        if: steps.st.outputs.done != 'true'
+        uses: matlab-actions/run-command@v2
+        with:
+          command: addpath('src/dfn'); addpath('src/dfn/aging'); ag_run(${{ matrix.expt }}, ${{ matrix.temp }}, 'results/run', struct('variant', '${{ matrix.variant }}', 'Jmax', ${{ github.event.inputs.jmax || 20 }}, 'budget_s', 5.1*3600));
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ck2-e${{ matrix.expt }}-T${{ matrix.temp }}-${{ matrix.variant }}
+          path: results/run
+          retention-days: 14
+
+  run3:
+    needs: run2
+    if: ${{ always() && github.event.inputs.mode != 'selftest' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        expt: ${{ fromJSON(github.event.inputs.expts || '[2,3]') }}
+        temp: ${{ fromJSON(github.event.inputs.temps || '[10,25,40]') }}
+        variant: ${{ fromJSON(github.event.inputs.variants || '["default","vcv42"]') }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: ck2-e${{ matrix.expt }}-T${{ matrix.temp }}-${{ matrix.variant }}
+          path: results/run
+      - name: Da xong o chang truoc?
+        id: st
+        run: if grep -q '^done' results/run/status.txt 2>/dev/null; then echo "done=true" >> "$GITHUB_OUTPUT"; else echo "done=false" >> "$GITHUB_OUTPUT"; fi
+      - uses: matlab-actions/setup-matlab@v2
+        if: steps.st.outputs.done != 'true'
+        with:
+          release: R2024b
+          cache: true
+      - name: Chang 3
+        if: steps.st.outputs.done != 'true'
+        uses: matlab-actions/run-command@v2
+        with:
+          command: addpath('src/dfn'); addpath('src/dfn/aging'); ag_run(${{ matrix.expt }}, ${{ matrix.temp }}, 'results/run', struct('variant', '${{ matrix.variant }}', 'Jmax', ${{ github.event.inputs.jmax || 20 }}, 'budget_s', 5.1*3600));
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ck3-e${{ matrix.expt }}-T${{ matrix.temp }}-${{ matrix.variant }}
+          path: results/run
+          retention-days: 30
+
+  jumpcheck:
+    needs: selftest
+    if: ${{ github.event.inputs.mode != 'selftest' && github.event.inputs.jumpcheck != '[]' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        expt: [2, 3]
+        jmax: ${{ fromJSON(github.event.inputs.jumpcheck || '[0,50]') }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: matlab-actions/setup-matlab@v2
+        with:
+          release: R2024b
+          cache: true
+      - name: Set 1, 25 C, Jmax = ${{ matrix.jmax }}
+        uses: matlab-actions/run-command@v2
+        with:
+          command: addpath('src/dfn'); addpath('src/dfn/aging'); ag_run(${{ matrix.expt }}, 25, 'results/jc', struct('Jmax', ${{ matrix.jmax }}, 'nsets', 1, 'budget_s', 5.4*3600));
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: jc-e${{ matrix.expt }}-J${{ matrix.jmax }}
+          path: results/jc
+          retention-days: 30
+
+  report:
+    needs: [run3, jumpcheck]
+    if: ${{ always() && github.event.inputs.mode != 'selftest' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: results/all
+          pattern: ck3-*
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          path: results/all
+          pattern: jc-*
+      - uses: matlab-actions/setup-matlab@v2
+        with:
+          release: R2024b
+          cache: true
+      - name: Bao cao
+        uses: matlab-actions/run-command@v2
+        with:
+          command: addpath('src/dfn'); addpath('src/dfn/aging'); ag_report('results/all', 'results/report', 'data/derived');
+      - name: Tom tat
+        if: always()
+        run: if [ -f results/report/aging_validation.md ]; then cat results/report/aging_validation.md >> "$GITHUB_STEP_SUMMARY"; fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: aging-report
+          path: results/report

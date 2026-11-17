@@ -46,7 +46,8 @@ for k = 1:numel(steps)
     Y = Yt.';
     tend = tt(end);
     if ~isempty(ie) && te(end) >= tend
-        names = {'Vmin', 'Vmax', 'Icut', 'Qstop', 'ce_depleted', 'xsn_max', 'xsn_min', 'xsp_max', 'xsp_min'};
+        names = {'Vmin', 'Vmax', 'Icut', 'Qstop', 'ce_depleted', 'xsn_max', 'xsn_min', 'xsp_max', 'xsp_min', ...
+                 'crack_eq_radius', 'porosity_zero'};
         out.reason{k} = names{ie(end)};
         if te(end) > tend
             tt = [tt; te(end)]; Y = [Y, ye(end,:).']; tend = te(end); %#ok<AGROW>

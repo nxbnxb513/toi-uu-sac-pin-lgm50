@@ -40,6 +40,28 @@ ix.thp = (n+1 : n+c.Nrp*Np).'; n = n + c.Nrp*Np;
 ix.ce  = (n+1 : n+N).';        n = n + N;
 ix.T   = n+1;                  n = n + 1;
 ix.Q   = n+1;                  n = n + 1;
+aging = isfield(par, 'aging') && par.aging.on;
+if aging
+    % Trang thai lao hoa (buoc C; chi khi par.aging.on), moi nut x cua cuc am (Nn) / duong (Np):
+    %   Lin, Lout     do day SEI lop trong/ngoai tren be mat hat [m]           (S6)-(S7)
+    %   Lcin, Lcout   do day SEI lop trong/ngoai tren vet nut [m]               (S20)
+    %   cLi, cdl      lithium ma thuan nghich / lithium chet [mol/m3 dien cuc]   (S11)-(S12)
+    %   lcr           chieu dai vet nut [m]                                      (S18)
+    %   epsn, epsp    phan the tich vat lieu hoat tinh eps_s [-]                 (S21)
+    %   xavn, xavp    stoich trung binh the tich cua hat (= sum theta Vsh / sum Vsh; bat bien
+    %                 tuyen tinh cua roi rac hoa, dung cho ung suat; dfn_aging_rhs.m)
+    %   nSEI, nSEIcr  Li da vao SEI be mat / SEI tren vet nut [mol/m3 dien cuc] (so sach)
+    %   nLAMn, nLAMp  Li nam trong vat lieu hoat tinh da mat [mol/m2 dien cuc]  (so sach)
+    %   Qthr          dien luong thong qua tich luy int |I| dt [Ah]
+    ag = struct();
+    for nm = {'Lin', 'Lout', 'Lcin', 'Lcout', 'cLi', 'cdl', 'lcr', 'epsn', 'xavn', 'nSEI', 'nSEIcr'}
+        ag.(nm{1}) = (n+1 : n+Nn).'; n = n + Nn;
+    end
+    ag.epsp = (n+1 : n+Np).'; n = n + Np;
+    ag.xavp = (n+1 : n+Np).'; n = n + Np;
+    ag.nLAMn = n+1; ag.nLAMp = n+2; ag.Qthr = n+3; n = n + 3;
+    ix.ag = ag;
+end
 ix.nd  = n;                    % so trang thai vi phan
 ix.phisn = (n+1 : n+Nn).';     n = n + Nn;
 ix.phisp = (n+1 : n+Np).';     n = n + Np;
@@ -59,6 +81,14 @@ at = zeros(ix.ny,1);
 at(ix.thn) = 1e-7; at(ix.thp) = 1e-7; at(ix.ce) = 1e-6; at(ix.T) = 1e-4;
 at(ix.Q) = 1e-6; at(ix.phisn) = 1e-6; at(ix.phisp) = 1e-6; at(ix.phie) = 1e-6;
 at(ix.jn) = 1e-6; at(ix.jp) = 1e-6; at(ix.H) = 1e-5; at(ix.I) = 1e-6;
+if aging
+    at([ix.ag.Lin; ix.ag.Lout; ix.ag.Lcin; ix.ag.Lcout; ix.ag.lcr]) = 1e-15;   % m
+    at([ix.ag.cLi; ix.ag.cdl; ix.ag.nSEI; ix.ag.nSEIcr]) = 1e-7;              % mol/m3
+    at([ix.ag.epsn; ix.ag.epsp]) = 1e-10;
+    at([ix.ag.xavn; ix.ag.xavp]) = 1e-8;
+    at([ix.ag.nLAMn, ix.ag.nLAMp]) = 1e-10;                                     % mol/m2
+    at(ix.ag.Qthr) = 1e-6;                                                      % Ah
+end
 par.atol = at;
 
 % ---- JPattern (cau truc Jacobian df/dy) --------------------------------
@@ -99,6 +129,7 @@ add(Hp, ix.phisp); add(Hp(1:end-1), ix.phisp(2:end)); add(Hp, ix.jp);
 add(Hp, Mp(end,:)); add(Hp, Mp(end-1,:));
 % phuong trinh dieu khien dong / ap
 add(ix.I, ix.I); add(ix.I, ix.phisp(end)); add(ix.I, ix.T);
+if aging, aging_pattern(); end
 
 S = sparse(vertcat(R{:}), vertcat(C{:}), 1, ix.ny, ix.ny);
 par.S = spones(S);
@@ -111,6 +142,44 @@ par.grp_aa = dfn_color(par.Saa);
         if numel(cc) == 1, cc = repmat(cc, numel(r), 1); end
         if numel(r) == 1, r = repmat(r, numel(cc), 1); end
         R{end+1} = r; C{end+1} = cc; %#ok<AGROW>
+    end
+    function aging_pattern()
+        % Lien ket cua trang thai lao hoa (cuc bo theo nut x). Cac hang chi la so sach
+        % (nSEI, nSEIcr, nLAMn, nLAMp, Qthr: khong trang thai nao phu thuoc vao chung) va
+        % phu thuoc yeu cua T vao do xop qua nhiet dung (dfn_rhocp) KHONG dua vao JPattern:
+        % cac hang day (dense) do se ep moi cot vao mot mau rieng (Jacobian sai phan dat gap
+        % nhieu lan). Bo qua chung chi lam Newton cua ode15s xap xi hon (khong doi nghiem);
+        % aging_selftest.m kiem tra moi phan tu khac 0 con lai nam trong JPattern.
+        G = ix.ag;
+        locN = {G.Lin, G.Lout, G.Lcin, G.Lcout, G.cLi, G.cdl, G.lcr, G.epsn, G.xavn};
+        for k = 1:Nn
+            Kk = cellfun(@(v) v(k), locN).';                      % trang thai lao hoa nut k
+            src = [Kk; ix.phisn(k); phn(k); cen(k); ix.jn(k); ix.T; Mn(end,k); Mn(end-1,k)];
+            addx(Kk, src);                                         % toc do lao hoa tai nut k
+            addx([G.nSEI(k); G.nSEIcr(k)], src);
+            addx(Mn(end,k), Kk);                                   % j_int = j_tot - j_side
+            addx(ix.jn(k), Kk);                                    % R_film, j_side
+            addx(ix.phisn(k), G.epsn(k));                          % a_n
+            addx(Hn(k), Kk);                                       % nhiet (a_n, j_int)
+            addx(ix.H(k), src);
+            nb = max(1, k-1):min(N, k+1);                         % mat ke (do xop -> D_eff, kappa_eff)
+            addx(ix.ce(nb), Kk); addx(ix.phie(nb), Kk); addx(ix.H(nb), Kk);
+            addx(cen(k), src);                                     % d(eps)/dt trong bao toan dien giai
+            addx(G.xavn(k), [ix.jn(k); ix.phisn(k); phn(k); cen(k); ix.T; Mn(end,k); Mn(end-1,k); Kk]);
+        end
+        for k = 1:Np
+            Kp = [G.epsp(k); G.xavp(k)];
+            srcp = [Kp; Mp(end,k); Mp(end-1,k); ix.jp(k); ix.T];
+            addx(Kp, srcp);
+            addx(ix.phisp(k), G.epsp(k)); addx(ix.jp(k), G.epsp(k));
+            addx(cep(k), G.epsp(k)); addx(php(k), G.epsp(k)); addx(Hp(k), G.epsp(k));
+            addx(ix.H(g.ip(k)), Kp);
+        end
+    end
+    function addx(r, cc)
+        % moi cap (r(i), cc(j)) (tich ngoai)
+        [RR, CC] = ndgrid(r(:), cc(:));
+        add(RR(:), CC(:));
     end
     function tri(rows, cols)
         add(rows, cols);

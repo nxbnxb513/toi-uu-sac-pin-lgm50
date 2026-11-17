@@ -9,6 +9,7 @@ on:
     paths:
       - 'src/dfn/**'
       - '!src/dfn/diag/**'   # file chan doan GD-16 khong anh huong kiem chung
+      - '!src/dfn/aging/**'  # mo phong lao hoa dai: workflow aging.yml
       - '.github/workflows/validate.yml'
   workflow_dispatch:
     inputs:

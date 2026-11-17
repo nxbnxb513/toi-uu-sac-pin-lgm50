@@ -61,6 +61,11 @@ loc.eta_film_n = jn.*ag.Rfilm_n; loc.eta_film_p = jp.*ag.Rfilm_p;
 sr  = dfn_side_reactions(par, ag, loc);
 jin = jn - sr.jn;                        % mat do dong dan xen (intercalation)
 jip = jp - sr.jp;
+aging = isfield(par, 'aging') && par.aging.on;
+if aging
+    % [buoc C] ve phai trang thai lao hoa + d(eps_e,n)/dt (dfn_aging_rhs.m)
+    [fa, depsn, da] = dfn_aging_rhs(par, ag, sr, thsn, thsp, jin, jip, I);
+end
 
 eta_n = phisn - phien - Un - jn.*ag.Rfilm_n;
 eta_p = phisp - phiep - Up - jp.*ag.Rfilm_p;
@@ -91,7 +96,13 @@ dphie = diff(phie);
 ie = -kf.*(dphie - 2*(1 - tpf).*tdff.*RTF.*diff(log(cep)))./dxc;   % A/m^2 tai mat trong
 Nf = -Df.*diff(ce)./dxc + tpf.*ie/F;                               % mol/m^2/s
 aj = [ag.as_n.*jn; zeros(Ns,1); ag.as_p.*jp];                      % A/m^3 (tong)
-dce = (-([Nf; 0] - [0; Nf])./g.dx + aj/F)./epe;
+if aging
+    % do xop thay doi theo thoi gian: d(eps c_e)/dt = -dN/dx + a j_tot/F
+    % -> eps dc_e/dt = -dN/dx + a j_tot/F - c_e d(eps)/dt (bao toan Li dien giai chinh xac)
+    dce = (-([Nf; 0] - [0; Nf])./g.dx + aj/F - ce.*[depsn; zeros(Ns + Np,1)])./epe;
+else
+    dce = (-([Nf; 0] - [0; Nf])./g.dx + aj/F)./epe;
+end
 res_phie = ([ie; 0] - [0; ie]) - aj.*g.dx;
 
 % ---- (2) pha ran --------------------------------------------------------
@@ -148,6 +159,7 @@ f(ix.jn)  = res_jn;
 f(ix.jp)  = res_jp;
 f(ix.H)   = res_H;
 f(ix.I)   = res_I;
+if aging, f(1:ix.nd) = f(1:ix.nd) + fa; end
 
 if nargout > 1
     aux.V = V; aux.I = I; aux.T = T; aux.Q = y(ix.Q);
@@ -161,5 +173,12 @@ if nargout > 1
     aux.Qgen = H(N)/par.th.Ltot*par.th.Vcell;        % W, cong suat nhiet vao can bang lumped
     aux.q_parts = [sum(q_ohm_s), sum(q_ohm_e), sum(q_rxn), sum(q_rev), q_cc + q_ct]*par.A;  % W (theo dien tich dien cuc)
     aux.Un = Un; aux.Up = Up; aux.jn = jn; aux.jp = jp;
+    if aging
+        aux.eps_n = epe(g.in); aux.S = ag.S; aux.jSEI = sr.jSEI; aux.jSEIcr = sr.jSEIcr;
+        aux.jLi = sr.jLi; aux.etapl = sr.etapl; aux.sigt_n = da.sigt_n; aux.sigt_p = da.sigt_p;
+        aux.dlcr = da.dlcr; aux.depsn_s = da.depsn_s; aux.depsp_s = da.depsp_s;
+        aux.eps_min = min(epe(g.in)); aux.lcr_max = max(ag.lcr);
+        aux.eta_pl_min = min(sr.etapl);
+    end
 end
 end

@@ -19,5 +19,6 @@ y(ix.phisn) = 0;            % moc the: phi_s = 0 tai current collector am
 y(ix.phie)  = -Un;
 y(ix.phisp) = Up - Un;
 y(ix.jn) = 0; y(ix.jp) = 0; y(ix.H) = 0; y(ix.I) = 0;
+y = dfn_aging_init(par, y);   % [buoc C] trang thai lao hoa BOL (khong lam gi khi par.aging.on = false)
 if g.N < 1, error('luoi rong'); end
 end

@@ -18,4 +18,11 @@ val(8) = (1 - tol) - max(a.thsp);
 val(9) = min(a.thsp) - tol;
 term = ones(9,1);
 dirn = [-1; -1; -1; 0; -1; -1; -1; -1; -1];
+if isfield(par, 'aging') && par.aging.on
+    % [buoc C] vet nut dai bang ban kinh hat (theo code: PyBaMM dung khi l_cr >= R);
+    % do xop cuc am cham 0 (bit kin lo rong)
+    val  = [val; par.neg.Rp - a.lcr_max; a.eps_min - 1e-6];
+    term = [term; 1; 1];
+    dirn = [dirn; -1; -1];
+end
 end
