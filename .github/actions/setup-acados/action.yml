@@ -78,12 +78,16 @@ runs:
       run: |
         A=$HOME/acados
         case "$CG" in /*) ;; *) CG="$PWD/$CG";; esac
+        mkdir -p "$CG"
         {
           echo "ACADOS_INSTALL_DIR=$A"
           echo "ACADOS_SOURCE_DIR=$A"
           echo "ENV_RUN=true"
-          # the generated solver .so must be on LD_LIBRARY_PATH when MATLAB starts
-          # (LD_RUN_PATH alone is not honoured by MATLAB's mex link on R2026b)
+          # The codegen dir must EXIST before MATLAB starts: glibc's ld.so marks
+          # LD_LIBRARY_PATH/RUNPATH dirs that are missing at process start as
+          # nonexistent and never rechecks them, so dlopen of the generated MEX
+          # then fails with "libacados_ocp_solver_<name>.so: cannot open shared
+          # object file" although the file is there.
           echo "LD_LIBRARY_PATH=$A/lib:$CG${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
           echo "LD_RUN_PATH=$CG"
           echo "MATLABPATH=$A/interfaces/acados_matlab_octave:$A/external/casadi-matlab${MATLABPATH:+:$MATLABPATH}"

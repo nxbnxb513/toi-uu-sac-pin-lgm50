@@ -32,20 +32,10 @@ jobs:
         with:
           release: ${{ matrix.release }}
           cache: true
-      - run: mkdir -p "$RUNNER_TEMP/lddebug" "$RUNNER_TEMP/mwork"
       - name: MEX hello world, CasADi, acados closed loop
         uses: matlab-actions/run-command@v2
-        env:
-          LD_DEBUG: libs
-          LD_DEBUG_OUTPUT: ${{ runner.temp }}/lddebug/ld
         with:
           command: cd(fullfile('${{ runner.temp }}','mwork')); addpath('${{ github.workspace }}/src/acados_test'); acados_matlab_test('${{ github.workspace }}/src/acados_test');
-      - name: Dynamic loader trace for the acados solver library
-        if: always()
-        run: |
-          cd "$RUNNER_TEMP/lddebug" 2>/dev/null || exit 0
-          grep -l "libacados_ocp_solver_pend_ocp" ld.* | head
-          for f in $(grep -l "libacados_ocp_solver_pend_ocp" ld.*); do echo "=== $f"; grep -n -B3 -A8 "libacados_ocp_solver_pend_ocp" "$f" | head -80; done
 
   python:
     name: B - acados Python interface (fallback)
