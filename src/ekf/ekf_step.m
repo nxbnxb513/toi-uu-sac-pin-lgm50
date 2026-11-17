@@ -39,6 +39,7 @@ if ~isempty(y)
         R = diag([c.sV_sens^2 + c.sV_model^2, c.sT_sens^2 + c.sT_model^2]) + (dhdI*dhdI.')*(c.sI_sens^2 + c.bI_filter^2);
         S = H*P*H.' + R; S = (S + S.')/2;
         K = (P*H.')/S;
+        if isfield(u, 'hold') && u.hold, K = hold_gain(E, K); end
         if it == 1, nu = y(:) - hv; info.innov = nu; info.S = S; info.nis = nu.'*(S\nu); end
         xn = xp + K*(y(:) - hv - H*(xp - xi));
         xfull(fi) = xn(1:nf);
@@ -56,6 +57,21 @@ P = (P + P.')/2;
 x(ix.soc) = (E.wn.'*x(ix.thn) - E.x0n)/(E.x100n - E.x0n);   % SOC theo dinh nghia GD-24
 xa = [x; rf];
 info.z = ekf_solve_z(E, x, u.I1, Ta, rf);
+end
+
+function K = hold_gain(E, K)
+% "giu" trang thai lao hoa (GD-74, hai thang thoi gian): trong giai doan hoi tu dau,
+% phan hieu chinh khong duoc lam doi rf va luong lithium trao doi duoc (LLI):
+%   - hang rf cua K = 0;
+%   - bo thanh phan lam doi LLI: dx <- dx - w (l.dx)/(l.w), w = huong dich cuc duong
+% P cap nhat dang Joseph nen van dung voi K da sua (bo loc Schmidt / "consider").
+ix = E.ix; fi = E.fi; nf = E.nf;
+K(end, :) = 0;
+l = zeros(1, E.na); w = zeros(E.na, 1);
+[~, ln] = ismember(ix.thn, fi); [~, lp] = ismember(ix.thp, fi);
+l(ln) = -E.Qn*E.wn.'; l(lp) = -E.Qp*E.wp.';
+w(lp) = -1/E.Qp;
+K = K - w*(l*K)/(l*w);
 end
 
 function [hv, H, dhdI] = meas(E, x, rf, I, Ta)

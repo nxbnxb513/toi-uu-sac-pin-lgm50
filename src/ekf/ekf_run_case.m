@@ -55,7 +55,7 @@ for k = 2:n
     if dtk < 1e-3
         nskip = nskip + 1; R = put(R, k, ekf_outputs(E, xa, P, Im(k), Ta), NaN, 0, 0); continue
     end
-    u = struct('I0', Im(k-1), 'I1', Im(k), 'dt', dtk, 'Tamb', Ta);
+    u = struct('I0', Im(k-1), 'I1', Im(k), 'dt', dtk, 'Tamb', Ta, 'hold', t(k) < c.t_hold);
     try
         [xa, P, inf_] = ekf_step(E, xa, P, u, [Vm(k); Tm(k)], c);
     catch err
@@ -83,7 +83,7 @@ if failed
     if n < 130, error('ekf_run_case: EKF dung qua som (buoc %d)', failed); end
 end
 % ---- sai so -------------------------------------------------------------------
-S.tag = tag; if nargin >= 7, S.over = string(over); else, S.over = ""; end S.Tc = Tc; S.crate = crate; S.noise = noise; S.socerr = socerr; S.scen = scen;
+S.tag = tag; if nargin >= 7, S.over = string(over); else, S.over = ""; end; S.Tc = Tc; S.crate = crate; S.noise = noise; S.socerr = socerr; S.scen = scen;
 S.plant_desc = pinfo.desc; S.reason = strjoin(D.reason, '/'); S.t_end = t(end);
 S.failed_at = failed; S.n = n; S.tbuild = tbuild; S.tplant = tplant; S.tekf = tekf; S.ms_per_step = 1e3*tekf/(n-1);
 S.nskip = nskip; S.nproj = sum(R.proj(2:end) > 0);

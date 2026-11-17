@@ -60,6 +60,8 @@ jobs:
           - {temp: 25, crate: 1,   noise: lab,     socerr: 0.1,  scen: nominal,  over: 'n_iter=1'}
           - {temp: 25, crate: 1,   noise: lab,     socerr: 0.1,  scen: mismatch, over: 'P0.rf=0.2;P0.lli=0.05'}
           - {temp: 25, crate: 1,   noise: lab,     socerr: 0.1,  scen: mismatch, over: 'q1h.rf=0.02;sV_model=0.01'}
+          - {temp: 25, crate: 1,   noise: lab,     socerr: 0.1,  scen: mismatch, over: 't_hold=600'}
+          - {temp: 25, crate: 0.5, noise: bms,     socerr: -0.1, scen: mismatch, over: 't_hold=600'}
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-acados

@@ -63,5 +63,6 @@ c.P0.th  = 1e-4;        % stoich (tung vo, doc lap; trang thai nghi la deu nen n
 
 % ---- buoc thoi gian -------------------------------------------------------------
 c.n_iter = 5;           % so lan lap toi da cua buoc cap nhat (1 = EKF thuong; > 1 = EKF lap, GD-73)
+c.t_hold = 0;           % s  giu rf va LLI (khong cap nhat) trong t < t_hold (hai thang thoi gian, GD-74); 0 = tat
 c.dt = 5;               % s chu ky lay mau cua EKF (lua chon so hoc; NMPC giai lai moi 30 s)
 end
