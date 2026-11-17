@@ -16,6 +16,7 @@ switch name
     case 'grid_fine',   opt = struct('Nn', 40, 'Ns', 20, 'Np', 40, 'Nrn', 200, 'Nrp', 60); desc = 'luoi min [40 20 40 | 200 60]';
     case 'grid_li',     opt = struct('Nn', 10, 'Ns', 5, 'Np', 5, 'Nrn', 100, 'Nrp', 20); desc = 'luoi Li 2025 [10 5 5 | 100 20]';
     case 'no_tdf',      opt.use_tdf = false; desc = 'bo thermodynamic factor (GD-18)';
+    case 'Rc17',        opt.Rcontact = 17e-3; desc = 'R_contact = 17 mOhm (11.5 + ~5.5 mOhm thieu o buoc nhay ap 1 s khi bat dau xa, du lieu mo 25 C) - chi chan doan';
     case 'Rc0',         opt.Rcontact = 0; desc = 'R_contact = 0 (SI Table 2 in V = phi_p - phi_n, khong co R_0; GD-20)';
     otherwise,          desc = '';
 end
@@ -85,7 +86,7 @@ switch name
         par.neg.x100 = 0.9014; desc = 'duong can bang lithium qua x100 = 0.9014 (can bang 5 Ah, Li SI Note 8 / Chen 2020)';
     case 'start_y0'
         start = 'y0'; desc = 'bat dau tai (x0, y0) cua Li 2025 thay vi duong can bang';
-    case {'base', 'src_paper', 'src_code', 'no_stress', 'EDs_6e4', 'grid_fine', 'grid_li', 'no_tdf', 'Rc0'}
+    case {'base', 'src_paper', 'src_code', 'no_stress', 'EDs_6e4', 'grid_fine', 'grid_li', 'no_tdf', 'Rc0', 'Rc17'}
     otherwise
         error('diag_variant: bien the khong ro: %s', name);
 end
