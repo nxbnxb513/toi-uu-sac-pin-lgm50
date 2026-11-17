@@ -17,7 +17,7 @@ loss = x(rom.ix.nsei) + x(rom.ix.npl);
 model.cost_y_expr_0 = sqrt(wd)*u;
 model.cost_y_expr   = sqrt(wd)*u;
 model.cost_y_expr_e = sqrt(rom_smax(wl*loss, 0, 1e-3) + eps_cost);   % >= 0 ca khi lap SQP lam loss hoi am
-hpath = [o.V - par.Vmax; o.T - Tmax; dlt - o.eta_sep; o.xs_sep - xsm; tf - bud];
+hpath = [o.V - v_limit(par); o.T - Tmax; dlt - o.eta_sep; o.xs_sep - xsm; tf - bud];
 model.con_h_expr   = hpath;
 model.con_h_expr_e = [soc_t - x(rom.ix.soc); tf - bud];
 nh = numel(hpath);

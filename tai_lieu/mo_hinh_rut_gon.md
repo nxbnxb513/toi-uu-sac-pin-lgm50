@@ -189,7 +189,7 @@ Code: `nmpc_model.m`, `nmpc_build.m` (tạo bộ giải acados **một lần m�
 | Ràng buộc | Dạng | Loại |
 |---|---|---|
 | 0 ≤ I_ch ≤ I_max = 10 A | biên trạng thái | cứng (GD-26) |
-| V ≤ 4.2 V | h(x, z) ≤ 0 | mềm, phạt L1 10⁴/V + L2 10⁵/V² |
+| V ≤ V_cv (`par.V_cv`, chung với CCCV; hiện 4.2 V) | h(x, z) ≤ 0 | mềm, phạt L1 10⁴/V + L2 10⁵/V² |
 | T ≤ T_max = 45 °C | h ≤ 0 | mềm (GD-27) |
 | η_Li,sep ≥ δ = 10 + 35 = 45 mV | h ≤ 0 | mềm (GD-28; +35 mV duyệt 17/11/2026) |
 | x_s,sep ≤ 0.99 | h ≤ 0 | mềm (GD-29) |

@@ -14,7 +14,7 @@ if ~isfield(opt, 'dt'), opt.dt = 10; end
 if ~isfield(opt, 'tmax'), opt.tmax = 12*3600; end
 Csoc = par.neg.Qcap*(par.neg.x100 - par.neg.x0);
 Qstop = -(soc1 - soc0)*Csoc;
-st = dfn_cccv(Crate*par.Qnom, par.Vmax, par.Qnom/50, Tamb, opt.tmax);
+st = dfn_cccv(Crate*par.Qnom, v_limit(par), par.Qnom/50, Tamb, opt.tmax);
 st(1).stop.Qstop = Qstop; st(2).stop.Qstop = Qstop;
 y0 = dfn_state_soc(par, soc0, Tamb);
 trk = aging_track('init', par);
