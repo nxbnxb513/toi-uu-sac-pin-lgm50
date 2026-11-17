@@ -14,7 +14,7 @@ start = 'balance';
 %   'base'         : approved CU (hysteresis cuc am, x100 = 0.8771) - de so sanh
 opt = struct('ocp_n_branch', 'hyst');
 switch name
-    case {'new', 'val_new', 'val_new_both'}
+    case {'new', 'val_new', 'val_new_both', 'val_new_f050', 'val_new_f075', 'val_new_f100', 'val_new_f125'}
         opt.ocp_n_branch = 'delith'; desc = 'cuc am luon nhanh delithiation (GD-40, mac dinh moi)';
     case 'base',        desc = 'bo approved CU (hysteresis cuc am, ocp_n_branch = hyst)';
     case 'src_paper',   opt.src = 'paper'; desc = 'src=paper (he so dien giai nhu SI in: 0.8353, -0.612)';
@@ -96,6 +96,11 @@ switch name
     case 'val_new'
         par.neg.x100 = par.val.x100_fresh;
         desc = [desc ' + x100 = 0.9014 cho cell kiem chung (GD-42)'];
+    case {'val_new_f050', 'val_new_f075', 'val_new_f100', 'val_new_f125'}
+        % GD-43: ap CC->CV / CV = 4.2 (1 - f), f = 0.50 / 0.75 / 1.00 / 1.25 %
+        f = str2double(name(end-2:end))/1e4;
+        par.neg.x100 = par.val.x100_fresh; par.V_cv = par.Vmax*(1 - f);
+        desc = sprintf('%s + x100 = 0.9014 + V_cv = 4.2 (1 - %.2f %%) = %.4f V', desc, 100*f, par.V_cv);
     case 'val_new_both'
         par.neg.x100 = par.val.x100_fresh; par.hys.offset = 1e4;
         desc = [desc ' + x100 = 0.9014 + cuc duong cung luon nhanh xa (m = 1)'];

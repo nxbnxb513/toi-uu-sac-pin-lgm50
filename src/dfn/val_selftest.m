@@ -110,7 +110,7 @@ for s = 1:numel(Pc)
        'max x_surf am trong buoc | min(phi_s - phi_e) phia mang ngan trong buoc (mV) | so lan goi ve phai | thoi gian chay (s) |\n|---|---|---|---|---|---|---|---|---|---|---|---|\n']);
     y = dfn_init_state(par, par.neg.x100, par.pos.y100, T25);
     nm = {'xa 1C', 'nghi', 'sac CC 0.3C', 'giu ap CV 4.2 V', 'nghi'};
-    cc = dfn_cccv(0.3*par.Qnom, par.Vmax, par.Qnom/100, T25);
+    cc = dfn_cccv(0.3*par.Qnom, par.V_cv, par.Qnom/100, T25);
     stl = {struct('mode', 'I', 'value', 5, 'tmax', 2*3600, 'Tamb', T25, 'stop', struct('Vmin', par.Vmin), 'tout', []), ...
            struct('mode', 'rest', 'value', 0, 'tmax', 1800, 'Tamb', T25, 'stop', struct(), 'tout', []), ...
            cc(1), cc(2), ...
@@ -125,8 +125,8 @@ for s = 1:numel(Pc)
         p('| %s | %s | %.1f | %.4f | %.3f | %.2f | %.4f | [%.4f, %.4f] | %.5f | %.1f | %d | %.1f |\n', nm{k}, o.reason{1}, o.t(end), o.V(end), o.I(end), ...
             o.T(end) - 273.15, o.Q(end), o.xsn(end,1), o.xsn(end,2), max(o.xsn(:,2)), 1e3*min(o.dphi_sep), o.nfev(1), w);
         if k == 4
-            p('\n- Pha CV: max|V - 4.2| = %.2e V\n\n', max(abs(o.V - par.Vmax)));
-            assert(max(abs(o.V - par.Vmax)) < 1e-4, 'rang buoc giu ap khong thoa');
+            p('\n- Pha CV: max|V - V_cv| = %.2e V (V_cv = %.4f V)\n\n', max(abs(o.V - par.V_cv)), par.V_cv);
+            assert(max(abs(o.V - par.V_cv)) < 1e-4, 'rang buoc giu ap khong thoa');
         end
         if strcmp(o.reason{1}, 'solver_failed'), p('\n- BO GIAI THAT BAI o buoc "%s" (bo `%s`)\n', nm{k}, srcc{s}); break; end
     end

@@ -75,10 +75,13 @@ for fi = 1:numel(files)
             if hasAfter, R.closure_Ah = (R.q0 - R.q_after) - R.Qtot_exp; end
             tmax = 1.5*R.tCC_exp + 3600;
             tq = unique([0 0.1 1 2 5 10 30 60 t(1) linspace(0, tmax, 500)]);
-            st = mkstep('I', -abs(Icc), tmax, T0K, struct('Vmax', par.Vmax), tq);
+            % mo phong: CC toi par.V_cv roi giu par.V_cv (GD-43); du lieu van nhan CV o 4.2 V
+            R.V_cv = par.V_cv;
+            st = mkstep('I', -abs(Icc), tmax, T0K, struct('Vmax', par.V_cv), tq);
             o = diag_run(par, y0, st);
             R.stop_CC = string(o.reason{1}); R.tCC_sim = o.t(end); R.QCC_sim = -o.Q(end); R.V_end_CC = o.V(end);
             R.xsn_max = max(o.xsn(:,2)); R.dT_endCC_sim = o.T(end) - T0K;
+            R.dphi_sep_min_mV = 1e3*min(o.dphi_sep);
             R.dV_first_sim = interp1(o.t, o.V, t(1)) - R.Vr_before;
             R.dV10_sim = interp1(o.t, o.V, 10) - R.Vr_before; R.dV60_sim = interp1(o.t, o.V, 60) - R.Vr_before;
             tc = min(R.tCC_exp, R.tCC_sim); kk = t <= tc & t >= t(1);
@@ -95,12 +98,13 @@ for fi = 1:numel(files)
             DC = adddec(DC, par, o, 1, R, t, V, Tc, R.Qtot_exp - Q, 1, 70);
             if strcmp(o.reason{1}, 'Vmax')
                 tm = 3*R.tCV_exp + 3600; trest = 7200; if hasAfter, trest = R.rest_after_s; end
-                s2 = [mkstep('V', par.Vmax, tm, T0K, struct('Icut', abs(R.Iend)), linspace(0, tm, 300)), ...
+                s2 = [mkstep('V', par.V_cv, tm, T0K, struct('Icut', abs(R.Iend)), linspace(0, tm, 300)), ...
                       mkstep('rest', 0, trest, T0K, struct(), unique([0 1 10 60 600 linspace(0, trest, 100)]))];
                 o2 = diag_run(par, o.y_end, s2);
                 R.stop_CV = string(o2.reason{1});
                 k2 = o2.step == 1; R.tCV_sim = max(o2.t(k2)); R.Qtot_sim = -o2.Q(find(k2, 1, 'last'));
                 R.xsn_max = max(R.xsn_max, max(o2.xsn(k2,2)));
+                R.dphi_sep_min_mV = min(R.dphi_sep_min_mV, 1e3*min(o2.dphi_sep(k2)));
                 if numel(o2.reason) > 1 && any(o2.step == 2)
                     k3 = find(o2.step == 2); tr0 = o2.t(k3) - o2.t(k3(1));
                     R.Vr_after_sim = o2.V(k3(end));
@@ -204,7 +208,7 @@ f = {'T_degC', 'cell', 'crate_file', 'block', 'after_dis', 'rest_before_s', 'Vr_
      'rest_after_s', 'Vr_after_exp', 'Vr_after10_exp', 'Vr_after600_exp', 'Vlast_phase', ...
      'Vr_after_sim', 'Vr_after10_sim', 'Vr_after600_sim', 'q0', 'q_after', 'q_after_chgbr', 'closure_Ah', ...
      'cap_exp', 'cap_sim', 'rmse_dis_mV', 'rmse_dis90_mV', 'mean_dis90_mV', ...
-     'dV_q025', 'dV_q05', 'dV_q1', 'dV_q2', 'dV_q3', 'dV_q4'};
+     'dV_q025', 'dV_q05', 'dV_q1', 'dV_q2', 'dV_q3', 'dV_q4', 'V_cv', 'dphi_sep_min_mV'};
 R = struct('variant', "", 'type', "", 'stop_CC', "", 'stop_CV', "");
 for i = 1:numel(f), R.(f{i}) = NaN; end
 end
