@@ -235,7 +235,7 @@ Tổng này **bất biến chính xác** của hệ bán rời rạc (mỗi số
 
 Chỉ số tại RPT (lấy ở **cuối bước xả 0.1C**) — [CODE] (`Get_SOH_LLI_LAM`), trừ ghi chú:
 - `LLI = 1 − n_Li,hạt / n_Li,hạt(RPT0)`; `LAM_k = 1 − C_k/C_k(RPT0)`, `C_k = A Σ ε_s dx c_max F/3600`.
-- `SOH = Q_xả,0.1C / Q_xả,0.1C(RPT0)` — [GĐ] GD-60 (code chia cho 4.86491 Ah; với V_cv = 4.116 V dung lượng RPT0 của mô hình khác 4.86491, nên chuẩn hoá theo RPT0 của chính mô hình, như thực nghiệm). Báo cáo ghi cả cách của code (`SOH_code_pct`).
+- `SOH = Q_xả,0.1C / 4.865 Ah` — số cố định in trong bài (code: 4.86491 Ah); người dùng chốt 17/11/2026 (GD-60) dùng cho mọi mô phỏng. Cột phụ `SOH_rpt0_pct` = chuẩn hoá theo RPT0 của chính mô hình.
 - `R_0.1s = (V_1 − V_2)/(I_2 − I_1)`, xung GITT thứ 12, V_2 tại 0.1 s sau khi đặt dòng — [BÀI] [SI] (S1) Note 1. (Code lấy mẫu đầu tiên của bước xả, tức bước nhảy tức thời.)
 - Phân rã LLI: SEI, SEI vết nứt, mạ còn lại, chết, LAM, cạn khô, điện giải — từ sổ sách (không suy ra bằng hiệu số như code).
 
@@ -341,7 +341,7 @@ Các tham số BOL của DFN (Table 6, 7, Note 8–11): như `gia_dinh.md` và `
 | D8 | GITT trong RPT | 25 xung ([BÀI] Note 1) | 24 xung |
 | D9 | Ngưỡng sạc / CV | V_cv = 4.116 V (GD-43, người dùng quyết định; biến thể `vcv42` = 4.2 V) | 4.2 V |
 | D10 | OCP cực âm | một nhánh delithiation (GD-40) | hysteresis (S46)–(S47) |
-| D11 | SOH | chuẩn hoá theo RPT0 của mô hình (GD-60) | chia 4.86491 Ah |
+| D11 | SOH | chia 4.865 Ah (số in trong bài; người dùng chốt, GD-60) | chia 4.86491 Ah |
 | D12 | Chuẩn bị trước chu kỳ (sau RPT) | theo [K24] (Expt 2: nghỉ 1 h, xả 1C 730 mAh, nghỉ 3 h; Expt 3: nghỉ 4 h) | Expt 2: xả 8.756838 phút, nghỉ 3 h; Expt 3: nghỉ 1 h |
 | D13 | Điện giải, j₀, D_e, χ… | bộ "approved" (GD-03, 04, 18, 21, 22) | trùng (trừ chữ số dU_n/dT, GD-08b) |
 | D14 | Bộ giải | ode15s, lưới như code (GD-57), nhảy chu kỳ (GD-58) | CasadiSolver, từng chu kỳ |
