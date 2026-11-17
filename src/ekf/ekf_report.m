@@ -6,8 +6,11 @@ if isempty(L), error('ekf_report: khong co ket qua'); end
 T = [];
 for i = 1:numel(L)
     t = readtable(fullfile(L(i).folder, L(i).name), 'TextType', 'string');
+    if ~ismember('over', t.Properties.VariableNames) || ~isstring(t.over), t.over = repmat("", height(t), 1); end
     if isempty(T), T = t; else, T = [T; t(:, T.Properties.VariableNames)]; end %#ok<AGROW>
 end
+T.over(ismissing(T.over)) = "";
+T.scen = string(T.scen) + regexprep(" " + T.over, "^ $", "");
 T = sortrows(T, {'scen', 'noise', 'Tc', 'crate', 'socerr'});
 writetable(T, fullfile(fileparts(outfile), 'ekf_all.csv'));
 fid = fopen(outfile, 'w');

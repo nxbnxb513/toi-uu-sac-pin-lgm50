@@ -21,6 +21,7 @@ concurrency:
 
 jobs:
   selftest:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -52,10 +53,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - {temp: 25, crate: 1,   noise: lab,     socerr: 0.1,  scen: mismatch}
-          - {temp: 10, crate: 1,   noise: bms_off, socerr: 0.1,  scen: mismatch}
-          - {temp: 25, crate: 0.5, noise: bms,     socerr: -0.1, scen: mismatch}
-          - {temp: 25, crate: 1,   noise: lab,     socerr: 0.1,  scen: nominal}
+          - {temp: 25, crate: 1,   noise: lab,     socerr: 0.1,  scen: mismatch, over: ''}
+          - {temp: 10, crate: 1,   noise: bms_off, socerr: 0.1,  scen: mismatch, over: ''}
+          - {temp: 25, crate: 0.5, noise: bms,     socerr: -0.1, scen: mismatch, over: ''}
+          - {temp: 25, crate: 1,   noise: lab,     socerr: 0.1,  scen: nominal,  over: ''}
+          - {temp: 25, crate: 1,   noise: lab,     socerr: 0.1,  scen: nominal,  over: 'n_iter=1'}
+          - {temp: 25, crate: 1,   noise: lab,     socerr: 0.1,  scen: mismatch, over: 'P0.rf=0.2;P0.lli=0.05'}
+          - {temp: 25, crate: 1,   noise: lab,     socerr: 0.1,  scen: mismatch, over: 'q1h.rf=0.02;sV_model=0.01'}
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-acados
@@ -69,11 +73,11 @@ jobs:
         with:
           command: >
             addpath('${{ github.workspace }}/src/dfn'); addpath('${{ github.workspace }}/src/nmpc'); addpath('${{ github.workspace }}/src/ekf');
-            ekf_run_case(${{ matrix.temp }}, ${{ matrix.crate }}, '${{ matrix.noise }}', ${{ matrix.socerr }}, '${{ matrix.scen }}', '${{ github.workspace }}/results/ekf');
+            ekf_run_case(${{ matrix.temp }}, ${{ matrix.crate }}, '${{ matrix.noise }}', ${{ matrix.socerr }}, '${{ matrix.scen }}', '${{ github.workspace }}/results/ekf', '${{ matrix.over }}');
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: ekf-case-${{ matrix.scen }}-${{ matrix.noise }}-${{ matrix.temp }}-${{ matrix.crate }}-${{ matrix.socerr }}
+          name: ekf-case-${{ matrix.scen }}-${{ matrix.noise }}-${{ matrix.temp }}-${{ matrix.crate }}-${{ matrix.socerr }}-${{ strategy.job-index }}
           path: results/ekf
           if-no-files-found: warn
 

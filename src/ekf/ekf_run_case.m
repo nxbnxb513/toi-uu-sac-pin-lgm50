@@ -1,4 +1,4 @@
-function S = ekf_run_case(Tc, crate, noise, socerr, scen, outdir)
+function S = ekf_run_case(Tc, crate, noise, socerr, scen, outdir, over)
 %EKF_RUN_CASE  Thu EKF voi pin "that" la DFN day du (src/dfn) khi sac CCCV.
 %   S = ekf_run_case(25, 1, 'lab', +0.10, 'mismatch', 'results/ekf')
 %   Tc [degC] nhiet do moi truong; crate: dong CC (1C = par.Qnom = 5 A);
@@ -9,6 +9,7 @@ function S = ekf_run_case(Tc, crate, noise, socerr, scen, outdir)
 % CCCV: CC toi V_cv = par.V_cv (GD-43), CV toi C/50 = 0.1 A (GD-25), dfn_cccv.m.
 % EKF chi dung dong, dien ap, nhiet do be mat DO DUOC (ekf_sensor.m); nhiet do
 % moi truong coi nhu biet (buong nhiet / cam bien moi truong).
+% over: chuoi ghi de so dieu chinh cua ekf_config, vd 'n_iter=5; P0.rf=0.2' (bien the thu).
 if nargin < 6 || isempty(outdir), outdir = 'results/ekf'; end
 if ~exist(outdir, 'dir'), mkdir(outdir); end
 tag = sprintf('T%d_c%02d_%s_e%+03d_%s', Tc, round(10*crate), noise, round(100*socerr), scen);
@@ -16,6 +17,10 @@ fprintf('\n===== EKF %s =====\n', tag);
 Ta = 273.15 + Tc;
 par = dfn_params();
 c = ekf_config(noise);
+if nargin >= 7 && ~isempty(over)
+    c = apply_over(c, over); tag = [tag '_' regexprep(over, '[^A-Za-z0-9]+', '')];
+end
+fprintf('so dieu chinh: %s\n', jsonencode(c));
 tb = tic; E = ekf_build(par); tbuild = toc(tb);
 fprintf('ekf_build: %.1f s (ROM %s: %d trang thai, %d dai so; bo loc %d)\n', tbuild, E.cfg, E.nx, E.nz, E.na);
 [pp, pinfo] = ekf_plant_par(par, scen);
@@ -43,7 +48,7 @@ f = {'soc', 's_soc', 'eta', 's_eta', 'T', 's_T', 'lli', 's_lli', 'rf', 's_rf', '
 for i = 1:numel(f), R.(f{i}) = NaN(n, 1); end
 R = put(R, 1, ekf_outputs(E, xa, P, Im(1), Ta), NaN, 0, 0);
 Xs = NaN(E.na, n); Ps = cell(n, 1); Xs(:, 1) = [xa(E.fi); xa(end)]; Ps{1} = P;
-te = tic; nskip = 0;
+te = tic; nskip = 0; failed = 0;
 for k = 2:n
     dtk = t(k) - t(k-1);
     tw = tic;
@@ -51,7 +56,17 @@ for k = 2:n
         nskip = nskip + 1; R = put(R, k, ekf_outputs(E, xa, P, Im(k), Ta), NaN, 0, 0); continue
     end
     u = struct('I0', Im(k-1), 'I1', Im(k), 'dt', dtk, 'Tamb', Ta);
-    [xa, P, inf_] = ekf_step(E, xa, P, u, [Vm(k); Tm(k)], c);
+    try
+        [xa, P, inf_] = ekf_step(E, xa, P, u, [Vm(k); Tm(k)], c);
+    catch err
+        fprintf('EKF DUNG o buoc %d (t = %.1f s): %s\n', k, t(k), err.message);
+        fprintf('  x: stoich am [%.4g, %.4g], duong [%.4g, %.4g], c_e [%.4g, %.4g], T %.2f, rf %.3f\n', ...
+            min(xa(E.ix.thn)), max(xa(E.ix.thn)), min(xa(E.ix.thp)), max(xa(E.ix.thp)), min(xa(E.ix.ce)), max(xa(E.ix.ce)), xa(E.ix.T), xa(end));
+        failed = k; break
+    end
+    if k <= 4
+        fprintf('  buoc %d: innov V %.2f mV, T %.3f K, NIS %.2f, SOC %.4f, rf %.3f\n', k, 1e3*inf_.innov(1), inf_.innov(2), inf_.nis, xa(E.ix.soc), xa(end));
+    end
     R = put(R, k, ekf_outputs(E, xa, P, Im(k), Ta), inf_.nis, inf_.proj, toc(tw));
     Xs(:, k) = [xa(E.fi); xa(end)]; Ps{k} = P;
     if mod(k, 200) == 0
@@ -60,10 +75,17 @@ for k = 2:n
     end
 end
 tekf = toc(te);
+if failed
+    keep = (1:n).' < failed;
+    t = t(keep); I = I(keep); V = V(keep); T = T(keep); soc_t = soc_t(keep); eta_t = eta_t(keep); xs_t = xs_t(keep);
+    Im = Im(keep); Vm = Vm(keep); Tm = Tm(keep); Xs = Xs(:, keep); Ps = Ps(keep); n = numel(t);
+    fn = fieldnames(R); for i = 1:numel(fn), R.(fn{i}) = R.(fn{i})(keep); end
+    if n < 130, error('ekf_run_case: EKF dung qua som (buoc %d)', failed); end
+end
 % ---- sai so -------------------------------------------------------------------
-S.tag = tag; S.Tc = Tc; S.crate = crate; S.noise = noise; S.socerr = socerr; S.scen = scen;
+S.tag = tag; if nargin >= 7, S.over = string(over); else, S.over = ""; end S.Tc = Tc; S.crate = crate; S.noise = noise; S.socerr = socerr; S.scen = scen;
 S.plant_desc = pinfo.desc; S.reason = strjoin(D.reason, '/'); S.t_end = t(end);
-S.n = n; S.tbuild = tbuild; S.tplant = tplant; S.tekf = tekf; S.ms_per_step = 1e3*tekf/(n-1);
+S.failed_at = failed; S.n = n; S.tbuild = tbuild; S.tplant = tplant; S.tekf = tekf; S.ms_per_step = 1e3*tekf/(n-1);
 S.nskip = nskip; S.nproj = sum(R.proj(2:end) > 0);
 es = R.soc - soc_t; ee = R.eta - eta_t; eT = R.T - T;
 late = t >= 600;
@@ -128,6 +150,16 @@ try
     exportgraphics(fig, fullfile(outdir, ['ekf_' tag '.png']), 'Resolution', 90); close(fig);
 catch err
     fprintf('Khong ve duoc hinh: %s\n', err.message);
+end
+end
+
+function c = apply_over(c, over)
+parts = strtrim(strsplit(over, ';'));
+for i = 1:numel(parts)
+    if isempty(parts{i}), continue; end
+    kv = strtrim(strsplit(parts{i}, '='));
+    f = strsplit(kv{1}, '.');
+    c = setfield(c, f{:}, str2double(kv{2})); %#ok<SFLD>
 end
 end
 
