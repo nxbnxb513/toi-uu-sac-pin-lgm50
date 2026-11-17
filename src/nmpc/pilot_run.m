@@ -1,7 +1,8 @@
 function pilot_run(iw, ik, outdir, romcfg, variant)
 %PILOT_RUN  Chay thu (dot 1): mot vung SOC x mot muc ngan sach, NMPC biet het
 % trang thai, pin "that" = DFN day du, 25 degC, CCCV goc 0.5C.
-%   iw: 1 = 0->50 %, 2 = 25->75 %, 3 = 50->100 %
+%   iw: chi so trong luoi soc_windows.m (15 vung buoc 20 %); dot chay thu dung
+%       3 vung: 3 = 0->60 %, 8 = 20->80 %, 12 = 40->100 %
 %   ik: 1..7 ung voi k = 0.8, 1, 1.25, 1.5, 2, 3, khong gioi han (ngan sach k.T_CCCV)
 % Bo giai acados duoc tao MOT lan trong job (nmpc_build.m), cac thong so chay
 % (SOC dich, ngan sach, trong so, T moi truong) truyen qua tham so acados.
@@ -11,7 +12,7 @@ if nargin < 3, outdir = 'results'; end
 if nargin < 4, romcfg = 'D'; end
 if nargin < 5 || isempty(variant), variant = 'base'; end
 if ~exist(outdir, 'dir'), mkdir(outdir); end
-W = [0 0.5; 0.25 0.75; 0.5 1.0];
+W = soc_windows();
 Ks = [0.8 1 1.25 1.5 2 3 Inf];
 soc0 = W(iw, 1); soc1 = W(iw, 2); k = Ks(ik);
 Ta = 298.15; Cbase = 0.5;

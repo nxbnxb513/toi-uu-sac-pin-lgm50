@@ -68,7 +68,7 @@ jobs:
       fail-fast: false
       max-parallel: 12
       matrix:
-        win: [1, 2, 3]
+        win: [3, 8, 12]   # 0->60, 20->80, 40->100 trong soc_windows.m
         k: [1, 2, 3, 4, 5, 6, 7]
     steps:
       - uses: actions/checkout@v4
@@ -121,7 +121,7 @@ jobs:
           command: >
             cd(fullfile('${{ runner.temp }}', 'mwork'));
             addpath('${{ github.workspace }}/src/dfn'); addpath('${{ github.workspace }}/src/nmpc');
-            pilot_run(1, ${{ matrix.k }}, '${{ github.workspace }}/results/debug', 'D', '${{ matrix.variant }}');
+            pilot_run(3, ${{ matrix.k }}, '${{ github.workspace }}/results/debug', 'D', '${{ matrix.variant }}');
       - uses: actions/upload-artifact@v4
         if: always()
         with:

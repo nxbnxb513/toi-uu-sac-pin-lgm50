@@ -124,7 +124,7 @@ Công thức (đặc tả: `tai_lieu/dac_ta_lao_hoa.md` mục 3, 4, 6.2; phân x
 - Mạ lithium (O'Kane 2022, α_c = 0.65, α_a = 0.35; k_Li = 10⁻¹⁰ m/s, γ₀ = 10⁻⁷ 1/s, Li 2025 Table 3):
   j_pl = F·k_Li·[c_Li·exp(α_a F η_Li/(RT)) − c_e·exp(−α_c F η_Li/(RT))],
   dc_Li/dt = −a_n j_pl/F − γ₀ c_Li (lithium chết tăng γ₀ c_Li).
-- "Lithium mất" = SEI + lithium mạ (gồm cả phần thuận nghịch chưa bóc lại và lithium chết), đơn vị mAh.
+- **Lithium mất vĩnh viễn** = SEI + lithium chết (mAh) — dùng trong hàm mục tiêu và để chấm điểm. Chấm điểm mọi lần chạy (CCCV và NMPC) trên DFN theo cùng một cách: sau lần sạc, xả 0.5C về đúng SOC đầu vùng để lithium mạ thuận nghịch bóc lại (`eval_discharge.m`, GD-32); chỉ số = SEI + lithium chết tích luỹ qua cả sạc và xả. Lithium mạ thuận nghịch (đỉnh khi sạc, còn lại sau xả) chỉ báo để chẩn đoán.
 
 Giữ cố định trong một lần sạc: độ dày SEI, độ nhám S₀ (thay đổi trong một lần sạc cỡ 10⁻⁴ lần giá trị, không đáng kể), và **không** cho dòng phụ chảy ngược vào cân bằng điện tích. Khi bước C xong, cả ROM lẫn chấm điểm phải dùng lão hoá thật của DFN.
 
@@ -182,28 +182,28 @@ Code: `nmpc_model.m`, `nmpc_build.m` (tạo bộ giải acados **một lần m�
 - Điều khiển: u = dI_ch/dτ. Dòng sạc vì vậy liên tục, tuyến tính từng khoảng; ΔI giữa hai nút = u/N.
 - Thời gian chuẩn hoá τ ∈ [0, 1]: dx_ROM/dτ = 3600·t_f·f_ROM(x_ROM, z, I = −I_ch), 0 = g_ROM(x_ROM, z, I).
   Vì t_f là ẩn, cùng một bài toán phục vụ cả hai chế độ "ngân sách" và "không giới hạn".
-- Ẩn đại số z (10) giữ nguyên trong acados (DAE chỉ số 1, tích phân IRK).
+- Ẩn đại số z (10) được **khử ngay trong hàm động lực** (quyết định người dùng 17/11/2026, phương án (a), `rom_elim.m`): z(x, I) là nghiệm của g(x, z, I) = 0, tính bằng Newton của CasADi (`fast_newton`, sinh mã C được, điểm đầu `rom_zguess.m`: phản ứng đều trong mỗi điện cực). acados thấy một ODE thuần dx/dt = f(x, z(x, I), I) — cùng phương trình, không bỏ gì. Đạo hàm của z theo x có từ định lý hàm ẩn (CasADi tự tạo). Kiểm chứng: z và dx/dt trùng ROM DAE tới |Δz| ≤ 2.3·10⁻⁹ (`rom_unit_tests` mục 7); mô phỏng cả lần sạc lệch ROM DAE ≤ 0.002 mV (V, η_Li) và có cùng sai số so với DFN (mục 7).
 
 ### 8.2 Ràng buộc
 
 | Ràng buộc | Dạng | Loại |
 |---|---|---|
 | 0 ≤ I_ch ≤ I_max = 10 A | biên trạng thái | cứng (GD-26) |
-| V ≤ V_cv (`par.V_cv`, chung với CCCV; hiện 4.2 V) | h(x, z) ≤ 0 | mềm, phạt L1 10⁴/V + L2 10⁵/V² |
+| V ≤ V_cv (`par.V_cv`, chung với CCCV; hiện 4.2 V) | h(x) ≤ 0 (cả nút cuối) | mềm, phạt L1 10⁴/V + L2 10⁵/V² |
 | T ≤ T_max = 45 °C | h ≤ 0 | mềm (GD-27) |
 | η_Li,sep ≥ δ = 10 + 35 = 45 mV | h ≤ 0 | mềm (GD-28; +35 mV duyệt 17/11/2026) |
 | x_s,sep ≤ 0.99 | h ≤ 0 | mềm (GD-29) |
 | t_f ≤ ngân sách còn lại | h ≤ 0 | mềm, 10² mỗi giờ |
 | SOC(τ = 1) ≥ SOC đích | h_e ≤ 0 | mềm, 10³ mỗi đơn vị SOC |
 
-Ràng buộc mềm để bài toán luôn có nghiệm. Thứ tự ưu tiên khi không thể thoả cùng lúc: giới hạn vật lý (V, η_Li, x_s) > tới SOC đích > đúng ngân sách thời gian. Nghĩa là nếu ngân sách quá chặt (ví dụ k = 0.8) thì NMPC **sạc lâu hơn ngân sách** chứ không vượt giới hạn vật lý; vòng kín báo phần vượt ngân sách. V, η_Li, x_s phụ thuộc z nên chỉ ràng buộc ở các nút 1…N−1 (acados không cho ràng buộc phụ thuộc z ở nút cuối); vòng kín giải lại mỗi 30 s nên phần cuối được kiểm tra dần.
+Ràng buộc mềm để bài toán luôn có nghiệm. Thứ tự ưu tiên khi không thể thoả cùng lúc: giới hạn vật lý (V, η_Li, x_s) > tới SOC đích > đúng ngân sách thời gian. Nghĩa là nếu ngân sách quá chặt (ví dụ k = 0.8) thì NMPC **sạc lâu hơn ngân sách** chứ không vượt giới hạn vật lý; vòng kín báo phần vượt ngân sách. V, η_Li, x_s được ràng buộc ở mọi nút 1…N (z đã khử nên nút cuối cũng được).
 
 ### 8.3 Hàm mục tiêu
 
-  min ½·w_loss·(n_SEI(τ=1) + n_pl(τ=1)) + ½·w_ΔI·∫ u² dτ
+  min ½·w_loss·(n_SEI(τ=1) + n_dl(τ=1)) + ½·w_ΔI·∫ u² dτ
 
-- n_SEI: lithium mất do SEI **dự báo từ lúc giải** (đặt về 0 ở mỗi lần giải); n_pl: lượng lithium mạ (thuận nghịch + chết) — giá trị đầu là lượng hiện có trên pin; mAh (mục 6).
-- Viết dưới dạng bình phương tối thiểu y_e = √(w_loss·(n_SEI + n_pl) + ε) để dùng Gauss–Newton (đạo hàm bậc nhất của hàm mục tiêu vẫn đúng). Chế độ "ngân sách": t_f ≤ k·T_CCCV − t (co dần). Chế độ "không giới hạn": t_f ≤ 20 h (chỉ là chặn số học; phải báo nếu chạm). SEI tăng theo thời gian nên có điểm tối ưu bên trong.
+- Chỉ tính **lithium mất vĩnh viễn** (quyết định người dùng 17/11/2026: mục tiêu là sạc nhiều lần mà giữ SOH): n_SEI do SEI và n_dl do lithium chết (dn_dl/dt = A·Σ γ₀·c_Li·Δx), **dự báo từ lúc giải** (đặt về 0 ở mỗi lần giải); mAh. Lithium mạ thuận nghịch không vào hàm mục tiêu; mạ bị ngăn bởi ràng buộc η_Li,sep ≥ 45 mV, và lượng mạ vẫn được báo cáo để chẩn đoán.
+- Viết dưới dạng bình phương tối thiểu y_e = √(w_loss·(n_SEI + n_dl) + ε) để dùng Gauss–Newton (đạo hàm bậc nhất của hàm mục tiêu vẫn đúng). Chế độ "ngân sách": t_f ≤ k·T_CCCV − t (co dần). Chế độ "không giới hạn": t_f ≤ 20 h (chỉ là chặn số học; phải báo nếu chạm). SEI tăng theo thời gian nên có điểm tối ưu bên trong.
 - w_ΔI = 10⁻⁴ nhỏ: chỉ để dòng không dao động.
 
 ### 8.4 Thời gian dự báo và chu kỳ lấy mẫu
@@ -211,7 +211,8 @@ Ràng buộc mềm để bài toán luôn có nghiệm. Thứ tự ưu tiên khi
 - Dự báo phủ **toàn bộ phần sạc còn lại** (t_f), chia N = 20 khoảng. Lý do: mục tiêu (lithium mất cả lần sạc) và điều kiện cuối (SOC đích, ngân sách) là của cả lần sạc; cắt ngắn tầm dự báo sẽ phải đặt chi phí cuối thay thế không có cơ sở. Mỗi khoảng dài t_f/20 (ví dụ 140 s khi t_f = 0.78 h).
 - Giải lại mỗi T_s = 30 s (hoặc ngắn hơn khi khoảng đầu < 30 s ở cuối lần sạc). Lý do: hằng số thời gian nhanh nhất cần theo dõi là của điện giải (L²/D_e ≈ 30–60 s) và lớp vỏ ngoài của hạt; nhiệt (τ ≈ 570 s) và khuếch tán trong hạt cực âm (R²/D_s ≈ 10³ s) chậm hơn nhiều.
 - Tích phân: IRK Radau IIA 2 nấc × 8 bước mỗi khoảng. Quét trên CI (`nmpc_irk_sweep.m`, một khoảng 140 s, SOC ≈ 0.47): 2 bước + 20 lần lặp Newton cho NaN (Newton của IRK phân kỳ); 4 bước: sai 3·10⁻³ (max |Δx|); 8 bước: 1.5·10⁻⁴, 14 ms; 16 bước: 4·10⁻⁵, 21 ms.
-- SQP, Gauss–Newton, QP bằng HPIPM. **Không có tìm kiếm đường**: acados v0.6 dừng chương trình (`exit(1)`, "not implemented yet for nz>0") khi tìm kiếm đường phải đánh giá ràng buộc phụ thuộc z. Thay vào đó: Levenberg–Marquardt (= 1) làm vùng tin cậy cho bước SQP, và vùng tin cậy riêng cho t_f (× [1/1.3, 1.3], dịch theo nghiệm và giải lại nếu nghiệm chạm biên vùng). Nếu một lần giải thất bại: giữ dòng hiện tại 30 s, khởi tạo lại đoán đầu bằng mô phỏng ROM.
+- SQP, Gauss–Newton, QP bằng HPIPM, **tìm kiếm đường merit** (dùng được vì mô hình là ODE thuần, ràng buộc chỉ phụ thuộc x), Levenberg–Marquardt 10⁻², và vùng tin cậy cho t_f (× [1/1.3, 1.3], dịch theo nghiệm và giải lại nếu nghiệm chạm biên vùng). Nếu một lần giải thất bại: giữ dòng hiện tại 30 s, khởi tạo lại đoán đầu bằng mô phỏng ROM.
+- Lịch sử (để không lặp lại): bản đầu giữ z là ẩn đại số của acados (DAE). acados v0.6 dừng chương trình (`exit(1)`, "not implemented yet for nz>0") khi tìm kiếm đường phải đánh giá ràng buộc phụ thuộc z; không có tìm kiếm đường thì độ nhạy của IRK cho NaN ở các nút cuối dù bộ tích phân chạy riêng và ode15s đều ổn tại đúng các trạng thái đó.
 
 ### 8.5 Vòng kín
 
