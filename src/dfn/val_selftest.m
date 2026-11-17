@@ -100,10 +100,14 @@ for s = 1:nP
 end
 
 % ---- 4. chu trinh ---------------------------------------------------------
-for s = 1:nP
-    par = P{s};
-    p('\n## 3.%d Chu trinh - bo `%s`: xa 1C toi 2.5 V -> nghi 30 phut -> sac CC 0.3C toi 4.2 V -> giu ap toi C/100 -> nghi 30 phut (25 C)\n\n', s, srcs{s});
-    p('| Buoc | Ly do dung | thoi luong (s) | V cuoi (V) | I cuoi (A) | T cuoi (degC) | Q da xa (Ah) | x_surf am [min, max] | so lan goi ve phai | thoi gian chay (s) |\n|---|---|---|---|---|---|---|---|---|---|\n');
+% Them bo approved CU (cuc am con hysteresis, ocp_n_branch = 'hyst', truoc 17/11/2026) de so sanh.
+Pc = [P, {dfn_params(struct('src', 'approved', 'ocp_n_branch', 'hyst'))}];
+srcc = [srcs, {'approved_old (hyst cuc am)'}];
+for s = 1:numel(Pc)
+    par = Pc{s};
+    p('\n## 3.%d Chu trinh - bo `%s`: xa 1C toi 2.5 V -> nghi 30 phut -> sac CC 0.3C toi 4.2 V -> giu ap toi C/100 -> nghi 30 phut (25 C)\n\n', s, srcc{s});
+    p(['| Buoc | Ly do dung | thoi luong (s) | V cuoi (V) | I cuoi (A) | T cuoi (degC) | Q da xa (Ah) | x_surf am [min, max] | ' ...
+       'max x_surf am trong buoc | min(phi_s - phi_e) phia mang ngan trong buoc (mV) | so lan goi ve phai | thoi gian chay (s) |\n|---|---|---|---|---|---|---|---|---|---|---|---|\n']);
     y = dfn_init_state(par, par.neg.x100, par.pos.y100, T25);
     nm = {'xa 1C', 'nghi', 'sac CC 0.3C', 'giu ap CV 4.2 V', 'nghi'};
     cc = dfn_cccv(0.3*par.Qnom, par.Vmax, par.Qnom/100, T25);
@@ -114,17 +118,17 @@ for s = 1:nP
     prev = '';
     for k = 1:5
         if k == 4 && ~strcmp(prev, 'Vmax')
-            p('| %s | (bo qua: pha CC khong ket thuc o Vmax) | | | | | | | | |\n', nm{k}); continue;
+            p('| %s | (bo qua: pha CC khong ket thuc o Vmax) | | | | | | | | | | |\n', nm{k}); continue;
         end
         tic; o = dfn_run(par, y, stl{k}); w = toc;
         y = o.y_end; prev = o.reason{1};
-        p('| %s | %s | %.1f | %.4f | %.3f | %.2f | %.4f | [%.4f, %.4f] | %d | %.1f |\n', nm{k}, o.reason{1}, o.t(end), o.V(end), o.I(end), ...
-            o.T(end) - 273.15, o.Q(end), o.xsn(end,1), o.xsn(end,2), o.nfev(1), w);
+        p('| %s | %s | %.1f | %.4f | %.3f | %.2f | %.4f | [%.4f, %.4f] | %.5f | %.1f | %d | %.1f |\n', nm{k}, o.reason{1}, o.t(end), o.V(end), o.I(end), ...
+            o.T(end) - 273.15, o.Q(end), o.xsn(end,1), o.xsn(end,2), max(o.xsn(:,2)), 1e3*min(o.dphi_sep), o.nfev(1), w);
         if k == 4
             p('\n- Pha CV: max|V - 4.2| = %.2e V\n\n', max(abs(o.V - par.Vmax)));
             assert(max(abs(o.V - par.Vmax)) < 1e-4, 'rang buoc giu ap khong thoa');
         end
-        if strcmp(o.reason{1}, 'solver_failed'), p('\n- BO GIAI THAT BAI o buoc "%s" (bo `%s`)\n', nm{k}, srcs{s}); break; end
+        if strcmp(o.reason{1}, 'solver_failed'), p('\n- BO GIAI THAT BAI o buoc "%s" (bo `%s`)\n', nm{k}, srcc{s}); break; end
     end
 end
 

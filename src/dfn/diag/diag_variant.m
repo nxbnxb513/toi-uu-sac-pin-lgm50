@@ -1,20 +1,28 @@
 function [par, desc, start] = diag_variant(name)
 %DIAG_VARIANT  Bo tham so cho mot bien the chan doan GD-16 (bao hoa be mat hat
-% cuc am khi sac). Moi bien the doi DUNG MOT thu so voi 'base' (bo mac dinh cua
-% dfn_params). CHI DUNG DE CHAN DOAN: khong phai bo tham so de xuat.
+% cuc am khi sac). Moi bien the doi DUNG MOT thu so voi 'base' (bo approved CU =
+% dfn_params(struct('ocp_n_branch', 'hyst'))), tru cac bien the moi ghi duoi day. CHI DUNG DE CHAN DOAN: khong phai bo tham so de xuat.
 %   start = 'balance' : 0 % SOC = x0 cuc am, cuc duong tren duong can bang
 %                       lithium di qua diem 100 % (x100, y100) (GD-13)
 %           'y0'      : (x0, y0) cua Li 2025 SI Note 8 (nhu val_selftest)
 start = 'balance';
-opt = struct();
+% Cac bien the cu (truoc 17/11/2026) doi MOT thu so voi bo approved CU, tuc cuc am con
+% hysteresis (ocp_n_branch = 'hyst'); giu nguyen de tai lap. Bien the moi (muc A-C da duyet):
+%   'new'          : bo mac dinh moi cua du an (cuc am luon nhanh delithiation, x100 = 0.8771)
+%   'val_new'      : approved moi nhu dung trong kiem chung (cuc am delith + x100 = 0.9014)
+%   'val_new_both' : val_new + cuc duong cung luon nhanh xa (khong hysteresis ca hai cuc)
+%   'base'         : approved CU (hysteresis cuc am, x100 = 0.8771) - de so sanh
+opt = struct('ocp_n_branch', 'hyst');
 switch name
-    case 'base',        desc = 'bo mac dinh cua dfn_params';
+    case {'new', 'val_new', 'val_new_both'}
+        opt.ocp_n_branch = 'delith'; desc = 'cuc am luon nhanh delithiation (GD-40, mac dinh moi)';
+    case 'base',        desc = 'bo approved CU (hysteresis cuc am, ocp_n_branch = hyst)';
     case 'src_paper',   opt.src = 'paper'; desc = 'src=paper (he so dien giai nhu SI in: 0.8353, -0.612)';
     case 'src_code',    opt.src = 'code';  desc = 'src=code (Landesfeind: 0.353, -6.12)';
     case 'no_stress',   opt.stress_diffusion = false; desc = 'tat khuech tan do ung suat (GD-10)';
     case 'EDs_6e4',     opt.E_Ds_n = 6e4; desc = 'E_act D_s,n = 6e4 J/mol (GD-01, cot SEI only)';
-    case 'grid_fine',   opt = struct('Nn', 40, 'Ns', 20, 'Np', 40, 'Nrn', 200, 'Nrp', 60); desc = 'luoi min [40 20 40 | 200 60]';
-    case 'grid_li',     opt = struct('Nn', 10, 'Ns', 5, 'Np', 5, 'Nrn', 100, 'Nrp', 20); desc = 'luoi Li 2025 [10 5 5 | 100 20]';
+    case 'grid_fine',   opt = struct('Nn', 40, 'Ns', 20, 'Np', 40, 'Nrn', 200, 'Nrp', 60, 'ocp_n_branch', 'hyst'); desc = 'luoi min [40 20 40 | 200 60]';
+    case 'grid_li',     opt = struct('Nn', 10, 'Ns', 5, 'Np', 5, 'Nrn', 100, 'Nrp', 20, 'ocp_n_branch', 'hyst'); desc = 'luoi Li 2025 [10 5 5 | 100 20]';
     case 'no_tdf',      opt.use_tdf = false; desc = 'bo thermodynamic factor (GD-18)';
     case 'Rc17',        opt.Rcontact = 17e-3; desc = 'R_contact = 17 mOhm (11.5 + ~5.5 mOhm thieu o buoc nhay ap 1 s khi bat dau xa, du lieu mo 25 C) - chi chan doan';
     case 'Rc0',         opt.Rcontact = 0; desc = 'R_contact = 0 (SI Table 2 in V = phi_p - phi_n, khong co R_0; GD-20)';
@@ -83,7 +91,14 @@ switch name
     case 'x100_fresh'
         % Li 2025 SI Note 8 (tr. 46-47): can bang 5 Ah "fresh" voi x100 = 0.9014 (Chen 2020
         % tr. 13); Li 2025 ha xuong 0.8771 cho cell LG M50T cua Kirkaldy (4.865 Ah).
-        par.neg.x100 = 0.9014; desc = 'duong can bang lithium qua x100 = 0.9014 (can bang 5 Ah, Li SI Note 8 / Chen 2020)';
+        par.neg.x100 = par.val.x100_fresh; desc = 'duong can bang lithium qua x100 = 0.9014 (can bang 5 Ah, Li SI Note 8 / Chen 2020)';
+    case 'new'
+    case 'val_new'
+        par.neg.x100 = par.val.x100_fresh;
+        desc = [desc ' + x100 = 0.9014 cho cell kiem chung (GD-42)'];
+    case 'val_new_both'
+        par.neg.x100 = par.val.x100_fresh; par.hys.offset = 1e4;
+        desc = [desc ' + x100 = 0.9014 + cuc duong cung luon nhanh xa (m = 1)'];
     case 'start_y0'
         start = 'y0'; desc = 'bat dau tai (x0, y0) cua Li 2025 thay vi duong can bang';
     case {'base', 'src_paper', 'src_code', 'no_stress', 'EDs_6e4', 'grid_fine', 'grid_li', 'no_tdf', 'Rc0', 'Rc17'}

@@ -5,7 +5,7 @@ function par = dfn_params(opt)
 %   par = dfn_params(opt)     opt la struct ghi de: Nn, Ns, Np, Nrn, Nrp,
 %                             src ('approved'|'paper'|'code'), E_Ds_n, V_SEI, contact_heat, h,
 %                             Rcontact, stress_diffusion, sei_init ('code'|'paper'), use_tdf,
-%                             dUdT_scale, L_SEI_layer0
+%                             dUdT_scale, L_SEI_layer0, ocp_n_branch ('delith'|'hyst')
 %
 % BO THAM SO: baseline cua Li et al. 2025 (Nat. Commun. 16:2776) = O'Regan
 % et al. 2022 (Electrochim. Acta 425:140700) + cac muc danh dau * trong
@@ -94,6 +94,12 @@ par.neg.brug_s = 0;           % -      [Li-T6] Bruggeman (electrode)
 par.neg.brug_e = 1.5;         % -      [Li-T6] Bruggeman (electrolyte)
 par.neg.x0     = 0.0279;      % stoich tai 0 % SOC   [Li-N8] SI tr. 46-47
 par.neg.x100   = 0.8771;      % stoich tai 100 % SOC [Li-N8]; 28543/32544 [Li-T6]*
+% CHI cho kiem chung voi du lieu mo O'Regan/Brosa Planella (Zenodo 4864437; GD-42, nguoi
+% dung duyet 17/11/2026, muc C): luong lithium cua cell kiem chung = duong can bang qua
+% x100 = 0.9014 (Li 2025 SI Note 8, gia tri cell "fresh" 5 Ah; Chen 2020 tr. 13).
+% KHONG dung o dau khac: bo mac dinh cua du an giu x100 = 0.8771 (LG M50T, Li 2025).
+% Ap dung trong val_run_condition.m (tuy chon 'x100', mac dinh 'fresh').
+par.val.x100_fresh = 0.9014;
 % j0 [Li-N11] pt. S27: 2.668*exp(-4e4/R*(1/T-1/298.15))*(ce/<ce>)^0.208*x^0.792*(1-x)^0.208
 par.neg.j0_ref = 2.668;       % A/m2
 par.neg.j0_E   = 4e4;         % J/mol
@@ -186,6 +192,29 @@ par.dUdT_scale = getopt(opt, 'dUdT_scale', 1e-3);
 % ---- Hysteresis OCP "current sigmoid" [Li-N7] pt. S46-S47 ---------------
 par.hys.k      = 100;         % m2/A
 par.hys.offset = 0.2;         % A/m2
+% Nhanh OCP cuc AM (GD-40, nguoi dung duyet 17/11/2026, muc A):
+%   'delith' (MAC DINH) : luon dung nhanh delithiation (S4) = nhanh xa, ca khi sac va khi
+%                         xa (khong chuyen nhanh hysteresis o cuc am), nhu O'Kane 2022 (SI:
+%                         OCP nhanh xa nhu Chen) va Chen 2020 (tr. 10-11, 16, 22: chi tham so
+%                         hoa nhanh xa); O'Regan 2022 tr. 18 do theo chieu xa. TRAI Li 2025 SI
+%                         Note 7 (zero-state hysteresis S46-S47) - xem tai_lieu/gia_dinh.md.
+%                         Ly do: tai_lieu/dieu_tra_dien_ap_sac.md (buoc nhay dau pha sac
+%                         mo hinh +342 mV, do +69 mV).
+%   'hyst'              : hanh vi cu (Li 2025 SI Note 7): cuc am chuyen nhanh theo sigmoid.
+% Cuc DUONG khong doi: van hysteresis (S46)-(S47) theo sigmoid (dieu tra: doi nhanh
+% cuc duong chi doi +-2 mV).
+par.ocp_n_branch = getopt(opt, 'ocp_n_branch', 'delith');
+if ~any(strcmp(par.ocp_n_branch, {'delith', 'hyst'}))
+    error('dfn_params: ocp_n_branch phai la delith hoac hyst');
+end
+par.hys.n_delith = strcmp(par.ocp_n_branch, 'delith');   % co dung trong dfn_rhs (nhanh)
+
+% ---- Bien an toan the ma lithium cho bo dieu khien (GD-41, duyet 17/11/2026, muc B)
+% Mo hinh KHONG sua phan thieu ~30-38 mV chi co khi sac o ~1 Ah tren cung
+% (tai_lieu/dieu_tra_dien_ap_sac.md muc 0.2). Bu bat dinh: bien an toan ma lithium cua
+% moi bo dieu khien tang them 35 mV:  delta_total = delta_base + par.ctrl.delta_pl_extra.
+% delta_base la gia dinh rieng (GD-28, do bo dieu khien dat). DAY LA NOI DUY NHAT dat so 35 mV.
+par.ctrl.delta_pl_extra = 35e-3;   % V
 
 % ---- Trang thai dau doi (BOL) lien quan toi lao hoa ---------------------
 % Lop SEI ban dau va do xop cuc am: [Li-N9] pt. S7-S11.

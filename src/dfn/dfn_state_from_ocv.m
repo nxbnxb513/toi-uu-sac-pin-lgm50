@@ -22,10 +22,11 @@ y = dfn_init_state(par, xn, yp, T0);
         xn_ = par.neg.x100 - qq/par.neg.Qcap;
         yp_ = par.pos.y100 + qq/par.pos.Qcap;
         m = 0.5*(1 + tanh(par.hys.k*par.hys.offset));
+        if par.hys.n_delith, mn = 1; else, mn = m; end   % cuc am: GD-40
         [Unl, Und, dUn] = dfn_ocp_neg(xn_);
         [Upl, Upd, dUp] = dfn_ocp_pos(yp_);
         dUn = dUn*par.dUdT_scale/1e-3; dUp = dUp*par.dUdT_scale/1e-3;
         v = m*Upl + (1 - m)*Upd + (T0 - par.Tref)*dUp ...
-          - ((1 - m)*Unl + m*Und + (T0 - par.Tref)*dUn);
+          - ((1 - mn)*Unl + mn*Und + (T0 - par.Tref)*dUn);
     end
 end

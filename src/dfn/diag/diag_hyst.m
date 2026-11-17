@@ -239,7 +239,8 @@ y = dfn_init_state(par, xn, yp, T0);
         [Unl, Und, dUn] = dfn_ocp_neg(x); [Upl, Upd, dUp] = dfn_ocp_pos(z);
         dUn = dUn*par.dUdT_scale/1e-3; dUp = dUp*par.dUdT_scale/1e-3;
         if strcmp(br, 'dis'), m = 0.5*(1 + tanh(par.hys.k*par.hys.offset)); else, m = 0; end
-        v = m*Upl + (1 - m)*Upd - ((1 - m)*Unl + m*Und);
+        if par.hys.n_delith, mn = 1; else, mn = m; end   % cuc am: GD-40 (ocp_n_branch)
+        v = m*Upl + (1 - m)*Upd - ((1 - mn)*Unl + mn*Und);
         v = v + (T0 - par.Tref)*(dUp - dUn);
     end
 end

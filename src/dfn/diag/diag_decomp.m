@@ -22,11 +22,12 @@ jn = y(ix.jn); jp = y(ix.jp); I = y(ix.I); iapp = I/par.A;
 RTF = par.R*T/F;
 ag = dfn_aging_state(par, y);
 m = 0.5*(1 + tanh(par.hys.k*(iapp + par.hys.offset)));
+if par.hys.n_delith, mn = 1; else, mn = m; end   % cuc am: GD-40 (nhu dfn_rhs)
 xbn = (g.Vshn.'*thn)/sum(g.Vshn); ybp = (g.Vshp.'*thp)/sum(g.Vshp);   % 1 x N
 xbar = mean(xbn); ybar = mean(ybp);
 [Unl, Und, dUn] = dfn_ocp_neg(xbar); [Upl, Upd, dUp] = dfn_ocp_pos(ybar);
 dUn = dUn*par.dUdT_scale/1e-3; dUp = dUp*par.dUdT_scale/1e-3;
-Un_b = (1 - m)*Unl + m*Und + (T - par.Tref)*dUn;
+Un_b = (1 - mn)*Unl + mn*Und + (T - par.Tref)*dUn;
 Up_b = m*Upl + (1 - m)*Upd + (T - par.Tref)*dUp;
 Un_bdis = Und + (T - par.Tref)*dUn; Up_bdis = Upl + (T - par.Tref)*dUp;
 Un_bchg = Unl + (T - par.Tref)*dUn; Up_bchg = Upd + (T - par.Tref)*dUp;

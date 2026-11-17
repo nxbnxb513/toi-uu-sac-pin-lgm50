@@ -11,14 +11,15 @@ function out = dfn_run(par, y0, steps)
 %           .Vmin, .Vmax [V]; .Icut [A] (|I| giam xuong duoi); .Qstop [Ah] (Q cham gia tri)
 %   .tout   (tuy chon) cac thoi diem [s, tinh tu dau buoc] can xuat ket qua
 % out: .t, .V, .I, .T, .Q, .step, .xsn, .xsp ([min max] stoich be mat), .y_end,
-%      .reason{k}, .nfev(k) (so lan goi ve phai)
+%      .reason{k}, .nfev(k) (so lan goi ve phai), .dphi_sep (phi_s - phi_e cuc am tai nut
+%      phia mang ngan [V])
 %
 % Tich phan: ode15s (NDF, ma tran khoi luong suy bien, JPattern thua), khoi
 % tao nhat quan bang dfn_consistent_init truoc moi buoc.
 ix = par.ix;
 y = y0; t0 = 0;
 out.t = []; out.V = []; out.I = []; out.T = []; out.Q = []; out.step = [];
-out.xsn = []; out.xsp = []; out.eta_pl_min = []; out.Qgen = []; out.ce_min = []; out.ce_max = [];
+out.xsn = []; out.xsp = []; out.dphi_sep = []; out.eta_pl_min = []; out.Qgen = []; out.ce_min = []; out.ce_max = [];
 out.reason = cell(1, numel(steps)); out.nfev = zeros(1, numel(steps));
 for k = 1:numel(steps)
     ctl = make_ctl(steps(k));
@@ -56,16 +57,17 @@ for k = 1:numel(steps)
         out.reason{k} = 'solver_failed';
     end
     nt = numel(tt);
-    V = zeros(nt,1); I = V; T = V; Q = V; xsn = zeros(nt,2); xsp = xsn; epl = V; Qg = V; cmin = V; cmax = V;
+    V = zeros(nt,1); I = V; T = V; Q = V; xsn = zeros(nt,2); xsp = xsn; epl = V; Qg = V; cmin = V; cmax = V; dsep = V;
     for i = 1:nt
         [~, a] = dfn_rhs(tt(i), Y(:,i), par, ctl);
         V(i) = a.V; I(i) = a.I; T(i) = a.T; Q(i) = a.Q;
         xsn(i,:) = [min(a.thsn), max(a.thsn)]; xsp(i,:) = [min(a.thsp), max(a.thsp)];
         epl(i) = a.eta_pl_min; Qg(i) = a.Qgen; cmin(i) = a.ce_min; cmax(i) = a.ce_max;
+        dsep(i) = a.dphi_n(end);
     end
     out.t = [out.t; t0 + tt]; out.V = [out.V; V]; out.I = [out.I; I]; out.T = [out.T; T];
     out.Q = [out.Q; Q]; out.step = [out.step; k*ones(nt,1)];
-    out.xsn = [out.xsn; xsn]; out.xsp = [out.xsp; xsp];
+    out.xsn = [out.xsn; xsn]; out.xsp = [out.xsp; xsp]; out.dphi_sep = [out.dphi_sep; dsep];
     out.eta_pl_min = [out.eta_pl_min; epl]; out.Qgen = [out.Qgen; Qg];
     out.ce_min = [out.ce_min; cmin]; out.ce_max = [out.ce_max; cmax];
     out.nfev(k) = nfev;

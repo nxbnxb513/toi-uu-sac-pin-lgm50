@@ -45,12 +45,8 @@ xsn  = min(max(thsn, 1e-8), 1 - 1e-8);
 xsp  = min(max(thsp, 1e-8), 1 - 1e-8);
 
 % ---- OCP voi hysteresis "current sigmoid" (Li 2025 SI Note 7, S46-S47) --
-m = 0.5*(1 + tanh(par.hys.k*(iapp + par.hys.offset)));   % 1: xa/nghi, 0: sac
-[Unl, Und, dUn] = dfn_ocp_neg(xsn);
-[Upl, Upd, dUp] = dfn_ocp_pos(xsp);
-dUn = dUn*par.dUdT_scale/1e-3; dUp = dUp*par.dUdT_scale/1e-3;   % GD-08
-Un = (1 - m)*Unl + m*Und + (T - par.Tref)*dUn;
-Up = m*Upl + (1 - m)*Upd + (T - par.Tref)*dUp;
+% Cuc am: nhanh theo par.ocp_n_branch (GD-40; mac dinh luon nhanh delithiation).
+[Un, Up, dUn, dUp] = dfn_ocp_mix(par, xsn, xsp, iapp, T);
 
 % ---- dong hoc ----------------------------------------------------------
 cen = cep(g.in); cepos = cep(g.ip);

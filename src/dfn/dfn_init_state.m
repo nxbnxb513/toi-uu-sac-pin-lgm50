@@ -9,10 +9,11 @@ y(ix.T)   = T0;
 y(ix.Q)   = 0;
 % Tai I = 0 ham sigmoid chon nhanh xa (offset 0.2 A/m2): am delithiation, duong lithiation
 m = 0.5*(1 + tanh(par.hys.k*par.hys.offset));
+if par.hys.n_delith, mn = 1; else, mn = m; end   % cuc am: GD-40 (ocp_n_branch)
 [Unl, Und, dUn] = dfn_ocp_neg(xn);
 [Upl, Upd, dUp] = dfn_ocp_pos(yp);
 dUn = dUn*par.dUdT_scale/1e-3; dUp = dUp*par.dUdT_scale/1e-3;
-Un = (1 - m)*Unl + m*Und + (T0 - par.Tref)*dUn;
+Un = (1 - mn)*Unl + mn*Und + (T0 - par.Tref)*dUn;
 Up = m*Upl + (1 - m)*Upd + (T0 - par.Tref)*dUp;
 y(ix.phisn) = 0;            % moc the: phi_s = 0 tai current collector am
 y(ix.phie)  = -Un;

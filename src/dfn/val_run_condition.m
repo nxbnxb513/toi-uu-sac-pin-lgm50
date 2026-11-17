@@ -1,9 +1,14 @@
-function val_run_condition(cstr, Tdeg, datadir, outdir)
+function val_run_condition(cstr, Tdeg, datadir, outdir, x100mode)
 %VAL_RUN_CONDITION  Kiem chung mot dieu kien xa (C-rate, nhiet do) voi du lieu mo.
 %   cstr    : '0p1' | '0p5' | '1' | '2'  (C-rate nhu trong ten file)
 %   Tdeg    : 0 | 10 | 25 (degC)
 %   datadir : thu muc data/ cua TEC-reduced-model (Zenodo 10.5281/zenodo.4864437)
 %   outdir  : thu muc ket qua
+%   x100mode: (tuy chon) luong lithium cua CELL KIEM CHUNG (GD-42, duyet 17/11/2026, muc C)
+%             'fresh' (MAC DINH): duong can bang qua x100 = par.val.x100_fresh = 0.9014
+%                       (Li 2025 SI Note 8, cell "fresh" 5 Ah) cho moi bien the tru approved_old
+%             'li2025': giu x100 = 0.8771 cua bo mac dinh (nhu truoc 17/11/2026)
+%             Chi anh huong kiem chung; bo tham so mac dinh cua du an KHONG doi.
 % Voi MOI cell va MOI lan xa trong file: mo phong tu trang thai dau cua du lieu
 %   - trang thai lithium ban dau: OCV(mo hinh) = ap nghi do duoc ngay truoc khi xa
 %   - T ban dau = T moi truong = nhiet do be mat cell do duoc ngay truoc khi xa (GD-09)
@@ -11,6 +16,9 @@ function val_run_condition(cstr, Tdeg, datadir, outdir)
 % roi tinh RMSE dien ap va nhiet do so voi du lieu, cho 6 bien the mo hinh
 % (xem danh sach ben duoi).
 if ischar(Tdeg) || isstring(Tdeg), Tdeg = str2double(Tdeg); end
+if nargin < 5 || isempty(x100mode), x100mode = 'fresh'; end
+x100mode = char(x100mode);
+if ~any(strcmp(x100mode, {'fresh', 'li2025'})), error('val_run_condition: x100mode phai la fresh hoac li2025'); end
 cstr = char(cstr);
 tag = sprintf('%sC_%ddegC', cstr, Tdeg);
 od = fullfile(outdir, ['cond_' tag]);
@@ -28,18 +36,29 @@ crate = str2double(strrep(cstr, 'p', '.'));
 %   approved_Rc_heat   : approved + nhiet I^2.R_contact trong can bang nhiet (GD-05)
 %   paper              : de so sanh - dung nhu Li 2025 in, ke ca cho in sai (0.8353, -0.612 ...)
 %   code               : de so sanh - gia tri ma nguon tac gia (khac approved: dQ (S7) 0.13509 Ah)
+%   approved_old       : bo approved CU (truoc 17/11/2026): cuc am con hysteresis (ocp_n_branch =
+%                        'hyst') va x100 = 0.8771 (khong ap dung x100mode) - de so sanh cu/moi
+% Cac bien the tren (tru approved_old) dung bo mac dinh moi: cuc am luon nhanh delithiation (GD-40)
+% va, voi x100mode = 'fresh', x100 = 0.9014 (GD-42).
 % Nhiet do mo hinh (lumped, mot gia tri) duoc so voi cap nhiet GIUA than cell.
 pb = dfn_params(struct('src', 'approved'));
 h_tau = dfn_rhocp(pb, Tdeg + 273.15, dfn_aging_state(pb, []))*pb.th.Vcell/(582*pb.th.Acool);
 fprintf('h suy tu tau = 582 s: %.2f W/m2/K\n', h_tau);
-vname = {'approved', 'approved_no_stress', 'approved_h_tau', 'approved_Rc_heat', 'paper', 'code'};
+vname = {'approved', 'approved_no_stress', 'approved_h_tau', 'approved_Rc_heat', 'paper', 'code', 'approved_old'};
 pars  = {pb, ...
          dfn_params(struct('src', 'approved', 'stress_diffusion', false)), ...
          dfn_params(struct('src', 'approved', 'h', h_tau)), ...
          dfn_params(struct('src', 'approved', 'contact_heat', true)), ...
          dfn_params(struct('src', 'paper')), ...
-         dfn_params(struct('src', 'code'))};
+         dfn_params(struct('src', 'code')), ...
+         dfn_params(struct('src', 'approved', 'ocp_n_branch', 'hyst'))};
 nv = numel(vname);
+if strcmp(x100mode, 'fresh')
+    for v = 1:nv
+        if ~strcmp(vname{v}, 'approved_old'), pars{v}.neg.x100 = pars{v}.val.x100_fresh; end
+    end
+end
+fprintf('x100mode = %s: x100 = %s (%s)\n', x100mode, mat2str(cellfun(@(q) q.neg.x100, pars), 5), strjoin(vname, ', '));
 par0 = pars{1};
 fprintf('=== %s: %d file, luoi [%d %d %d | %d %d], %d an ===\n', tag, numel(files), ...
     par0.cfg.Nn, par0.cfg.Ns, par0.cfg.Np, par0.cfg.Nrn, par0.cfg.Nrp, par0.ix.ny);
