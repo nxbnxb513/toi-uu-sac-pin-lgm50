@@ -1,0 +1,62 @@
+name: Mo phong sac toi uu
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  # 20 job song song: 10 muc SOC bat dau x 2 muc dong baseline.
+  windows:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        lo: [0, 10, 20, 30, 40, 50, 60, 70, 80, 90]
+        cbase: [0.3, 1.0]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: matlab-actions/setup-matlab@v2
+        with:
+          cache: true
+      - name: Chay cac vung sac bat dau tu ${{ matrix.lo }} %, baseline ${{ matrix.cbase }}C
+        uses: matlab-actions/run-command@v2
+        with:
+          command: addpath('src'); run_window(${{ matrix.lo }}, ${{ matrix.cbase }});
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: window-lo${{ matrix.lo }}-c${{ matrix.cbase }}
+          path: results/
+          if-no-files-found: warn
+
+  report:
+    needs: windows
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: results
+          pattern: window-*
+      - uses: matlab-actions/setup-matlab@v2
+        with:
+          cache: true
+      - name: Gop ket qua va chay minh hoa EKF
+        uses: matlab-actions/run-command@v2
+        with:
+          command: addpath('src'); try, make_report('results', 'results'); catch e, disp(e.message); end; run_ekf_demo();
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bao-cao-tong-hop
+          path: |
+            results/summary.csv
+            results/summary.md
+            results/*.png
+            results/ekf_demo.*
+          if-no-files-found: warn

@@ -1,0 +1,5 @@
+.DS_Store
+# Bai bao va toan van: khong dua len repo vi ban quyen
+tai_lieu/*.pdf
+tai_lieu/toan_van_trich_xuat/
+results/
