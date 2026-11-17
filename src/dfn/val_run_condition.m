@@ -24,9 +24,16 @@ crate = str2double(strrep(cstr, 'p', '.'));
 %   Rc_heat   : them nhiet I^2.R_contact vao can bang nhiet (GD-05)
 %   no_stress : tat khuech tan do ung suat (DFN nhu mo ta trong bai/SI; GD-10)
 %   h15       : h = 15 W/m2/K nhu O'Regan 2022 (tr. 32) thay cho h = 20 cua Li 2025
-vname = {'base', 'Rc_heat', 'no_stress', 'h15'};
-pars  = {dfn_params(), dfn_params(struct('contact_heat', true)), ...
-         dfn_params(struct('stress_diffusion', false)), dfn_params(struct('h', 15))};
+%   h_tau     : h suy tu hang so thoi gian nguoi do duoc tau = 582 s (trung vi, data/ket_qua_du_lieu.md
+%               muc A.3) va nhiet dung cua mo hinh: h = rho.c_p,eff.V_cell/(tau.A_cool)
+% Nhiet do mo hinh (lumped, mot gia tri) duoc so voi cap nhiet GIUA than cell.
+pb = dfn_params();
+h_tau = dfn_rhocp(pb, Tdeg + 273.15, dfn_aging_state(pb, []))*pb.th.Vcell/(582*pb.th.Acool);
+fprintf('h suy tu tau = 582 s: %.2f W/m2/K\n', h_tau);
+vname = {'base', 'Rc_heat', 'no_stress', 'h15', 'h_tau'};
+pars  = {pb, dfn_params(struct('contact_heat', true)), ...
+         dfn_params(struct('stress_diffusion', false)), dfn_params(struct('h', 15)), ...
+         dfn_params(struct('h', h_tau))};
 nv = numel(vname);
 par0 = pars{1};
 fprintf('=== %s: %d file, luoi [%d %d %d | %d %d], %d an ===\n', tag, numel(files), ...
@@ -60,7 +67,8 @@ for fi = 1:numel(files)
             end
             rows(end+1,:) = {tag, vname{v}, crate, Tdeg, str2double(cellid), si, s.Vrest0, s.T0, s.Imean, sim.q0, ...
                 1e3*m.rmseV, 1e3*m.maxV, m.rmseT, m.maxT, 1e3*m.rmseVr, m.rmseTr, ...
-                s.cap, m.cap_sim, m.Tend_exp, m.Tend_sim, sim.out.reason{1}, wall, sum(sim.out.nsteps)}; %#ok<AGROW>
+                s.cap, m.cap_sim, m.Tend_exp, m.Tend_sim, s.dTpos, s.dTneg, pars{v}.th.h, ...
+                sim.out.reason{1}, wall, sum(sim.out.nsteps)}; %#ok<AGROW>
             sims{v} = sim;
         end
         runs(end+1) = struct('cell', cellid, 'idis', si, 'seg', s, 'sims', {sims}); %#ok<AGROW>
@@ -70,7 +78,8 @@ if isempty(rows), error('Khong co lan xa hop le nao cho %s', tag); end
 
 vn = {'cond', 'variant', 'crate', 'T_degC', 'cell', 'discharge', 'Vrest_V', 'T0_degC', 'I_A', 'q0_Ah', ...
       'rmseV_mV', 'maxerrV_mV', 'rmseT_K', 'maxerrT_K', 'rmseV_rest_mV', 'rmseT_rest_K', ...
-      'cap_exp_Ah', 'cap_sim_Ah', 'Tend_exp_degC', 'Tend_sim_degC', 'stop_reason', 'wall_s', 'ode_steps'};
+      'cap_exp_Ah', 'cap_sim_Ah', 'Tend_exp_degC', 'Tend_sim_degC', 'dTpos_exp_K', 'dTneg_exp_K', 'h_W_m2K', ...
+      'stop_reason', 'wall_s', 'ode_steps'};
 Tb = cell2table(rows, 'VariableNames', vn);
 writetable(Tb, fullfile(od, 'metrics.csv'));
 

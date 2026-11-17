@@ -19,7 +19,7 @@ y = y0; t0 = 0;
 out.t = []; out.V = []; out.I = []; out.T = []; out.Q = []; out.step = [];
 out.xsn = []; out.xsp = []; out.eta_pl_min = []; out.Qgen = []; out.ce_min = []; out.ce_max = [];
 out.reason = cell(1, numel(steps)); out.nsteps = zeros(1, numel(steps));
-out.nfail = zeros(1, numel(steps)); out.nfev = zeros(1, numel(steps));
+out.nfail = zeros(1, numel(steps)); out.nfev = zeros(1, numel(steps)); out.npd = zeros(1, numel(steps));
 for k = 1:numel(steps)
     ctl = make_ctl(steps(k));
     [y, ok] = dfn_consistent_init(0, y, par, ctl);
@@ -62,6 +62,17 @@ for k = 1:numel(steps)
     out.eta_pl_min = [out.eta_pl_min; epl]; out.Qgen = [out.Qgen; Qg];
     out.ce_min = [out.ce_min; cmin]; out.ce_max = [out.ce_max; cmax];
     out.nsteps(k) = sol.stats.nsteps; out.nfail(k) = sol.stats.nfailed; out.nfev(k) = sol.stats.nfevals;
+    out.npd(k) = sol.stats.npds;
+    if strcmp(out.reason{k}, 'solver_failed')
+        g = par.grid; yf = Y(:,end);
+        thn = reshape(yf(ix.thn), g.Nrn, g.Nn); thp = reshape(yf(ix.thp), g.Nrp, g.Np);
+        fprintf(['dfn_run: BO GIAI THAT BAI o buoc %d (mode %s) tai t = %.3f s: V = %.4f, I = %.4f, T = %.2f K\n', ...
+            '  x_surf am [%.4f, %.4f], duong [%.4f, %.4f]; theta am [%.4f, %.4f], duong [%.4f, %.4f]\n', ...
+            '  ce [%.1f, %.1f] mol/m3; max|d theta| giua hai vo ke: am %.4f, duong %.4f\n'], ...
+            k, ctl.mode, tend, V(end), I(end), T(end), xsn(end,1), xsn(end,2), xsp(end,1), xsp(end,2), ...
+            min(thn(:)), max(thn(:)), min(thp(:)), max(thp(:)), cmin(end), cmax(end), ...
+            max(max(abs(diff(thn,1,1)))), max(max(abs(diff(thp,1,1)))));
+    end
     y = Y(:,end); t0 = t0 + tend;
     if strcmp(out.reason{k}, 'solver_failed'), break; end
 end

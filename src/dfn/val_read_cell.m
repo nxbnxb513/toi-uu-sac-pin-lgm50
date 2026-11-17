@@ -4,6 +4,7 @@ function d = val_read_cell(fname)
 % File co 15 dong tieu de, 1 dong ten cot, 1 dong don vi, roi du lieu; moi
 % dong ket thuc bang dau phay.
 % Tra ve: d.t [s], d.V [V], d.I [A, > 0 la SAC nhu trong file], d.Tcell [degC],
+% (d.Tcell la cap nhiet GIUA than cell: LogTempMid, hoac LogTemp001 o cell chi co mot cap nhiet)
 % d.Tamb [degC, NaN neu file khong co cam bien moi truong], d.status (cellstr),
 % d.tstep [s], d.seg (cac doan xa, xem duoi).
 txt = fileread(fname);
@@ -31,9 +32,11 @@ has = @(nm) any(strcmp(names, nm));
 % Cam bien nhiet (theo tec_reduced_model/process_experimental_data.py):
 %   co LogTempMid: cell = LogTempMid, moi truong = LogTemp001 (neu co)
 %   khong:         cell = LogTemp001, moi truong = LogTemp002 (neu co)
-d.Tamb = nan(n,1);
+d.Tamb = nan(n,1); d.Tpos = nan(n,1); d.Tneg = nan(n,1);
 if has('LogTempMid')
     d.Tcell = col('LogTempMid');
+    if has('LogTempPositive'), d.Tpos = col('LogTempPositive'); end
+    if has('LogTempNegative'), d.Tneg = col('LogTempNegative'); end
     if has('LogTemp001'), d.Tamb = col('LogTemp001'); end
 else
     d.Tcell = col('LogTemp001');
@@ -45,7 +48,7 @@ isd = strcmp(d.status, 'DCH');
 isp = strcmp(d.status, 'PAU');
 ds = find(isd & ~[false; isd(1:end-1)]);      % dong dau cua moi doan xa
 seg = struct('t', {}, 'V', {}, 'I', {}, 'T', {}, 'Vrest0', {}, 'T0', {}, 'Tamb0', {}, ...
-             'tr', {}, 'Vr', {}, 'Tr', {}, 'cap', {}, 'Imean', {});
+             'tr', {}, 'Vr', {}, 'Tr', {}, 'cap', {}, 'Imean', {}, 'dTpos', {}, 'dTneg', {});
 for k = 1:numel(ds)
     a = ds(k);
     b = a; while b < n && isd(b+1), b = b + 1; end
@@ -64,6 +67,8 @@ for k = 1:numel(ds)
     % dong trung binh theo thoi gian va dung luong xa (tich phan hinh thang)
     s.cap = trapz(s.t, s.I)/3600;
     s.Imean = s.cap*3600/(s.t(end) - s.t(1));
+    % do tang nhiet cuoi pha xa o hai dau cell (chi mot so cell co 3 cap nhiet)
+    s.dTpos = d.Tpos(b) - d.Tpos(p); s.dTneg = d.Tneg(b) - d.Tneg(p);
     seg(end+1) = s; %#ok<AGROW>
 end
 d.seg = seg;

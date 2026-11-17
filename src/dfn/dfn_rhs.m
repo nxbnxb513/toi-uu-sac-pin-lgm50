@@ -72,11 +72,12 @@ res_jn = eta_n - 2*RTF*asinh(jin./(2*j0n));
 res_jp = eta_p - 2*RTF*asinh(jip./(2*j0p));
 
 % ---- (1) khuech tan trong hat ------------------------------------------
-Dfn  = dfn_Ds(par.neg, 0.5*(thn(1:end-1,:) + thn(2:end,:)), T, par);
-fln  = [zeros(1,Nn); Dfn.*diff(thn,1,1)/g.drn; -(jin.')/(F*par.neg.cmax)];
+% thong luong D dx/dr tai mat vo = (K(x_{i+1}) - K(x_i))/dr (bien doi Kirchhoff, dfn_Ktable.m)
+Kn   = dfn_Kint(par.neg, thn, T, par);
+fln  = [zeros(1,Nn); diff(Kn,1,1)/g.drn; -(jin.')/(F*par.neg.cmax)];
 dthn = (g.r2fn(2:end).*fln(2:end,:) - g.r2fn(1:end-1).*fln(1:end-1,:))./g.Vshn;
-Dfp  = dfn_Ds(par.pos, 0.5*(thp(1:end-1,:) + thp(2:end,:)), T, par);
-flp  = [zeros(1,Np); Dfp.*diff(thp,1,1)/g.drp; -(jip.')/(F*par.pos.cmax)];
+Kp   = dfn_Kint(par.pos, thp, T, par);
+flp  = [zeros(1,Np); diff(Kp,1,1)/g.drp; -(jip.')/(F*par.pos.cmax)];
 dthp = (g.r2fp(2:end).*flp(2:end,:) - g.r2fp(1:end-1).*flp(1:end-1,:))./g.Vshp;
 
 % ---- (3),(4) dien giai --------------------------------------------------

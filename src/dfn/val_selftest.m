@@ -49,29 +49,7 @@ p('\n## 2. Chu trinh xa 1C -> nghi 30 phut -> sac CC-CV 0.3C / 4.2 V / C-100 -> 
 st = struct('mode', 'I', 'value', 5, 'tmax', 600, 'Tamb', T25, 'stop', struct('Vmin', par.Vmin), 'tout', []);
 tic; o1 = dfn_run(par, y100, st); w1 = toc;
 ymid = o1.y_end;
-st2(1) = struct('mode', 'I', 'value', 5, 'tmax', 2*3600, 'Tamb', T25, 'stop', struct('Vmin', par.Vmin), 'tout', []);
-st2(2) = struct('mode', 'rest', 'value', 0, 'tmax', 1800, 'Tamb', T25, 'stop', struct(), 'tout', []);
-cc = dfn_cccv(0.3*par.Qnom, par.Vmax, par.Qnom/100, T25);
-st2(3) = cc(1); st2(4) = cc(2);
-st2(5) = struct('mode', 'rest', 'value', 0, 'tmax', 1800, 'Tamb', T25, 'stop', struct(), 'tout', []);
-tic; o2 = dfn_run(par, ymid, st2); w2 = toc;
-nm = {'xa 1C (tiep)', 'nghi', 'sac CC 0.3C', 'giu ap CV', 'nghi'};
-p('| Buoc | Ly do dung | t cuoi buoc (s) | V cuoi (V) | I cuoi (A) | T cuoi (degC) | Q (Ah) | so buoc ode | buoc hong |\n|---|---|---|---|---|---|---|---|---|\n');
-p('| xa 1C 600 s | %s | %.1f | %.4f | %.3f | %.2f | %.4f | %d | %d |\n', o1.reason{1}, o1.t(end), o1.V(end), o1.I(end), o1.T(end) - 273.15, o1.Q(end), o1.nsteps(1), o1.nfail(1));
-for k = 1:5
-    i = find(o2.step == k, 1, 'last');
-    p('| %s | %s | %.1f | %.4f | %.3f | %.2f | %.4f | %d | %d |\n', nm{k}, o2.reason{k}, o2.t(i), o2.V(i), o2.I(i), o2.T(i) - 273.15, o2.Q(i), o2.nsteps(k), o2.nfail(k));
-end
-p('\n- Thoi gian chay: xa 600 s: %.1f s; chu trinh con lai: %.1f s (may GitHub Actions)\n', w1, w2);
-assert(~any(strcmp([o1.reason, o2.reason], 'solver_failed')), 'bo giai that bai trong chu trinh');
-assert(strcmp(o2.reason{1}, 'Vmin') && strcmp(o2.reason{3}, 'Vmax') && strcmp(o2.reason{4}, 'Icut'), 'ly do dung khong dung');
-i3 = find(o2.step == 3, 1, 'last'); i4 = o2.step == 4;
-p('- Chuyen CC -> CV: V = %.5f V, dong lien tuc %.4f -> %.4f A; trong pha CV: max|V - 4.2| = %.2e V\n', ...
-    o2.V(i3), o2.I(i3), o2.I(find(i4, 1)), max(abs(o2.V(i4) - par.Vmax)));
-assert(max(abs(o2.V(i4) - par.Vmax)) < 1e-4, 'rang buoc giu ap khong thoa');
-p('- Dung luong xa 1C tu diem 100 %% SOC: %.4f Ah; dung luong sac lai: %.4f Ah\n', o1.Q(end) + (o2.Q(find(o2.step == 1, 1, 'last')) - o2.Q(1)), ...
-    o2.Q(find(o2.step == 2, 1, 'last')) - o2.Q(end));
-
+p('- xa 1C 600 s: %d buoc ode, %d hong, %d Jacobian, %.1f s\n', o1.nsteps(1), o1.nfail(1), o1.npd(1), w1);
 % ---- 2. JPattern --------------------------------------------------------
 p('\n## 3. Kiem tra JPattern\n\n');
 ctlI = struct('mode', 'I', 'value', 5, 'Tamb', T25);
@@ -111,6 +89,31 @@ p('- Li roi cuc am: %.6f mol; Li vao cuc duong: %.6f mol; I.t/F = %.6f mol\n', n
 p('- Li trong dien giai: %.8f -> %.8f mol (sai lech tuong doi %.2e)\n', e1, e2, abs(e2 - e1)/e1);
 assert(abs((n1 - n2) - dq) < 1e-4*dq && abs((p2 - p1) - dq) < 1e-4*dq, 'khong bao toan lithium pha ran');
 assert(abs(e2 - e1)/e1 < 1e-6, 'khong bao toan lithium dien giai');
+
+p('\n## Chu trinh (tiep)\n\n');
+st2(1) = struct('mode', 'I', 'value', 5, 'tmax', 2*3600, 'Tamb', T25, 'stop', struct('Vmin', par.Vmin), 'tout', []);
+st2(2) = struct('mode', 'rest', 'value', 0, 'tmax', 1800, 'Tamb', T25, 'stop', struct(), 'tout', []);
+cc = dfn_cccv(0.3*par.Qnom, par.Vmax, par.Qnom/100, T25);
+st2(3) = cc(1); st2(4) = cc(2);
+st2(5) = struct('mode', 'rest', 'value', 0, 'tmax', 1800, 'Tamb', T25, 'stop', struct(), 'tout', []);
+tic; o2 = dfn_run(par, ymid, st2); w2 = toc;
+nm = {'xa 1C (tiep)', 'nghi', 'sac CC 0.3C', 'giu ap CV', 'nghi'};
+p('| Buoc | Ly do dung | t cuoi buoc (s) | V cuoi (V) | I cuoi (A) | T cuoi (degC) | Q (Ah) | so buoc ode | buoc hong | so Jacobian |\n|---|---|---|---|---|---|---|---|---|---|\n');
+p('| xa 1C 600 s | %s | %.1f | %.4f | %.3f | %.2f | %.4f | %d | %d | %d |\n', o1.reason{1}, o1.t(end), o1.V(end), o1.I(end), o1.T(end) - 273.15, o1.Q(end), o1.nsteps(1), o1.nfail(1), o1.npd(1));
+for k = 1:5
+    i = find(o2.step == k, 1, 'last');
+    if isempty(i), continue; end
+    p('| %s | %s | %.1f | %.4f | %.3f | %.2f | %.4f | %d | %d | %d |\n', nm{k}, o2.reason{k}, o2.t(i), o2.V(i), o2.I(i), o2.T(i) - 273.15, o2.Q(i), o2.nsteps(k), o2.nfail(k), o2.npd(k));
+end
+p('\n- Thoi gian chay: xa 600 s: %.1f s; chu trinh con lai: %.1f s (may GitHub Actions)\n', w1, w2);
+assert(~any(strcmp([o1.reason, o2.reason], 'solver_failed')), 'bo giai that bai trong chu trinh');
+assert(strcmp(o2.reason{1}, 'Vmin') && strcmp(o2.reason{3}, 'Vmax') && strcmp(o2.reason{4}, 'Icut'), 'ly do dung khong dung');
+i3 = find(o2.step == 3, 1, 'last'); i4 = o2.step == 4;
+p('- Chuyen CC -> CV: V = %.5f V, dong lien tuc %.4f -> %.4f A; trong pha CV: max|V - 4.2| = %.2e V\n', ...
+    o2.V(i3), o2.I(i3), o2.I(find(i4, 1)), max(abs(o2.V(i4) - par.Vmax)));
+assert(max(abs(o2.V(i4) - par.Vmax)) < 1e-4, 'rang buoc giu ap khong thoa');
+p('- Dung luong xa 1C tu diem 100 %% SOC: %.4f Ah; dung luong sac lai: %.4f Ah\n', o1.Q(end) + (o2.Q(find(o2.step == 1, 1, 'last')) - o2.Q(1)), ...
+    o2.Q(find(o2.step == 2, 1, 'last')) - o2.Q(end));
 
 % ---- 5. hoi tu luoi ------------------------------------------------------
 p('\n## 5. Hoi tu luoi (xa tu 100 %% SOC toi 2.5 V; so voi luoi min [40 20 40 | 200 60])\n\n');

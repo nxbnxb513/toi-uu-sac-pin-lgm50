@@ -185,6 +185,8 @@ par.th.hA_V  = par.th.h*par.th.Acool/par.th.Vcell;       % W/m3/K
 par.neg.Qcap = par.neg.cmax*par.neg.eps_s*par.neg.L*par.A*par.F/3600;
 par.pos.Qcap = par.pos.cmax*par.pos.eps_s*par.pos.L*par.A*par.F/3600;
 
+par.neg = dfn_Ktable(par.neg);   % bang tich phan Kirchhoff cua D_s (GD-15)
+par.pos = dfn_Ktable(par.pos);
 par = dfn_mesh(par);
 end
 
