@@ -69,6 +69,7 @@ for ik = iks(:).'
         R = [];
     end
     row = pilot_row(iw, soc0, soc1, Cbase, Tamb_C, k, romcfg, variant, cc, cv, cl, R, C, cfgn);
+    row.job_wall_s = toc(tjob);    % tu dau pilot_run (gom CCCV + tao bo giai) toi khi xong lan vong kin nay
     writetable(struct2table(row), fullfile(outdir, ['pilot_' tag '.csv']));
     if isempty(R), continue; end
     K = R.solve;
@@ -142,7 +143,8 @@ nanf = {'t_charge_s', 'soc_end', 'nmpc_perm_mAh', 'nmpc_perm_sei_mAh', 'nmpc_per
     'nmpc_Vmax', 'nmpc_eta_min_mV', 'nmpc_xs_max', 'nmpc_Tmax_C', ...
     'viol_V_mV', 'viol_T_K', 'viol_eta_mV', 'viol_xs', 'viol_budget_s', 'n_solves', 'n_fail', 'n_status0', 'n_status2', ...
     'n_status_other', 'solve_mean_ms', 'solve_median_ms', 'solve_p95_ms', 'solve_max_ms', 'wall_solve_mean_ms', ...
-    'sqp_mean', 'sqp_max', 'closed_loop_wall_s', 'plant_wall_s'};
+    'sqp_mean', 'sqp_max', 'closed_loop_wall_s', 'plant_wall_s', 'lin_mean_ms', 'sim_mean_ms', 'qp_mean_ms', 'glob_mean_ms', ...
+    'n_status2_warm', 'max_iter_warm'};
 for i = 1:numel(nanf), row.(nanf{i}) = NaN; end
 row.nmpc_reason = 'error'; row.dis_reason = '';
 if isempty(R), return; end
@@ -161,4 +163,7 @@ row.solve_mean_ms = 1e3*mean(K.time_tot); row.solve_median_ms = 1e3*median(K.tim
 q = sort(K.time_tot); row.solve_p95_ms = 1e3*q(max(1, ceil(0.95*numel(q)))); row.solve_max_ms = 1e3*max(K.time_tot);
 row.wall_solve_mean_ms = 1e3*mean(K.wall); row.sqp_mean = mean(K.sqp_iter); row.sqp_max = max(K.sqp_iter);
 row.closed_loop_wall_s = R.wall; row.plant_wall_s = R.plant_wall;
+row.lin_mean_ms = 1e3*mean(K.time_lin); row.sim_mean_ms = 1e3*mean(K.time_sim);
+row.qp_mean_ms = 1e3*mean(K.time_qp); row.glob_mean_ms = 1e3*mean(K.time_glob);
+row.max_iter_warm = C.opt.max_iter_warm; row.n_status2_warm = sum(st == 2 & K.max_iter == C.opt.max_iter_warm);
 end

@@ -36,6 +36,13 @@ for i = 1:height(T)
         r.viol_V_mV, r.viol_eta_mV, r.viol_xs, r.viol_T_K, r.viol_budget_s, r.n_solves, r.n_fail, r.n_status_other, ...
         r.solve_mean_ms, r.solve_median_ms, r.solve_p95_ms, r.solve_max_ms, r.sqp_mean, r.sqp_max, r.closed_loop_wall_s, r.plant_wall_s);
 end
+p('\n## Thoi gian chay (moi job = mot vung x dong x k)\n\n');
+p('| Vung | CCCV | k | job (s) | tao bo giai (s) | vong kin (s) | DFN (s) | lan giai | lin / sim / qp / glob TB (ms) | status 2 khi khoi dong nong |\n|---|---|---|---|---|---|---|---|---|---|\n');
+for i = 1:height(T)
+    r = T(i, :);
+    p('| %s | %gC | %g | %.0f | %.0f | %.0f | %.0f | %d | %.0f / %.0f / %.0f / %.0f | %d |\n', r.window, r.Cbase, r.k, r.job_wall_s, r.build_s, ...
+        r.closed_loop_wall_s, r.plant_wall_s, r.n_solves, r.lin_mean_ms, r.sim_mean_ms, r.qp_mean_ms, r.glob_mean_ms, r.n_status2_warm);
+end
 p('\nTham so NMPC: I_max = %g A, T_s = %g s, N = %g (nmpc_config.m, gia_dinh.md GD-26..GD-30). Bien the so hoc: %s.\n', T.Imax_A(1), T.Ts_s(1), T.N(1), strjoin(unique(T.variant), ', '));
 fclose(fid);
 writetable(T, fullfile(outdir, 'pilot_all.csv'));
