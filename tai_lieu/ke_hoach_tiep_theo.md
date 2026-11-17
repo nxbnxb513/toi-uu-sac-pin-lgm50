@@ -90,13 +90,23 @@ Mỗi bước: viết code → đẩy lên → đọc kết quả CI → sửa �
 - Ràng buộc: V ≤ 4.2 V, nhiệt độ, quá thế mạ lithium có biên an toàn.
 - Pin "thật" trong mô phỏng là DFN đầy đủ với tham số bị làm lệch.
 
-**Bước H. Bốn phương án so sánh cho từng vùng sạc**
-1. CCCV (baseline 0.3C và 1C);
-2. Profile tối ưu tính sẵn, áp vòng hở;
-3. NMPC biết hết trạng thái;
-4. NMPC + EKF.
+**Bước H. Các phương án so sánh cho từng vùng sạc (cập nhật 17/11/2026)**
+1. CCCV (baseline). Ngưỡng chuyển sang giữ áp là `par.V_cv` dùng chung.
+2. **Sạc nhiều bậc (bảng tra) rút ra từ kết quả tối ưu.** Đây là mức "dùng được ngay ngoài đời"; người dùng yêu cầu thêm ngày 17/11/2026.
+   - Dạng: dòng sạc là hằng số theo từng dải SOC và từng nhiệt độ môi trường, có thể theo cả ngân sách thời gian k.
+   - Rút bảng từ profile tối ưu tính sẵn của **một tập vùng sạc "huấn luyện"**, rồi đánh giá trên **mọi** vùng. Không lấy bảng từ chính trường hợp đang chấm.
+   - Vẫn phải chịu đủ ràng buộc an toàn; nếu một bậc vi phạm thì tự giảm dòng (luật đơn giản, ghi rõ).
+3. Profile tối ưu tính sẵn, áp vòng hở.
+4. NMPC biết hết trạng thái (cận trên lý tưởng).
+5. NMPC + EKF (thực tế, chỉ dùng cảm biến).
+6. **Phân tích tách hiệu ứng:** tối ưu tính sẵn chỉ với giới hạn điện áp và dòng như CCCV, không có ràng buộc an toàn. So với (3) để thấy phần lợi do tối ưu dòng và phần chi phí do bắt sạc an toàn.
 
-So sánh phải công bằng: cùng thời gian sạc, hoặc báo cả thời gian và lão hoá.
+Quy tắc công bằng:
+- CCCV cũng được kiểm tra bằng đúng các ràng buộc an toàn. Báo rõ khi CCCV mạ lithium, làm bề mặt hạt đầy, hoặc quá nhiệt.
+- Bộ tối ưu khởi đầu từ đường CCCV.
+- Trường hợp không có cách sạc an toàn nào trong ngân sách thời gian thì ghi "không thể sạc an toàn trong thời gian này", không bỏ qua.
+- Lão hoá = lithium mất vĩnh viễn (SEI + lithium chết), đo sau khi sạc rồi xả về SOC đầu vùng. Lithium mạ tạm thời chỉ thống kê.
+- **Chờ người dùng xác nhận:** khi k > 1, có cho CCCV nghỉ đến cùng tổng thời gian k·T_CCCV trước khi chấm hay không (SEI vẫn lớn khi pin nằm yên).
 
 **Thiết kế so sánh do người dùng chốt (17/11/2026)**
 
@@ -109,14 +119,12 @@ Với mỗi trường hợp (vùng sạc × mức dòng CCCV × nhiệt độ m�
 
 | Chiều của lưới | Giá trị | Số mức |
 |---|---|---|
-| Vùng sạc | bắt đầu 0–95 %, kết thúc cao hơn, **bước 5 %** (người dùng chốt lưới mịn) | 210 |
+| Vùng sạc | **lưới thưa hơn bước 10 %** (người dùng muốn ít trường hợp; bước cụ thể chờ chốt) | < 55 |
 | Dòng CCCV | 0.3C, 0.5C, 1C (2C nếu có nguồn cho phép) | 3–4 |
 | Nhiệt độ môi trường | 10, 25, 40 °C | 3 |
 | Ngân sách thời gian k | 0.8; 1; 1.25; 1.5; 2; 3; không giới hạn | 7 |
-| Phương pháp | tối ưu tính sẵn; NMPC biết hết trạng thái; NMPC + EKF | 3 |
+| Phương pháp | bảng nhiều bậc; tối ưu tính sẵn; NMPC biết hết trạng thái; NMPC + EKF; tối ưu không ràng buộc an toàn (tách hiệu ứng) | 5 |
 
-
-Tổng số trường hợp: 210 vùng × 3 mức dòng × 3 nhiệt độ × 7 mức thời gian × 3 phương pháp ≈ 39 700 bài toán tối ưu, cộng 210 × 3 × 3 = 1 890 lần chạy CCCV.
 
 **Chạy trên GitHub Actions, tận dụng 20 job song song**
 - Repo công khai: tối đa 20 job Linux chạy cùng lúc; mỗi job tối đa 6 giờ; một workflow tối đa 256 job trong ma trận. Đặt `max-parallel: 20`; một lượt chạy xếp hàng được 256 job, tức tối đa khoảng 20 × 6 h mỗi đợt 20 job.
