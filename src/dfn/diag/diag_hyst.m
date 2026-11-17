@@ -27,11 +27,16 @@ for fi = 1:numel(files)
     code(strcmp(d.status, 'PAU')) = 1; code(strcmp(d.status, 'CHA')) = 2; code(strcmp(d.status, 'DCH')) = 3;
     bs = find([true; diff(code) ~= 0]); be = [bs(2:end) - 1; numel(code)];
     seenDis = false; did167 = false;
+    bc = code(bs); bl = be - bs + 1;
+    fprintf('  file %s: %d khoi [%s]\n', files(fi).name, numel(bs), sprintf('%d(%d) ', [bc bl].'));
     for b = 1:numel(bs)
-        if ~(code(bs(b)) == 2 || code(bs(b)) == 3) || be(b) - bs(b) < 10, continue; end
-        if b == 1 || code(bs(b-1)) ~= 1, continue; end
-        ischa = code(bs(b)) == 2;
-        a = bs(b); e = be(b); pz = be(b-1);
+        if ~(bc(b) == 2 || bc(b) == 3) || bl(b) < 10, continue; end
+        % khoi nghi lien truoc / lien sau (bo qua cac khoi trang thai khac, ngan)
+        bp = b - 1; while bp >= 1 && bc(bp) == 0 && bl(bp) < 5, bp = bp - 1; end
+        bn = b + 1; while bn <= numel(bs) && bc(bn) == 0 && bl(bn) < 5, bn = bn + 1; end
+        if bp < 1 || bc(bp) ~= 1, continue; end
+        ischa = bc(b) == 2;
+        a = bs(b); e = be(b); pz = be(bp);
         R = blankrow();
         R.variant = string(variant); R.T_degC = Tdeg; R.cell = cellid; R.crate_file = crt; R.block = b;
         R.type = string(ternary(ischa, 'CHA', 'DCH')); R.after_dis = double(seenDis);
@@ -40,9 +45,9 @@ for fi = 1:numel(files)
         R.t_first = t(1); R.dt_med = median(diff(t));
         R.dV_first_exp = V(1) - R.Vr_before;
         R.dV10_exp = interp_ok(t, V, 10) - R.Vr_before; R.dV60_exp = interp_ok(t, V, 60) - R.Vr_before;
-        hasAfter = b < numel(bs) && code(bs(b+1)) == 1;
+        hasAfter = bn <= numel(bs) && bc(bn) == 1;
         if hasAfter
-            r1 = bs(b+1); r2 = be(b+1); tr = d.tstep(r1:r2); Vr = d.V(r1:r2);
+            r1 = bs(bn); r2 = be(bn); tr = d.tstep(r1:r2); Vr = d.V(r1:r2);
             R.rest_after_s = tr(end); R.Vr_after_exp = Vr(end);
             R.Vr_after10_exp = interp_ok(tr, Vr, 10); R.Vr_after600_exp = interp_ok(tr, Vr, 600);
             R.Vlast_phase = V(end);
