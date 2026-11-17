@@ -12,5 +12,7 @@ D.reason = o.reason{end}; D.t = o.t(end);
 D.nsei = trk.nsei; D.ndl = trk.ndl;
 D.pl_rev_left = trk.npl - trk.ndl;              % lithium ma thuan nghich chua boc lai
 D.perm = trk.nsei + trk.ndl;
+D.source = 'posthoc_provisional';
+if isfield(trk, 'source'), D.source = trk.source; end   % 'plant' khi DFN da co lao hoa (aging_from_plant.m)
 D.y_end = o.y_end;
 end

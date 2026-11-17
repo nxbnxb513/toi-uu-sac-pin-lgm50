@@ -62,6 +62,19 @@ for k = 1:numel(steps)
     end
     % lao hoa hau kiem doc theo quy dao cua buoc nay
     [trk, ser] = aging_track('run', par, ap, trk, tt, Y, a);
+    % lao hoa CUA DFN neu da co (buoc C): thay so hau kiem bang trang thai cua DFN,
+    % tinh tu dau vung (trk.nat0 = gia tri luc bat dau dem). aging_from_plant.m.
+    nat = aging_from_plant(par, a);
+    if isempty(nat)
+        trk.source = 'posthoc_provisional';
+    else
+        if ~isfield(trk, 'nat0') || isempty(trk.nat0)
+            trk.nat0 = [nat.nsei(1), nat.ndl(1), nat.npl(1)];
+        end
+        ser.nsei = nat.nsei - trk.nat0(1); ser.ndl = nat.ndl - trk.nat0(2); ser.npl = nat.npl - trk.nat0(3);
+        trk.nsei = ser.nsei(end); trk.ndl = ser.ndl(end); trk.npl = ser.npl(end);
+        trk.source = 'plant';
+    end
     s.t = t0 + tt; s.step = k*ones(nt, 1);
     s.V = cellfun(@(q) q.V, a); s.I = cellfun(@(q) q.I, a); s.T = cellfun(@(q) q.T, a); s.Q = cellfun(@(q) q.Q, a);
     s.soc = cellfun(@(q) (q.xn_avg - par.neg.x0)/(par.neg.x100 - par.neg.x0), a);

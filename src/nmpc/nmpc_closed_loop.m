@@ -35,8 +35,10 @@ K = struct('t', [], 'status', [], 'sqp_iter', [], 'time_tot', [], 'wall', [], 't
 if ~isfield(cfg, 'band'), cfg.band = 1.3; end
 tf_ref = tf0/3600;
 reason = 'tmax'; nfail = 0; meas = struct('t', 0, 'I', 0, 'V', NaN, 'T', Ta);
-tw = tic;
+if ~isfield(cfg, 'wall_max'), cfg.wall_max = Inf; end   % gioi han thoi gian CHAY (s) cua mot lan vong kin
+tw = tic; tplant = 0;
 while t < cfg.tmax
+    if toc(tw) > cfg.wall_max, reason = 'wall_limit'; break; end
     xhat = cfg.estimator(y, trk, meas);
     if xhat(rom.ix.soc) >= cfg.soc1 - 1e-6, reason = 'soc_reached'; break; end
     if unlimited
@@ -59,6 +61,10 @@ while t < cfg.tmax
     K.time_tot(end+1, 1) = info.time_tot; K.wall(end+1, 1) = info.wall;
     K.tf_h(end+1, 1) = plan.tf_h; K.slope(end+1, 1) = plan.slope; K.loss_pred(end+1, 1) = plan.loss_pred;
     K.soc_end(end+1, 1) = plan.soc_end; K.nrep(end+1, 1) = rep;
+    if numel(K.t) <= 10 || mod(numel(K.t), 20) == 0 || ~plan.ok
+        fprintf('  [%4d] t %6.0f s soc %.4f I %.2f A | status %d sqp %2d rep %d %.0f ms | tf %.3f h slope %.2e A/s loss %.4f mAh soc_N %.4f | wall %.0f s\n', ...
+            numel(K.t), t, xhat(rom.ix.soc), Ich, info.status, info.sqp_iter, rep, 1e3*info.time_tot, plan.tf_h, plan.slope, plan.loss_pred, plan.soc_end, toc(tw));
+    end
     if plan.ok
         slope = plan.slope; Tseg = min(cfg.Ts, max(plan.dt1, 1));
     else
@@ -80,7 +86,9 @@ while t < cfg.tmax
     I0 = Ich; sl = slope;
     st = struct('mode', 'I', 'value', @(tt) -max(I0 + sl*tt, 0), 'tmax', Tseg, 'Tamb', Ta, ...
         'stop', struct('Qstop', Qstop, 'Vmin', par.Vmin), 'tout', []);
+    tp = tic;
     [o, trk] = plant_run(par, y, st, trk, struct('dt', min(5, Tseg/2)));
+    tplant = tplant + toc(tp);
     f = fieldnames(S);
     for i = 1:numel(f)
         v = o.(f{i}); if strcmp(f{i}, 't'), v = v + t; end
@@ -93,7 +101,7 @@ while t < cfg.tmax
     if strcmp(o.reason{end}, 'Qstop'), reason = 'soc_reached'; break; end
     if ~strcmp(o.reason{end}, 'time'), reason = ['plant_' o.reason{end}]; break; end
 end
-R.wall = toc(tw);
+R.wall = toc(tw); R.plant_wall = tplant;
 R.reason = reason; R.ser = S; R.solve = K; R.nfail = nfail;
 R.t_charge = t;
 R.soc_end = S.soc(end);
