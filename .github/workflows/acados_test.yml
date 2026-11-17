@@ -45,7 +45,7 @@ jobs:
         run: |
           cd "$RUNNER_TEMP/lddebug" 2>/dev/null || exit 0
           grep -l "libacados_ocp_solver_pend_ocp" ld.* | head
-          for f in $(grep -l "libacados_ocp_solver_pend_ocp" ld.*); do grep -B2 -A12 "file=libacados_ocp_solver_pend_ocp" "$f" | head -60; done
+          for f in $(grep -l "libacados_ocp_solver_pend_ocp" ld.*); do echo "=== $f"; grep -n -B3 -A8 "libacados_ocp_solver_pend_ocp" "$f" | head -80; done
 
   python:
     name: B - acados Python interface (fallback)
