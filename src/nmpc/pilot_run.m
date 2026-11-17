@@ -30,7 +30,7 @@ fprintf('CCCV 0.5C: %s, T_CCCV = %.0f s, SOC cuoi %.4f, SEI %.4f mAh, ma Li %.4f
 % ---- NMPC (tao bo giai mot lan) ----
 bo = struct('N', cfgn.N, 'Imax', cfgn.Imax, 'codegen_dir', fullfile(pwd, 'c_generated_code'));
 switch variant      % bien the so hoc de do tim cai dat on dinh (chi dung khi go loi)
-    case 'base'
+    case {'base', 'sweep'}
     case 's4n12', bo.num_steps = 4; bo.newton_iter = 12;
     case 'lm10',  bo.lm = 10;
     case 's4lm10', bo.num_steps = 4; bo.newton_iter = 12; bo.lm = 10;
@@ -47,7 +47,7 @@ tfb = min(k, 1.5)*cc.T_CCCV/3600; Igs = min(cfgn.Imax, (soc1 - soc0)*rom.Csoc/tf
 prm0 = [Ta; soc1; tfb; cfgn.w_loss; cfgn.w_dI; cfgn.Tmax; cfgn.delta; cfgn.xsmax];
 [~, C.simchk] = nmpc_sim_check(rom, par, M, xs0, zs0, 0, Igs, tfb, prm0, C, ...
     struct('num_stages', C.opt.num_stages, 'num_steps', C.opt.num_steps, 'newton_iter', C.opt.newton_iter));
-C.M = M;
+C.M = M; C.par = par; C.sweep = strcmp(variant, 'sweep');
 cl.soc0 = soc0; cl.soc1 = soc1; cl.Tamb = Ta;
 cl.budget = k*cc.T_CCCV; cl.Ts = cfgn.Ts;
 cl.w_loss = cfgn.w_loss; cl.w_dI = cfgn.w_dI; cl.Tmax = cfgn.Tmax; cl.delta = cfgn.delta; cl.xsmax = cfgn.xsmax;

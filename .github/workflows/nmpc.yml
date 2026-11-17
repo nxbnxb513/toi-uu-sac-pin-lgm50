@@ -104,8 +104,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [base, s4n12, lm10, s4lm10]
-        k: [1, 4]
+        variant: [sweep]
+        k: [1]
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-acados

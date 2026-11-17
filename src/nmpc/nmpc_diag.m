@@ -34,6 +34,12 @@ end
 if nargin < 2 || ~isfield(C, 'simchk') || ~isfield(C, 'M'), return; end
 M = C.M; Ta = prm(1);
 cand = unique([bad(:).', 0, N-1]);
+if isfield(C, 'sweep') && C.sweep && ~isempty(bad)
+    k = bad(1); xk = X(:, k+1);
+    try, zk = s.get('z', k); catch, zk = zeros(r.nz, 1); end
+    zk = rom_solve_z(M, xk(1:r.nx), -xk(C.iI), Ta, zk);
+    nmpc_irk_sweep(r, C.par, M, C, xk, U(k+1), zk, prm);
+end
 for k = cand(1:min(4, numel(cand)))
     xk = X(:, k+1); uk = U(k+1);
     try, zk = s.get('z', k); catch, zk = zeros(r.nz, 1); end
