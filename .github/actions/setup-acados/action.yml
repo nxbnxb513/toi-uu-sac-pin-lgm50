@@ -1,6 +1,6 @@
 name: Setup acados
 description: >
-  Build acados (pinned tag, qpOASES on) into ~/acados with actions/cache, install
+  Build acados (pinned tag; HPIPM only - qpOASES in v0.6.0 does not compile with GCC 14 on ubuntu-24.04: -Wincompatible-pointer-types error in QProblemCPY) into ~/acados with actions/cache, install
   t_renderer, optionally the CasADi MATLAB binaries and the Python acados_template,
   and export ACADOS_INSTALL_DIR / ACADOS_SOURCE_DIR / LD_LIBRARY_PATH / MATLABPATH / ENV_RUN.
   Usage:  - uses: ./.github/actions/setup-acados   (after actions/checkout)
@@ -42,7 +42,7 @@ runs:
       uses: actions/cache@v4
       with:
         path: ~/acados
-        key: acados-${{ runner.os }}-${{ inputs.acados-tag }}-qpoases-tera${{ inputs.tera-version }}-cm${{ inputs.casadi-matlab }}-${{ hashFiles('.github/actions/setup-acados/action.yml') }}
+        key: acados-${{ runner.os }}-${{ inputs.acados-tag }}-hpipm-tera${{ inputs.tera-version }}-cm${{ inputs.casadi-matlab }}-${{ hashFiles('.github/actions/setup-acados/action.yml') }}
 
     - name: Clone and build acados
       if: steps.cache.outputs.cache-hit != 'true'
@@ -59,7 +59,7 @@ runs:
         cd ~/acados
         git submodule update -q --recursive --init --depth 1
         mkdir -p build && cd build
-        cmake .. -DCMAKE_BUILD_TYPE=Release -DACADOS_WITH_QPOASES=ON -DACADOS_WITH_OPENMP=OFF -DACADOS_OCTAVE=OFF > /dev/null
+        cmake .. -DCMAKE_BUILD_TYPE=Release -DACADOS_WITH_QPOASES=OFF -DACADOS_WITH_OPENMP=OFF -DACADOS_OCTAVE=OFF > /dev/null
         make install -j4 > /dev/null
         mkdir -p ~/acados/bin
         wget -q -O ~/acados/bin/t_renderer "https://github.com/acados/tera_renderer/releases/download/${TERA}/t_renderer-${TERA}-linux-amd64"
