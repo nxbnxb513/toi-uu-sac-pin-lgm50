@@ -84,7 +84,7 @@ def main():
         t_wall.append(time.perf_counter() - tw)
         t_acados.append(solver.get_stats("time_tot"))
         iters.append(solver.get_stats("sqp_iter"))
-        statuses.append(solver.get_status())
+        statuses.append(solver.status)
         x = integrator.simulate(x=x, u=u0)
 
     t_acados = 1e3 * np.array(t_acados)

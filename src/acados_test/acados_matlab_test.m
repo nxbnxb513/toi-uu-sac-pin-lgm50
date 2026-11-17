@@ -104,6 +104,9 @@ try
     ocp.solver_options.globalization = 'MERIT_BACKTRACKING';
     ocp.solver_options.nlp_solver_max_iter = 200;
     ocp.name = 'pend_ocp';
+    % acados >= 0.5 defaults to codegen_<name>; use the directory that
+    % setup-acados put on LD_LIBRARY_PATH so the MEX finds the solver .so
+    ocp.code_gen_options.code_export_directory = fullfile(pwd, 'c_generated_code');
 
     substage = 'AcadosOcpSolver (codegen + compile + mex)';
     t0 = tic;
@@ -117,6 +120,7 @@ try
     sim.solver_options.integrator_type = 'IRK';
     sim.solver_options.num_stages = 3;
     sim.solver_options.num_steps = 3;
+    sim.code_gen_options.code_export_directory = fullfile(pwd, 'c_generated_code');
     sim_solver = AcadosSimSolver(sim);
 
     substage = 'closed loop';
