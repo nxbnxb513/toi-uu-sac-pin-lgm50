@@ -36,17 +36,19 @@ File PDF và toàn văn của các bài báo không nằm trong repo vì lý do 
 
 ## Mô hình DFN (bước 1 của bản làm lại)
 
-Thư mục `src/dfn/` chứa mô hình Doyle–Fuller–Newman đầy đủ ghép với mô hình nhiệt lumped, bộ tham số Li et al. 2025 (O'Regan 2022 + các mục đánh dấu *), chưa có lão hoá:
+Thư mục `src/dfn/` chứa mô hình Doyle–Fuller–Newman đầy đủ ghép với mô hình nhiệt lumped, bộ tham số Li et al. 2025 (O'Regan 2022 + các mục đánh dấu *), chưa có lão hoá.
+
+**Bộ tham số mặc định `src = 'approved'`:** theo bài in; chỗ bài in sai thì theo bài gốc (Landesfeind & Gasteiger 2019 Table II cho điện giải: 0.353, −6.12, thermodynamic factor theo pt. [2]; Butler–Volmer 2·j₀·sinh(Fη/2RT) theo O'Kane 2022; ∂U/∂T theo mV/K; mật độ khô theo O'Regan 2022 Table 7); chỗ không bài nào ghi thì theo mã nguồn tác giả (L_SEI,0, khuếch tán do ứng suất, vị trí R_0, dạng nhiệt 0D — đều có tuỳ chọn đổi). `src = 'paper'` (đúng như bài in, kể cả lỗi in) và `src = 'code'` chỉ để so sánh. Chi tiết: [tai_lieu/gia_dinh.md](tai_lieu/gia_dinh.md), [tai_lieu/doi_chieu_tham_so.md](tai_lieu/doi_chieu_tham_so.md).
 
 | File | Vai trò |
 |---|---|
-| `dfn_params.m` | Tham số, mỗi số ghi nguồn (bài + bảng/phương trình); `src = 'paper'` hoặc `'code'` |
+| `dfn_params.m` | Tham số, mỗi số ghi nguồn (bài + bảng/phương trình); `src = 'approved'` (mặc định), `'paper'`, `'code'` |
 | `dfn_rhs.m` | Vế phải của hệ DAE (khuếch tán trong hạt tại mọi nút x, điện giải, Butler–Volmer, nhiệt) |
 | `dfn_run.m`, `dfn_cccv.m` | Chạy chuỗi bước: dòng cho trước, giữ áp (ràng buộc đại số), nghỉ |
 | `dfn_aging_state.m`, `dfn_side_reactions.m` | Chỗ móc cho lão hoá ở bước sau (ε, a, màng SEI theo nút; j_tot = j_int + j_phụ) |
 | `val_selftest.m`, `val_run_condition.m`, `val_report.m` | Tự kiểm tra và kiểm chứng với dữ liệu xả mở (Zenodo 4864437) |
 
-Các giả định và những chỗ bài báo in khác mã nguồn của tác giả: [tai_lieu/gia_dinh.md](tai_lieu/gia_dinh.md). Workflow `.github/workflows/validate.yml` chạy kiểm chứng (12 điều kiện xả song song) và xuất `validation.md`, CSV, hình trong artifact `validation-report`.
+Workflow `.github/workflows/validate.yml` chạy kiểm chứng (12 điều kiện xả song song) cho các biến thể `approved`, `approved_no_stress`, `approved_h_tau` (h nhận dạng từ τ nguội đo được 582 s), `approved_Rc_heat`, `paper`, `code`, và xuất `validation.md`, CSV, hình trong artifact `validation-report`. Sai số báo cho cả "tất cả lần xả" và "bỏ lần xả có số liệu nhiệt bất thường" (GD-23).
 
 ## Chạy trên GitHub
 
