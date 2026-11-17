@@ -6,11 +6,10 @@ function [plan, info] = nmpc_solve(C, xhat, Ich, prm, tfband)
 %   Ich: dong sac dang ap [A, >= 0];  prm: vector tham so acados (nmpc_build.m)
 % plan.slope [A/s]: dong sac ke hoach tren khoang dau  I_ch(t) = Ich + slope t,
 % plan.dt1 [s] do dai khoang dau, plan.tf_h thoi gian con lai toi uu [h],
-% plan.loss_pred [mAh] lithium mat du doan cho phan sac con lai.
+% plan.loss_pred [mAh] lithium mat VINH VIEN du doan (SEI + chet) cho phan sac con lai.
 % tfband = [lo hi] (gio): vung tin cay cho t_f trong lan giai nay (bien cung).
-% Ly do: acados v0.6 khong cho tim kiem duong (merit line search) khi rang buoc
-% phi tuyen phu thuoc bien dai so z; ham muc tieu gan tuyen tinh theo t_f nen
-% buoc SQP day du co the nhay t_f ra bien va lam bo tich phan phan ky.
+% Ly do: ham muc tieu gan tuyen tinh theo t_f nen buoc SQP co the nhay t_f ra
+% bien va lam bo tich phan phan ky.
 % Vong kin dich vung nay theo nghiem (nmpc_closed_loop.m).
 s = C.solver;
 for k = 1:C.N
@@ -30,7 +29,8 @@ plan.dt1 = 3600*plan.tf_h/C.N;
 plan.slope = u0/(3600*plan.tf_h);
 plan.I1 = Ich + u0/C.N;
 rom = C.rom;
-plan.loss_pred = XN(rom.ix.nsei) + XN(rom.ix.npl) - xhat(rom.ix.npl);
+plan.loss_pred = XN(rom.ix.nsei) + XN(rom.ix.ndl);            % mat vinh vien du doan (mAh)
+plan.pl_pred = XN(rom.ix.npl);                                 % lithium ma du doan cuoi (chan doan)
 plan.soc_end = XN(rom.ix.soc);
 plan.at_edge = abs(plan.tf_h - tfband(1)) < 1e-4*tfband(1) || abs(plan.tf_h - tfband(2)) < 1e-4*tfband(2);
 plan.ok = any(info.status == [0 2]) && all(isfinite([plan.tf_h, plan.slope, plan.loss_pred])) && plan.tf_h > 0;

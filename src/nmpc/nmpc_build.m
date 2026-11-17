@@ -4,16 +4,17 @@ function C = nmpc_build(rom, par, opt)
 % Bai toan toi uu (thoi gian chuan hoa tau in [0, 1], thoi gian sac con lai
 % t_f la TRANG THAI tu do, khong co dinh o nut dau):
 %   trang thai X = [x_ROM; I_ch; t_f],  dieu khien u = dI_ch/dtau  [A]
-%   dx_ROM/dtau = 3600 t_f f_ROM(x_ROM, z, I = -I_ch)   (t_f tinh bang gio)
-%   dI_ch/dtau = u,  dt_f/dtau = 0,  0 = g_ROM(x_ROM, z, -I_ch)
-%   min   0.5 w_loss (n_SEI(1) + n_pl(1))  +  0.5 w_dI int u^2 dtau
-%         (n_SEI, n_pl: lithium mat do SEI va do ma lithium du doan [mAh];
-%          n_SEI dat ve 0 o moi lan giai, n_pl = luong lithium ma hien co)
+%   dx_ROM/dtau = 3600 t_f f_ROM(x_ROM, z(x_ROM, I), I = -I_ch)   (t_f tinh bang gio;
+%                 z(x, I): nghiem g = 0 bang Newton sinh ma, rom_elim.m => ODE thuan)
+%   dI_ch/dtau = u,  dt_f/dtau = 0
+%   min   0.5 w_loss (n_SEI(1) + n_dl(1))  +  0.5 w_dI int u^2 dtau
+%         (n_SEI, n_dl: lithium mat VINH VIEN du doan do SEI va lithium chet [mAh],
+%          dat ve 0 o moi lan giai; lithium ma thuan nghich KHONG vao muc tieu)
 %   v.d.k. 0 <= I_ch <= I_max (cung), va (mem, phat L1 + L2 lon):
-%          V <= 4.2 V, T <= T_max, eta_Li,sep >= delta, x_s,sep <= x_s,max,
-%          t_f <= ngan sach con lai;   cuoi: SOC >= SOC_dich, t_f <= ngan sach
+%          V <= V_cv (v_limit.m), T <= T_max, eta_Li,sep >= delta, x_s,sep <= x_s,max,
+%          t_f <= ngan sach con lai;   cuoi: SOC >= SOC_dich, t_f <= ngan sach, V, eta, x_s
 % Ham muc tieu viet dang binh phuong toi thieu (NONLINEAR_LS) de dung
-% Gauss-Newton: y_e = sqrt(w_loss (n_SEI + n_pl) + eps)  (n >= 0), y = sqrt(w_dI) u.
+% Gauss-Newton: y_e = sqrt(w_loss (n_SEI + n_dl) + eps)  (n >= 0), y = sqrt(w_dI) u.
 % Tham so acados p = [T_amb; SOC_dich; ngan sach (h); w_loss; w_dI; T_max; delta; x_s,max].
 % Che do "ngan sach": ngan sach = k T_CCCV - t (thu hep dan); che do "khong
 % gioi han": ngan sach = opt.tf_cap_h (chi la can so hoc, phai bao neu cham).
@@ -22,11 +23,12 @@ import casadi.*
 if nargin < 3, opt = struct(); end
 d = struct('N', 20, 'Imax', 2*par.Qnom, 'tf_min_h', 10/3600, 'tf_cap_h', 20, 'eps_cost', 1e-3, ...
     'name', 'rom_nmpc', 'codegen_dir', fullfile(pwd, 'c_generated_code'), 'max_iter', 60, ...
-    'num_stages', 2, 'num_steps', 8, 'lm', 1, 'newton_iter', 8, 'newton_tol', 0);
+    'num_stages', 2, 'num_steps', 8, 'lm', 1e-2, 'newton_iter', 8, 'newton_tol', 0, 'E', [], ...
+    'globalization', 'MERIT_BACKTRACKING');
 fn = fieldnames(d);
 for i = 1:numel(fn), if ~isfield(opt, fn{i}), opt.(fn{i}) = d.(fn{i}); end, end
 nx = rom.nx; nX = nx + 2; iI = nx + 1; itf = nx + 2;
-[model, nh] = nmpc_model(rom, par, opt.name, opt.eps_cost);
+[model, nh] = nmpc_model(rom, par, opt.name, opt.eps_cost, opt.E);
 
 ocp = AcadosOcp();
 ocp.model = model;
@@ -46,13 +48,13 @@ ocp.constraints.idxbu = 0;
 ocp.constraints.lbu = -opt.Imax*opt.N; ocp.constraints.ubu = opt.Imax*opt.N;
 % rang buoc phi tuyen (mem) - viet dang h <= 0
 ocp.constraints.lh = -1e4*ones(nh, 1); ocp.constraints.uh = zeros(nh, 1);
-ocp.constraints.lh_e = -1e4*ones(2, 1); ocp.constraints.uh_e = zeros(2, 1);
+ocp.constraints.lh_e = -1e4*ones(5, 1); ocp.constraints.uh_e = zeros(5, 1);
 ocp.constraints.idxsh = 0:nh-1;
-ocp.constraints.idxsh_e = 0:1;
+ocp.constraints.idxsh_e = 0:4;
 % phat vi pham: [V (V), T (K), eta (V), x_s (-), t_f (h)] - xem mo_hinh_rut_gon.md muc 8.4
 zu = [1e4; 1e2; 1e4; 1e4; 1e2]; Zu = [1e5; 1e2; 1e5; 1e5; 1e2];
 ocp.cost.zl = zu; ocp.cost.zu = zu; ocp.cost.Zl = Zu; ocp.cost.Zu = Zu;
-zue = [1e3; 1e2]; Zue = [1e4; 1e2];
+zue = [1e3; 1e2; zu(1); zu(3); zu(4)]; Zue = [1e4; 1e2; Zu(1); Zu(3); Zu(4)];
 ocp.cost.zl_e = zue; ocp.cost.zu_e = zue; ocp.cost.Zl_e = Zue; ocp.cost.Zu_e = Zue;
 ocp.parameter_values = [298.15; 0.5; 1; 10; 1e-4; 318.15; 0.01; 0.99];
 
@@ -67,15 +69,13 @@ if opt.newton_tol > 0, so.sim_method_newton_tol = opt.newton_tol; end
 so.nlp_solver_type = 'SQP';
 so.qp_solver = 'PARTIAL_CONDENSING_HPIPM';
 so.hessian_approx = 'GAUSS_NEWTON';
-so.globalization = 'FIXED_STEP';   % MERIT_BACKTRACKING can danh gia h(x,z): acados v0.6 chua ho tro khi nz > 0
+so.globalization = opt.globalization;   % mo hinh la ODE thuan (z da khu) nen tim kiem duong dung duoc
 so.nlp_solver_max_iter = opt.max_iter;
 so.nlp_solver_tol_stat = 1e-6; so.nlp_solver_tol_eq = 1e-7;
 so.nlp_solver_tol_ineq = 1e-7; so.nlp_solver_tol_comp = 1e-7;
 so.qp_solver_iter_max = 200;
-% Levenberg-Marquardt dong vai tro vung tin cay: Hessian Gauss-Newton gan bang
-% 0 (muc tieu gan tuyen tinh) nen khong co no buoc QP nhay "bang-bang" va dua
-% trang thai ra ngoai vung vat ly (da thay tren CI). Khong co tim kiem duong
-% (acados v0.6 chua ho tro khi h phu thuoc z).
+% Levenberg-Marquardt nho lam on dinh QP (Hessian Gauss-Newton gan bang 0 vi
+% muc tieu gan tuyen tinh); buoc SQP con duoc tim kiem duong (merit) gioi han.
 so.levenberg_marquardt = opt.lm;
 so.print_level = 0;
 ocp.solver_options = so;

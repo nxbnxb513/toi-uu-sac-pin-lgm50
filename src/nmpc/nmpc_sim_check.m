@@ -4,7 +4,7 @@ function [chk, ss] = nmpc_sim_check(rom, par, M, x0, z0, Ich0, Ig, tf_h, prm, C,
 % 3600 tf_h / N giay; so voi ROM tich phan bang ode15s (rom_sim.m).
 % In sai lech V, T, SOC, x_s,sep; bao NaN neu bo tich phan phan ky.
 N = C.N;
-model = nmpc_model(rom, par, sprintf('rom_simchk_%d_%d', opt.num_stages, opt.num_steps), C.opt.eps_cost);
+model = nmpc_model(rom, par, sprintf('rom_simchk_%d_%d', opt.num_stages, opt.num_steps), C.opt.eps_cost, C.opt.E);
 sim = AcadosSim();
 sim.model = model;
 sim.parameter_values = prm(:);
@@ -20,7 +20,7 @@ u0 = (Ig - Ich0)*N;
 X0 = [x0(:); Ich0; tf_h];
 chk.ok = true;
 try
-    Xn = ss.simulate(X0, u0, z0(:), [], prm(:));
+    Xn = ss.simulate(X0, u0, [], [], prm(:));
 catch e
     fprintf('nmpc_sim_check: acados sim loi: %s\n', e.message);
     Xn = nan(size(X0)); chk.ok = false;

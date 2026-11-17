@@ -10,7 +10,7 @@ fprintf('nmpc_irk_sweep: khoang %.1f s, I %.3f -> %.3f A; ode15s: %s, V cuoi %.4
 for nst = [2 4 8 16 32]
     for nnw = [8 20]
         name = sprintf('rom_sw_%d_%d', nst, nnw);
-        model = nmpc_model(rom, par, name, C.opt.eps_cost);
+        model = nmpc_model(rom, par, name, C.opt.eps_cost, C.opt.E);
         sim = AcadosSim();
         sim.model = model; sim.parameter_values = prm(:);
         sim.solver_options.Tsim = 1/N;
@@ -22,7 +22,7 @@ for nst = [2 4 8 16 32]
         sim.code_gen_options.code_export_directory = C.opt.codegen_dir;
         try
             ss = AcadosSimSolver(sim);
-            tw = tic; xa = ss.simulate(Xk, uk, zk, [], prm(:)); w = toc(tw);
+            tw = tic; xa = ss.simulate(Xk, uk, [], [], prm(:)); w = toc(tw);
             xa = xa(1:rom.nx);
             fprintf('  steps %2d newton %2d: NaN %d, max|dx| %.3g, chay %.1f ms\n', nst, nnw, any(~isfinite(xa)), max(abs(xa - xr)), 1e3*w);
         catch e

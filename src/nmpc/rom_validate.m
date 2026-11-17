@@ -19,15 +19,17 @@ tag = sprintf('%s_%dC_%s', dirn, Tc, cfg);
 fid = fopen(fullfile(outdir, ['rom_validate_' tag '.md']), 'w');
 p('# ROM (cau hinh %s) so voi DFN: %s, %d degC\n\n', cfg, dirn, Tc);
 p('Tao ham CasADi cua ROM: %.1f s. ROM: %d trang thai vi phan + %d dai so; DFN: %d + %d.\n\n', tbuild, rom.nx, rom.nz, par.ix.nd, par.ix.ny - par.ix.nd);
+qhdr = {};
+qhdr{end+1} = sprintf('| C-rate | ly do dung ROM-DAE / ROM-ODE | max abs(V) ODE-DAE (mV) | max abs(eta_sep) ODE-DAE (mV) | max abs(xs_sep) ODE-DAE | V ODE-DFN RMS / max (mV) | eta_sep ODE-DFN RMS / max (mV) | chay ODE (s) |\n|---|---|---|---|---|---|---|---|\n');
 p('| C-rate | ly do dung DFN / ROM | t cuoi DFN / ROM (s) | Q DFN / ROM (Ah) | V RMS / max (mV) | xs_sep RMS / max (-) | phi_s-phi_e sep RMS / max (mV) | eta_Li sep RMS / max (mV) | T max (K) | SEI DFN / ROM (uAh) | ma Li DFN / ROM (uAh) | chay DFN / ROM (s) |\n');
 p('|---|---|---|---|---|---|---|---|---|---|---|---|\n');
 hdr = 'cfg,dir,Tamb_C,crate,reason_dfn,reason_rom,tend_dfn,tend_rom,Q_dfn,Q_rom,V_rms_mV,V_max_mV,xs_rms,xs_max,dphi_rms_mV,dphi_max_mV,eta_rms_mV,eta_max_mV,T_max_K,sei_dfn_uAh,sei_rom_uAh,pl_dfn_uAh,pl_rom_uAh,wall_dfn_s,wall_rom_s,map_V_max_mV,map_dphi_max_mV';
-rows = {};
+rows = {}; qrows = {};
 fig = figure('Visible', 'off', 'Position', [0 0 1400 900]);
 for ir = 1:numel(rates)
     cr = rates(ir);
     if strcmp(dirn, 'charge')
-        soc0 = 0; I = -cr*par.Qnom; stopD = struct('Vmax', par.Vmax); stopR = struct('Vmax', par.Vmax);
+        soc0 = 0; I = -cr*par.Qnom; stopD = struct('Vmax', v_limit(par)); stopR = struct('Vmax', v_limit(par));
     else
         soc0 = 1; I = cr*par.Qnom; stopD = struct('Vmin', par.Vmin); stopR = struct('Vmin', par.Vmin);
     end
@@ -43,6 +45,14 @@ for ir = 1:numel(rates)
     yc = dfn_consistent_init(0, y0, par, struct('mode', 'I', 'value', I, 'Tamb', Ta));
     [x0, z0] = rom_from_dfn(rom, par, yc);
     tic; R = rom_sim(M, rom, x0, z0, I, Ta, tout, stopR); wR = toc;
+    % ROM da khu z (ODE thuan, dung trong acados): so voi ROM DAE va DFN
+    tic; Q = rom_sim_ode(M.E, M, rom, x0, I, Ta, tout, stopR); wQ = toc;
+    tq = min(Q.t(end), R.t(end)); kq = tout <= tq + 1e-9;
+    eq = @(fq, fr) interp1(uniq(Q.t), fq(iu(Q.t)), tout(kq)) - interp1(uniq(R.t), fr(iu(R.t)), tout(kq));
+    qV = eq(Q.V, R.V); qE = eq(Q.eta_sep, R.eta_sep); qX = eq(Q.xs_sep, R.xs_sep);
+    tc2 = min(D.t(end), Q.t(end)); k2 = tout <= tc2 + 1e-9;
+    qVD = interp1(uniq(Q.t), Q.V(iu(Q.t)), tout(k2)) - interp1(uniq(D.t), D.V(iu(D.t)), tout(k2));
+    qED = interp1(uniq(Q.t), Q.eta_sep(iu(Q.t)), tout(k2)) - interp1(uniq(D.t), D.eta_sep(iu(D.t)), tout(k2));
     % ---- sai so tren khoang chung ----
     tc = min(D.t(end), R.t(end));
     k = tout <= tc + 1e-9;
@@ -71,6 +81,8 @@ for ir = 1:numel(rates)
         sprintf('%.3f', max(abs(dT))), sprintf('%.3f / %.3f', 1e3*D.nsei(end), 1e3*nseiR), sprintf('%.3f / %.3f', 1e3*D.npl(end), 1e3*nplR), ...
         sprintf('%.1f / %.1f', wD, wR)};
     p('| %.1fC | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s |\n', v{:});
+    qrows{end+1} = sprintf('| %.1fC | %s / %s | %.4f | %.4f | %.2e | %.2f / %.2f | %.2f / %.2f | %.1f |\n', cr, R.reason, Q.reason, ...
+        1e3*max(abs(qV)), 1e3*max(abs(qE)), max(abs(qX)), 1e3*rmsv(qVD), 1e3*max(abs(qVD)), 1e3*rmsv(qED), 1e3*max(abs(qED)), wQ); %#ok<AGROW>
     rows{end+1} = sprintf('%s,%s,%d,%.2f,%s,%s,%.1f,%.1f,%.5f,%.5f,%.3f,%.3f,%.5f,%.5f,%.3f,%.3f,%.3f,%.3f,%.4f,%.5f,%.5f,%.5f,%.5f,%.2f,%.2f,%.3f,%.3f', ...
         cfg, dirn, Tc, cr, D.reason{end}, R.reason, D.t(end), R.t(end), QD, QR, 1e3*rmsv(dV), 1e3*max(abs(dV)), rmsv(dX), max(abs(dX)), ...
         1e3*rmsv(dP), 1e3*max(abs(dP)), 1e3*rmsv(dE), 1e3*max(abs(dE)), max(abs(dT)), 1e3*D.nsei(end), 1e3*nseiR, 1e3*D.npl(end), 1e3*nplR, wD, wR, 1e3*mV, 1e3*mP); %#ok<AGROW>
@@ -82,6 +94,8 @@ for ir = 1:numel(rates)
     sub(ir, 3); plot(D.t, 1e3*D.eta_sep, 'k', R.t, 1e3*R.eta_sep, 'r--'); grid on; if ir == 1, title('\eta_{Li} phia mang ngan (mV)'); end
     sub(ir, 4); plot(D.t, D.T - 273.15, 'k', R.t, R.T - 273.15, 'r--'); grid on; if ir == 1, title('T (degC)'); end
 end
+p('\n## ROM da khu z (ODE thuan, rom_elim.m) so voi ROM DAE va DFN\n\n');
+p('%s', qhdr{:}); p('%s', qrows{:});
 p('\nSai so tuc thoi cua phep anh xa trang thai (5 thoi diem moi lan chay, ROM tinh tai trang thai DFN da anh xa): xem cot map_* trong CSV.\n');
 p('xs_sep, phi_s - phi_e, eta_Li: tai nut DFN cuc am sat mang ngan nhat va o ROM cuoi cuc am (cung tam x). eta_Li = phi_s - phi_e - rho_SEI L_SEI j.\n');
 p('SEI, ma Li: lao hoa TAM THOI tich luy trong lan chay (aging_rates.m; DFN: hau kiem tren quy dao; ROM: trang thai cua ROM).\n');

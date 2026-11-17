@@ -8,10 +8,12 @@ function R = cccv_window(par, soc0, soc1, Crate, Tamb, opt)
 % thuong dung o soc1 ngay trong pha CC. Neu DFN dung vi stoich be mat cuc
 % am cham 1 - 1e-4 (su kien xsn_max, GD-16) truoc khi toi 4.2 V hay soc1 thi
 % CCCV KHONG hoan thanh vung; R.complete = false va bao cao nguyen trang.
-% R.T_CCCV [s], lao hoa tam thoi hau kiem R.nsei, R.npl, R.ndl [mAh].
+% R.T_CCCV [s]; lao hoa tam thoi hau kiem sau sac R.nsei, R.npl, R.ndl [mAh];
+% R.perm [mAh] = mat vinh vien sau sac + xa ve SOC dau (eval_discharge.m).
 if nargin < 6, opt = struct(); end
 if ~isfield(opt, 'dt'), opt.dt = 10; end
 if ~isfield(opt, 'tmax'), opt.tmax = 12*3600; end
+if ~isfield(opt, 'Cdis'), opt.Cdis = Crate; end
 Csoc = par.neg.Qcap*(par.neg.x100 - par.neg.x0);
 Qstop = -(soc1 - soc0)*Csoc;
 st = dfn_cccv(Crate*par.Qnom, v_limit(par), par.Qnom/50, Tamb, opt.tmax);
@@ -39,7 +41,10 @@ R.ser = o; R.reasons = reasons; R.reason = strjoin(reasons, '+');
 R.T_CCCV = o.t(end);
 R.soc_end = o.soc(end);
 R.complete = any(strcmp(reasons{end}, {'Qstop', 'Icut'}));
-R.nsei = trk.nsei; R.npl = trk.npl; R.ndl = trk.ndl; R.loss = trk.nsei + trk.npl;
+R.nsei = trk.nsei; R.npl = trk.npl; R.ndl = trk.ndl;     % sau pha sac
+R.pl_peak = max(o.npl - o.ndl);                         % lithium ma thuan nghich lon nhat khi sac (chan doan)
+[R.dis, trk] = eval_discharge(par, o.y_end, trk, Tamb, opt.Cdis);   % chi so chung: sac + xa ve SOC dau
+R.perm = R.dis.perm;
 R.Vmax = max(o.V); R.Tmax = max(o.T); R.eta_min = min(o.eta_sep); R.xs_max = max(o.xs_sep);
 R.trk = trk; R.y_end = o.y_end;
 end

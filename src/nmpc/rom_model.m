@@ -22,4 +22,5 @@ G = Function('rom_G', {z, pz}, {g});
 M.G = G;
 M.Gz = Function('rom_Gz', {z, pz}, {jacobian(g, z)});
 M.nx = rom.nx; M.nz = rom.nz;
+M.E = rom_elim(rom, par);   % cung mo hinh, z da khu (ODE thuan) - dung cho acados
 end

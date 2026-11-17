@@ -75,6 +75,7 @@ ix.soc = k+1;                    k = k + 1;
 ix.cLi = (k+1 : k+Nn).';         k = k + Nn;
 ix.nsei = k+1;                   k = k + 1;
 ix.npl  = k+1;                   k = k + 1;
+ix.ndl  = k+1;                   k = k + 1;
 rom.nx = k; rom.ix = ix;
 k = 0;
 iz.jn = (k+1 : k+Nn).'; k = k + Nn;
@@ -85,7 +86,7 @@ rom.nz = k; rom.iz = iz;
 % sai so tuyet doi cho ode15s (cung muc nhu dfn_mesh.m)
 at = zeros(rom.nx, 1);
 at(ix.thn) = 1e-7; at(ix.thp) = 1e-7; at(ix.ce) = 1e-6; at(ix.T) = 1e-4; at(ix.soc) = 1e-7;
-at(ix.cLi) = 1e-6; at(ix.nsei) = 1e-9; at(ix.npl) = 1e-9;
+at(ix.cLi) = 1e-6; at(ix.nsei) = 1e-9; at(ix.npl) = 1e-9; at(ix.ndl) = 1e-12;
 rom.atol_x = at; rom.atol_z = 1e-6*ones(rom.nz, 1);
 end
 

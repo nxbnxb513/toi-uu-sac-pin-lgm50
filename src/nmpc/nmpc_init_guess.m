@@ -17,7 +17,6 @@ for k = 0:N
     X = [Y(1:rom.nx, j); Ich(k+1); tf_h];
     C.solver.set('x', X, k);
     if k < N
-        C.solver.set('z', Y(rom.nx+1:end, j), k);
         C.solver.set('xdot', zeros(rom.nx + 2, 1), k);   % xoa doan dau dao ham cu (co the NaN sau that bai)
         C.solver.set('u', (Ich(k+2) - Ich(k+1))*N, k);
     end

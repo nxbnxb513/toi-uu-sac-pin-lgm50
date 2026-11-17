@@ -8,7 +8,7 @@ function [x, z0] = rom_from_dfn(rom, par, y, trk)
 %   - c_e: trung binh cac o DFN trong o ROM (cung eps, cung dx) => bao toan Li dien giai;
 %   - T: giong; SOC = (x_avg - x0)/(x100 - x0) cua cuc am;
 %   - c_Li: trung binh bo dem hau kiem theo nut; n_SEI = 0 (NMPC dem tu luc giai);
-%     n_pl = luong lithium ma hien co (mAh).
+%     n_pl = luong lithium ma hien co (mAh); n_dl (lithium chet) = 0.
 % z0: doan dau cho bien dai so (trung binh j, phi_e, phi_s cua DFN tren o ROM).
 g = par.grid; ix = par.ix;
 thn = reshape(y(ix.thn), g.Nrn, g.Nn); thp = reshape(y(ix.thp), g.Nrp, g.Np);
@@ -24,6 +24,7 @@ if nargin < 4 || isempty(trk), trk = aging_track('init', par); end
 x(rom.ix.cLi) = cellfun(@(v) mean(trk.cLi(v)), rom.mapn);
 x(rom.ix.nsei) = 0;
 x(rom.ix.npl) = trk.npl;
+x(rom.ix.ndl) = 0;                    % lithium chet: dem tu luc giai (nhu n_SEI)
 if nargout > 1
     jn = y(ix.jn); jp = y(ix.jp); phie = y(ix.phie); phisp = y(ix.phisp);
     z0 = zeros(rom.nz, 1);

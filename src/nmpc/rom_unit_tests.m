@@ -82,6 +82,23 @@ for I = [-10 -1 -0.01 0 0.01 5]
 end
 p('\n- 6. rom_ocp so voi aux.Un, aux.Up cua dfn_rhs (I = -10 ... 5 A): lech lon nhat %.2e V\n', err);
 assert(err < 1e-12, 'OCP cua ROM khac logic OCP cua DFN mac dinh');
+% 7. ROM da khu z (rom_elim): z(x, I) va dx/dt trung ROM DAE (Newton rom_solve_z)
+ez = 0; ef = 0;
+for soc = [0.05 0.5 0.95]
+    for I = [-10 -2.5 -0.5 0 5]
+        y = dfn_state_soc(par, soc, 298.15);
+        ctl = struct('mode', 'I', 'value', I, 'Tamb', 298.15);
+        yc = dfn_consistent_init(0, y, par, ctl);
+        [x, z0] = rom_from_dfn(rom, par, yc);
+        z1 = rom_solve_z(M, x, I, 298.15, z0);
+        z2 = full(M.E.zfun(x, I, 298.15));
+        f1 = full(M.dae([x; z1], I, 298.15)); f1 = f1(1:rom.nx);
+        f2 = full(M.E.ode(x, I, 298.15));
+        ez = max(ez, max(abs(z2 - z1))); ef = max(ef, max(abs(f2 - f1)./max(abs(f1), 1e-12)));
+    end
+end
+p('- 7. ROM da khu z vs ROM DAE (SOC 0.05/0.5/0.95, I = -10 ... 5 A): max abs(dz) %.2e, max sai lech tuong doi dx/dt %.2e\n', ez, ef);
+assert(ez < 1e-8, 'ROM da khu z khong trung ROM DAE');
 fclose(fid);
 fprintf('\nROM UNIT TESTS: DAT\n');
 

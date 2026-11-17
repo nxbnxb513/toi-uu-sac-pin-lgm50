@@ -97,7 +97,11 @@ R.wall = toc(tw);
 R.reason = reason; R.ser = S; R.solve = K; R.nfail = nfail;
 R.t_charge = t;
 R.soc_end = S.soc(end);
-R.nsei = trk.nsei; R.npl = trk.npl; R.ndl = trk.ndl; R.loss = trk.nsei + trk.npl;
+R.nsei = trk.nsei; R.npl = trk.npl; R.ndl = trk.ndl;     % sau pha sac
+R.pl_peak = max(S.npl - interp1([0; S.t(end)], [0; trk.ndl], S.t));   % xap xi: tru lithium chet cuoi (rat nho)
+if ~isfield(cfg, 'Cdis'), cfg.Cdis = 0.5; end
+[R.dis, trk] = eval_discharge(par, y, trk, Ta, cfg.Cdis);
+R.perm = R.dis.perm;
 R.viol.V = max(max(S.V) - v_limit(par), 0);
 R.viol.T = max(max(S.T) - cfg.Tmax, 0);
 R.viol.eta = max(cfg.delta - min(S.eta_sep), 0);

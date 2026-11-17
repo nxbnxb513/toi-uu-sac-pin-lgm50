@@ -46,13 +46,13 @@ for k = cand(1:min(4, numel(cand)))
     [zc, okz, rz] = rom_solve_z(M, xk(1:r.nx), -xk(C.iI), Ta, zk);
     fprintf('nmpc_diag: nut %d: z cua acados vs z nhat quan: ok %d, |g| %.2e, max|dz| %.3g\n', k, okz, rz, max(abs(zc - zk)));
     try
-        xa = C.simchk.simulate(xk, uk, zc, [], prm(:));
+        xa = C.simchk.simulate(xk, uk, [], [], prm(:));
         fprintf('  acados sim (z nhat quan): NaN %d, max|x| %.3g, T %.2f, soc %.4f\n', any(~isfinite(xa)), max(abs(xa)), xa(ix.T), xa(ix.soc));
     catch e
         fprintf('  acados sim loi: %s\n', e.message);
     end
     try
-        xa2 = C.simchk.simulate(xk, uk, zk, [], prm(:));
+        xa2 = C.simchk.simulate(xk, uk, [], [], prm(:));
         fprintf('  acados sim (z cua OCP): NaN %d, max|x| %.3g\n', any(~isfinite(xa2)), max(abs(xa2)));
     catch e
         fprintf('  acados sim (z cua OCP) loi: %s\n', e.message);

@@ -129,9 +129,10 @@ ap = rom.ap;
 dcLi  = -rom.as_n*jpl/F - ap.gamma0*cLi;                           % mol/m3/s
 dnsei = par.A*(dxn.'*rsei)*F/3.6;                                 % mAh/s
 dnpl  = -par.A*rom.as_n*(dxn.'*jpl)/3.6;                          % mAh/s (thuan nghich + chet)
+dndl  = par.A*ap.gamma0*(dxn.'*cLi)*F/3.6;                         % mAh/s lithium CHET (mat vinh vien)
 
 dsoc = -I/(3600*rom.Csoc);
-fx = [vertcat(dth{:}); dce/par.ce_ref; dT; dsoc; dcLi; dnsei; dnpl];
+fx = [vertcat(dth{:}); dce/par.ce_ref; dT; dsoc; dcLi; dnsei; dnpl; dndl];
 
 o.V = V; o.T = T; o.soc = x(ix.soc);
 o.xsn = thsn; o.xsp = thsp;
