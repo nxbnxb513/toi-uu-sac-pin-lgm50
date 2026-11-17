@@ -109,11 +109,14 @@ Với mỗi trường hợp (vùng sạc × mức dòng CCCV × nhiệt độ m�
 
 | Chiều của lưới | Giá trị | Số mức |
 |---|---|---|
-| Vùng sạc | bắt đầu 0–90 %, kết thúc cao hơn, bước 10 % (bước 5 % nếu người dùng xác nhận) | 55 (210) |
+| Vùng sạc | bắt đầu 0–95 %, kết thúc cao hơn, **bước 5 %** (người dùng chốt lưới mịn) | 210 |
 | Dòng CCCV | 0.3C, 0.5C, 1C (2C nếu có nguồn cho phép) | 3–4 |
 | Nhiệt độ môi trường | 10, 25, 40 °C | 3 |
 | Ngân sách thời gian k | 0.8; 1; 1.25; 1.5; 2; 3; không giới hạn | 7 |
 | Phương pháp | tối ưu tính sẵn; NMPC biết hết trạng thái; NMPC + EKF | 3 |
+
+
+Tổng số trường hợp: 210 vùng × 3 mức dòng × 3 nhiệt độ × 7 mức thời gian × 3 phương pháp ≈ 39 700 bài toán tối ưu, cộng 210 × 3 × 3 = 1 890 lần chạy CCCV.
 
 **Chạy trên GitHub Actions, tận dụng 20 job song song**
 - Repo công khai: tối đa 20 job Linux chạy cùng lúc; mỗi job tối đa 6 giờ; một workflow tối đa 256 job trong ma trận. Đặt `max-parallel: 20`; một lượt chạy xếp hàng được 256 job, tức tối đa khoảng 20 × 6 h mỗi đợt 20 job.
