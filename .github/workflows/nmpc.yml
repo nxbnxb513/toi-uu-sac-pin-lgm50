@@ -104,7 +104,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [base, sweep]
+        variant: [tol, tols16]
         k: [1]
     steps:
       - uses: actions/checkout@v4

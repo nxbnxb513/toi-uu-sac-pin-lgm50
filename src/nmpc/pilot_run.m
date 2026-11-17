@@ -32,6 +32,8 @@ bo = struct('N', cfgn.N, 'Imax', cfgn.Imax, 'codegen_dir', fullfile(pwd, 'c_gene
 switch variant      % bien the so hoc de do tim cai dat on dinh (chi dung khi go loi)
     case {'base', 'sweep'}
     case 's4n12', bo.num_steps = 4; bo.newton_iter = 12;
+    case 'tol',   bo.newton_iter = 20; bo.newton_tol = 1e-8;
+    case 'tols16', bo.num_steps = 16; bo.newton_iter = 20; bo.newton_tol = 1e-8;
     case 'lm10',  bo.lm = 10;
     case 's4lm10', bo.num_steps = 4; bo.newton_iter = 12; bo.lm = 10;
     otherwise, error('pilot_run: bien the %s', variant);
