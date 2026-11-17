@@ -5,7 +5,9 @@ function [out, trk] = plant_run(par, y0, steps, trk, popt)
 %     phia mang ngan (stoich be mat, phi_s - phi_e, the ma lithium) tai nut DFN
 %     cuc am sat mang ngan nhat;
 %   - cham diem lao hoa TAM THOI hau kiem (aging_track.m): tich phan toc do SEI
-%     va ma lithium (aging_rates.m, CUNG cong thuc voi ROM/NMPC) doc theo quy dao.
+%     va ma lithium (aging_rates.m, CUNG cong thuc voi ROM/NMPC) doc theo quy dao;
+%     neu par.aging.on (DFN co lao hoa, buoc C) thi dung lao hoa CUA DFN
+%     (aging_from_plant.m), cot trk.source ghi ro nguon.
 % Khong sua src/dfn: chi goi dfn_consistent_init, dfn_rhs, dfn_events.
 %
 % steps(k): nhu dfn_run.m (.mode 'I'|'V'|'rest', .value, .tmax, .Tamb, .stop, .tout)
@@ -64,15 +66,15 @@ for k = 1:numel(steps)
     [trk, ser] = aging_track('run', par, ap, trk, tt, Y, a);
     % lao hoa CUA DFN neu da co (buoc C): thay so hau kiem bang trang thai cua DFN,
     % tinh tu dau vung (trk.nat0 = gia tri luc bat dau dem). aging_from_plant.m.
-    nat = aging_from_plant(par, a);
+    nat = aging_from_plant(par, Y);
     if isempty(nat)
         trk.source = 'posthoc_provisional';
     else
         if ~isfield(trk, 'nat0') || isempty(trk.nat0)
-            trk.nat0 = [nat.nsei(1), nat.ndl(1), nat.npl(1)];
+            trk.nat0 = [nat.nsei(1), nat.ndl(1), nat.npl(1), nat.nlam(1)];
         end
         ser.nsei = nat.nsei - trk.nat0(1); ser.ndl = nat.ndl - trk.nat0(2); ser.npl = nat.npl - trk.nat0(3);
-        trk.nsei = ser.nsei(end); trk.ndl = ser.ndl(end); trk.npl = ser.npl(end);
+        trk.nsei = ser.nsei(end); trk.ndl = ser.ndl(end); trk.npl = ser.npl(end); trk.nlam = nat.nlam(end) - trk.nat0(4);
         trk.source = 'plant';
     end
     s.t = t0 + tt; s.step = k*ones(nt, 1);

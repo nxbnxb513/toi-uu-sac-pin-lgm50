@@ -25,7 +25,8 @@ W = soc_windows();
 Ks = [0.8 1 1.25 1.5 2 3 Inf];
 soc0 = W(iw, 1); soc1 = W(iw, 2);
 Ta = 273.15 + Tamb_C;
-par = dfn_params();
+par = dfn_params();                % tham so ROM/NMPC (DFN khong lao hoa)
+parp = plant_params(par);          % "pin that": co lao hoa DFN chi khi da duoc kiem chung
 rom = rom_setup(par, romcfg);
 M = rom_model(rom, par);
 cfgn = nmpc_config(par);           % gia dinh NMPC (GD-26..GD-30)
@@ -34,7 +35,7 @@ fprintf('\n===== PILOT %s: vung %.0f -> %.0f %%, CCCV %gC, %g degC, ROM %s, bien
     jtag, 100*soc0, 100*soc1, Cbase, Tamb_C, romcfg, variant);
 
 % ---- CCCV goc ----
-cc = cccv_window(par, soc0, soc1, Cbase, Ta, struct('Cdis', 0.5));
+cc = cccv_window(parp, soc0, soc1, Cbase, Ta, struct('Cdis', 0.5));
 cv = cccv_viol(par, cfgn, cc.ser);
 fprintf(['CCCV %gC: %s, T_CCCV = %.0f s, SOC cuoi %.4f; sau sac + xa: mat vinh vien %.5f mAh (SEI %.5f, chet %.2e) [%s]; ' ...
     'Li ma dinh %.4f mAh, con lai sau xa %.2e; vi pham V %.2f mV, T %.3f K, eta %.2f mV (min %.1f mV), x_s %.4f; chay %.1f s\n'], ...
@@ -62,7 +63,7 @@ for ik = iks(:).'
         'tmax', cfgn.tmax_factor*cc.T_CCCV, 'tf_guess', 1.5*cc.T_CCCV, 'Cdis', 0.5, ...
         'wall_max', max(left_s/nleft, 60), 'Ich0_guess', Cbase*par.Qnom);
     try
-        R = nmpc_closed_loop(C, M, par, cl);
+        R = nmpc_closed_loop(C, M, parp, cl);
     catch e
         fprintf('NMPC LOI: %s\n%s\n', e.message, getReport(e, 'extended', 'hyperlinks', 'off'));
         R = [];
@@ -99,6 +100,24 @@ end
 fprintf('PILOT %s: XONG sau %.0f s\n', jtag, toc(tjob));
 end
 
+function parp = plant_params(par)
+% DFN co lao hoa (buoc C, src/dfn) chi dung lam "pin that" khi luong lao hoa da danh
+% dau kiem chung xong: par.aging.validated = true trong src/dfn/dfn_params.m (do luong
+% lao hoa dat), hoac bien moi truong NMPC_PLANT_AGING = 1 (chi de thu). Nguoc lai: DFN
+% khong lao hoa + cham diem hau kiem TAM THOI (aging_track.m). Cot aging_source ghi ro.
+ok = isfield(par, 'aging') && isfield(par.aging, 'validated') && isequal(par.aging.validated, true);
+if strcmp(getenv('NMPC_PLANT_AGING'), '1'), ok = true; end
+if ~ok
+    parp = par;
+    fprintf('Pin that: DFN KHONG lao hoa; lao hoa cham diem hau kiem TAM THOI (aging_rates.m)\n');
+    return
+end
+o2 = struct(); if isfield(par, 'opt'), o2 = par.opt; end
+o2.aging = true;
+parp = dfn_params(o2);
+fprintf('Pin that: DFN CO lao hoa (buoc C); mat vinh vien = SEI + Li chet + Li theo LAM cua DFN\n');
+end
+
 function v = cccv_viol(par, cfgn, S)
 % vi pham rang buoc an toan cua CCCV tren DFN (cung cach do voi NMPC)
 v.V = max(max(S.V) - v_limit(par), 0);
@@ -111,13 +130,14 @@ function row = pilot_row(iw, soc0, soc1, Cbase, Tamb_C, k, romcfg, variant, cc, 
 row = struct('iw', iw, 'window', sprintf('%g-%g', 100*soc0, 100*soc1), 'Cbase', Cbase, 'Tamb_C', Tamb_C, 'k', k, ...
     'rom', romcfg, 'variant', variant, 'aging_source', cc.dis.source, ...
     'T_CCCV_s', cc.T_CCCV, 'cccv_reason', cc.reason, 'cccv_soc_end', cc.soc_end, 'cccv_complete', cc.complete, ...
-    'cccv_perm_mAh', cc.perm, 'cccv_perm_sei_mAh', cc.dis.nsei, 'cccv_perm_dead_mAh', cc.dis.ndl, 'cccv_pl_left_mAh', cc.dis.pl_rev_left, ...
+    'cccv_perm_mAh', cc.perm, 'cccv_perm_sei_mAh', cc.dis.nsei, 'cccv_perm_dead_mAh', cc.dis.ndl, 'cccv_perm_lam_mAh', cc.dis.nlam, ...
+    'cccv_pl_left_mAh', cc.dis.pl_rev_left, ...
     'cccv_pl_peak_mAh', cc.pl_peak, 'cccv_sei_charge_mAh', cc.nsei, 'cccv_pl_charge_end_mAh', cc.npl, ...
     'cccv_Vmax', cc.Vmax, 'cccv_eta_min_mV', 1e3*cc.eta_min, 'cccv_xs_max', cc.xs_max, 'cccv_Tmax_C', cc.Tmax - 273.15, ...
     'cccv_viol_V_mV', 1e3*cv.V, 'cccv_viol_T_K', cv.T, 'cccv_viol_eta_mV', 1e3*cv.eta, 'cccv_viol_xs', cv.xs, ...
     'cccv_wall_s', cc.wall, 'budget_s', cl.budget, 'build_s', C.t_build, ...
     'Imax_A', cfgn.Imax, 'Ts_s', cfgn.Ts, 'N', cfgn.N);
-nanf = {'t_charge_s', 'soc_end', 'nmpc_perm_mAh', 'nmpc_perm_sei_mAh', 'nmpc_perm_dead_mAh', 'nmpc_pl_left_mAh', ...
+nanf = {'t_charge_s', 'soc_end', 'nmpc_perm_mAh', 'nmpc_perm_sei_mAh', 'nmpc_perm_dead_mAh', 'nmpc_perm_lam_mAh', 'nmpc_pl_left_mAh', ...
     'nmpc_pl_peak_mAh', 'nmpc_sei_charge_mAh', 'nmpc_pl_charge_end_mAh', 'reduction_pct', 'loss_pred0_mAh', ...
     'nmpc_Vmax', 'nmpc_eta_min_mV', 'nmpc_xs_max', 'nmpc_Tmax_C', ...
     'viol_V_mV', 'viol_T_K', 'viol_eta_mV', 'viol_xs', 'viol_budget_s', 'n_solves', 'n_fail', 'n_status0', 'n_status2', ...
@@ -129,7 +149,7 @@ if isempty(R), return; end
 K = R.solve; st = K.status; S = R.ser;
 row.nmpc_reason = R.reason; row.dis_reason = R.dis.reason;
 row.t_charge_s = R.t_charge; row.soc_end = R.soc_end;
-row.nmpc_perm_mAh = R.perm; row.nmpc_perm_sei_mAh = R.dis.nsei; row.nmpc_perm_dead_mAh = R.dis.ndl;
+row.nmpc_perm_mAh = R.perm; row.nmpc_perm_sei_mAh = R.dis.nsei; row.nmpc_perm_dead_mAh = R.dis.ndl; row.nmpc_perm_lam_mAh = R.dis.nlam;
 row.nmpc_pl_left_mAh = R.dis.pl_rev_left; row.nmpc_pl_peak_mAh = R.pl_peak;
 row.nmpc_sei_charge_mAh = R.nsei; row.nmpc_pl_charge_end_mAh = R.npl;
 row.reduction_pct = 100*(1 - R.perm/cc.perm); row.loss_pred0_mAh = R.loss_pred0;

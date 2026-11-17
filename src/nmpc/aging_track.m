@@ -15,7 +15,7 @@ g = par.grid;
 switch cmd
     case 'init'
         trk.cLi = zeros(g.Nn, 1); trk.cdl = zeros(g.Nn, 1);
-        trk.nsei = 0; trk.npl = 0; trk.ndl = 0;
+        trk.nsei = 0; trk.npl = 0; trk.ndl = 0; trk.nlam = 0;   % nlam: chi khac 0 khi DFN co lao hoa
         return
     case 'run'
     otherwise
