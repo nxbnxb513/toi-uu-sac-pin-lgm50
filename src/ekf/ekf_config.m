@@ -66,6 +66,6 @@ c.n_iter = 5;           % so lan lap toi da cua buoc cap nhat (1 = EKF thuong; >
 c.t_hold = Inf;         % s  giu rf va LLI (khong cap nhat) trong t < t_hold (hai thang thoi gian, GD-74/GD-75);
                         %    Inf = giu CA lan sac (chon 18/11/2026, GD-75), 0 = tat
 c.ls = 1;               % GD-78 (a): tim theo duong trong buoc cap nhat lap (1 = bat)
-c.fade = 0;             % GD-78 (b): he so nhan P toi da khi NIS > 13.8 (0 = tat)
+c.fade = 10;            % GD-78 (b): he so nhan P toi da khi NIS > 13.8 (0 = tat); chon 18/11/2026 (bo_uoc_luong_ekf.md muc 6.3)
 c.dt = 5;               % s chu ky lay mau cua EKF (lua chon so hoc; NMPC giai lai moi 30 s)
 end

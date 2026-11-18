@@ -77,6 +77,22 @@ Workflow `.github/workflows/validate.yml` chạy kiểm chứng (12 điều ki�
   - CC 9386 s, CV 3181 s, nạp 4.422 Ah.
   - x_surf lớn nhất 0.981.
 
+## Bộ ước lượng EKF (bước F)
+
+Thư mục `src/ekf/`. EKF dùng đúng mô hình rút gọn của NMPC, chỉ nhận dòng, điện áp, nhiệt độ bề mặt đo được, và ước lượng SOC, thế mạ lithium phía màng ngăn η_Li, nhiệt độ. Pin "thật" trong phép thử là DFN đầy đủ. Chi tiết: [tai_lieu/bo_uoc_luong_ekf.md](tai_lieu/bo_uoc_luong_ekf.md); giả định GD-70 … GD-78 ở [tai_lieu/gia_dinh.md](tai_lieu/gia_dinh.md). Workflow `.github/workflows/ekf.yml` (`stage = full`: 76 ca song song).
+
+Cấu hình chọn theo tiêu chí đặt trước (ưu tiên sai số η_Li phía nguy hiểm): EKF lặp có tìm theo đường, giữ R_film và lượng lithium mất cố định trong lần sạc, fading memory khi innovation quá lớn.
+
+**Kết quả** (run [44219690606](https://github.com/nxbnxb513/toi-uu-sac-pin-lgm50/actions/runs/44219690606), 76 ca: 10/25/40 °C × 0.5C/1C CCCV × nhiễu phòng thí nghiệm/BMS/BMS lệch dòng × sai SOC đầu ±10 % × pin đúng/lệch tham số; không ca nào dừng giữa chừng; tính sau 600 s):
+
+| Pin thật | SOC RMSE xấu nhất (%) | η_Li RMSE xấu nhất (mV) | η_Li ước cao lớn nhất (mV) | T RMSE xấu nhất (K) |
+|---|---|---|---|---|
+| Đúng mô hình | 0.52 (1.68 khi cảm biến dòng lệch 50 mA) | 2.6 | 3.3 | 0.07 |
+| Lệch tham số (j₀, D_s, h ×0.8; R_film ×1.5; mất 2 % Li) | 1.69 | 7.3 | **17.0** | 0.35 |
+
+- Biên an toàn mạ lithium 45 mV **không** có phần dành cho sai số ước lượng. Với pin lệch tham số, EKF có thể báo η_Li cao hơn thật tới 17 mV (phía nguy hiểm). Ví dụ ở 10 °C 0.5C: η_Li thật 43.7 mV, EKF báo 48–51 mV. Đề xuất cộng biên lùi ≈ 20 mV khi chạy NMPC + EKF; chờ người dùng quyết.
+- Độ lệch chuẩn mà bộ lọc tự báo nhỏ hơn sai số thật nhiều lần, nên không dùng được làm biên an toàn tự động.
+
 ## Lão hoá "5 coupled" trong DFN (bước C)
 
 Bật bằng `par = dfn_params(struct('aging', true))`. Đủ năm cơ chế của Li et al. 2025 và mọi hồi tiếp: SEI hai lớp giới hạn bởi khuếch tán interstitial (cả trên vết nứt), mạ lithium bán thuận nghịch + lithium chết, nứt hạt (luật Paris), LAM do ứng suất ở cả hai cực, tiêu thụ dung môi / cạn khô với reservoir (5 trường hợp), điện trở màng, độ xốp, LLI, LAM → ε_s và a. Tham số: cột "5 coupled" của Li 2025 Table 3. Mỗi phương trình và tham số có nhãn theo bài báo / theo bài gốc (bài in sai) / theo code (bài không ghi) / giả định: [tai_lieu/dac_ta_lao_hoa.md](tai_lieu/dac_ta_lao_hoa.md); giả định GD-50 … GD-64 ở [tai_lieu/gia_dinh.md](tai_lieu/gia_dinh.md).

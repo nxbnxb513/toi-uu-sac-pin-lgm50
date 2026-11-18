@@ -34,6 +34,7 @@ Mỗi chu kỳ lấy mẫu Δt = 5 s:
 1. **Dự đoán.** Tích phân ROM (DAE) qua Δt bằng bộ tích phân CasADi `collocation` (Radau IIA bậc 3, 5 khoảng con 1 s). Dòng trong khoảng = nội suy tuyến tính giữa hai mẫu dòng đo được. Ma trận chuyển A = ∂x⁺/∂x và B = ∂x⁺/∂I là **đạo hàm giải tích** do CasADi tính (qua định lý hàm ẩn của bộ giải Newton), không dùng sai phân. Hiệp phương sai: P ← A P Aᵀ + Q·Δt + B Bᵀ σ_I².
 2. **Cập nhật.** Phương trình đo y = [V; T] = h(x, z(x)). Jacobian toàn phần H = h_x − h_z g_z⁻¹ g_x (z là ẩn đại số, g = 0 là ràng buộc của ROM), cũng giải tích. Cập nhật Kalman dạng Joseph. Sau cập nhật, stoichiometry được giữ trong (0, 1).
 3. Nếu bộ giải Newton của tích phân không hội tụ (kết quả ra ngoài miền vật lý) thì tự chia đôi khoảng con.
+4. Cấu hình chọn (mục 6, GD-75, GD-78): bước cập nhật **lặp** 5 lần (IEKF), mỗi lần **tìm theo đường** (chia đôi bước tới khi trạng thái hợp lệ và hàm MAP giảm); **giữ R_film và LLI** trong cả lần sạc (vẫn giữ độ bất định của chúng trong P); khi NIS > 13.8 thì nhân P dự đoán với min(10, NIS/2).
 
 R (nhiễu đo của bộ lọc) = nhiễu cảm biến + **sai số mô hình** (5 mV cho điện áp, 0.1 K cho nhiệt độ; GD-73). Sai số mô hình trội hơn nhiễu cảm biến phòng thí nghiệm khoảng 140 lần, nên R không được đặt bằng nhiễu cảm biến.
 
@@ -107,7 +108,49 @@ Sửa (GD-78, lựa chọn của bộ ước lượng, không đổi mô hình):
 
 **Tiêu chí chọn giữa (a) và (a)+(b), đặt trước khi có kết quả:** giống mục 6.1 nhưng lấy xấu nhất trên **cả 76 ca** của lưới; thêm điều kiện 0: số ca dừng giữa chừng ít hơn thắng.
 
-KQ_THU
+**Kết quả** (run 44219685690 = chỉ (a); run 44219690606 = (a)+(b); mỗi run 76 ca, cùng chuỗi nhiễu):
+
+| | (a) tìm theo đường | (a) + (b) fading, λ_max = 10 |
+|---|---|---|
+| 0. Số ca dừng giữa chừng | 0 / 76 | 0 / 76 |
+| 1. Ước cao η_Li lớn nhất (mV) | 16.4 | 17.0 (hoà, chênh < 1 mV) |
+| 2. Tỷ lệ η_thật ≥ η_ước − 3σ, ca xấu nhất (%) | 0.0 | 6.0 (**hơn 6 điểm** ⇒ thắng) |
+| 3. SOC RMSE xấu nhất (%) | 1.67 | 1.69 |
+
+Theo đúng tiêu chí đặt trước, chọn **(a) + (b)** (`c.fade = 10`, GD-78). **Ghi chú trung thực:** đây gần như hoà. (b) chỉ kích hoạt 1–3 lần mỗi ca (ở các bước đầu) và ở nhóm bms làm ước cao η_Li *trung bình* xấu hơn (ca bms 10 °C 1C −10 %: 15.5 mV so với 8.8 mV). Ở nhiễu phòng thí nghiệm hai cấu hình cho kết quả trùng nhau. Kết luận về biên an toàn (mục 6.5) giống nhau với cả hai cấu hình.
+
+### 6.4. Kết quả lưới đầy đủ (cấu hình chọn, run 44219690606)
+
+76 ca: 10/25/40 °C × 0.5C/1C (CCCV tới 4.116 V rồi giữ áp tới C/50) × nhiễu lab/bms/bms_off × sai SOC đầu ±10 % × pin nominal/mismatch, cộng 4 ca mismatch_Rc (GD-77). Không ca nào dừng giữa chừng. Số tính sau 600 s đầu. Mỗi ô: trung vị / xấu nhất trong nhóm.
+
+| Pin thật | Nhiễu | Số ca | SOC RMSE (%) | η_Li RMSE (mV) | η_Li ước cao lớn nhất (mV) | T RMSE (K) | Hội tụ η_Li < 5 mV (s, trung vị) | NEES η (trung vị; lý tưởng 1) |
+|---|---|---|---|---|---|---|---|---|
+| nominal | lab | 12 | 0.14 / 0.52 | 1.0 / 2.6 | 0.3 | 0.016 / 0.022 | 65 | 5.3 |
+| nominal | bms | 12 | 0.12 / 0.49 | 1.0 / 2.5 | 0.7 | 0.050 / 0.056 | 15 | 4.7 |
+| nominal | bms_off | 12 | 1.08 / 1.68 | 1.2 / 1.7 | 3.3 | 0.060 / 0.068 | 15 | 7.6 |
+| mismatch | lab | 12 | 0.64 / 0.92 | 2.9 / 4.8 | 12.2 | 0.039 / 0.073 | 1501 | 40 |
+| mismatch | bms | 12 | 0.64 / 1.69 | 3.0 / 5.8 | 15.5 | 0.19 / 0.32 | 1720 | 10 |
+| mismatch | bms_off | 12 | 0.69 / 1.52 | 4.5 / 7.3 | **17.0** | 0.16 / 0.35 | 4658 | 18 |
+| mismatch_Rc | bms | 4 | 0.70 / 0.85 | 4.3 / 5.4 | 12.6 | 0.19 / 0.28 | 5167 | 15 |
+
+Đọc bảng:
+
+- **Pin đúng mô hình (nominal):** EKF tốt. SOC sai dưới 0.6 % (trừ khi cảm biến dòng lệch 50 mA: SOC trôi tới 1.7 %, vì lệch không cộng dồn và bộ lọc không biết). η_Li ước cao không quá 3.3 mV. SOC hội tụ về dưới 1 % sau 5 s (một mẫu) khi không có lệch dòng.
+- **Pin lệch tham số (mismatch: j₀ và D_s ×0.8, h ×0.8, R_film ×1.5, mất 2 % lithium):** SOC vẫn sai dưới 1.7 %, nhiệt độ dưới 0.35 K. Nhưng η_Li bị ước **cao** có hệ thống (phía nguy hiểm) 12–17 mV, và sai số > 5 mV kéo dài phần lớn lần sạc (hội tụ < 5 mV chỉ sau 1500–4700 s). Lý do: j₀ và D_s nhỏ hơn làm quá thế thật lớn hơn, mà EKF không có trạng thái nào để "thấy" điều đó; điện áp đo khớp được bằng cách dịch nồng độ, nhưng η_Li thì không khớp.
+- Ước cao lớn nhất theo nhiệt độ (mismatch): 10 °C 17.0 mV; 25 °C 14.1 mV; 40 °C 15.0 mV. Theo dòng: 0.5C 17.0; 1C 15.5 mV.
+- **Độ nhất quán:** NEES η 5–40 (lý tưởng 1). σ_η của bộ lọc chỉ 0.3–1.2 mV trong khi sai thật tới 17 mV. Tức là **P không dùng được** để đặt biên an toàn tự động.
+- Trạng thái lão hoá: theo cấu hình chọn, rf và LLI giữ ở giá trị đầu (BOL) cả lần sạc, nên không có ước lượng lão hoá trong lần sạc (mục 6.2).
+- Thời gian: 0.52–0.55 s cho một bước 5 s (máy GitHub).
+
+### 6.5. Biên an toàn 45 mV có che được sai số ước lượng không?
+
+**Không, không đủ, nói thẳng.**
+
+- Biên δ = 10 + 35 mV (GD-28) được đặt cho **các sai số khác**: 10 mV cho sai số ROM so với DFN (η_Li lớn nhất tới 12.8 mV, `mo_hinh_rut_gon.md`) và 35 mV cho phần điện áp sạc mô hình thấp hơn đo (GD-41). Không phần nào được dành cho sai số của bộ ước lượng.
+- Sai số ước lượng phía nguy hiểm xấu nhất: **17 mV** (pin lệch tham số), chỉ 0.3–3.3 mV khi pin đúng mô hình.
+- Ví dụ cụ thể: ở 10 °C 0.5C pin lệch tham số, η_Li thật thấp nhất 43.7 mV (đã dưới 45 mV) nhưng EKF báo 48.4–50.8 mV, tức **NMPC sẽ tin là còn an toàn khi thực tế đã vượt biên**. Ở 10 °C 1C, η_Li thật xuống 28 mV trong khi EKF báo 34–36 mV.
+- Đề xuất cho NMPC + EKF (cần người dùng quyết, chưa áp): cộng thêm biên lùi theo sai số thực nghiệm δ_EKF ≈ 17 mV (làm tròn 20 mV) ⇒ ràng buộc η_Li,ước ≥ 45 + 20 = 65 mV khi chạy với EKF; hoặc giữ 45 mV và báo rõ rủi ro. Biên lùi lớn hơn sẽ làm sạc chậm hơn; điều này ảnh hưởng so sánh phương án 4 (NMPC biết hết) và 5 (NMPC + EKF).
+- Mức 17 mV chỉ đúng cho kiểu lệch tham số đã thử (±20 %, GD-72). Lệch lớn hơn sẽ cho sai số lớn hơn.
 
 ## 7. Giao diện cho vòng kín NMPC (ghi chú tích hợp)
 
@@ -116,10 +159,16 @@ KQ_THU
 1. **Cách nối.** `est = ekf_estimator(par, noise, soc_guess, T0, Tamb)`, rồi `cfg.estimator = @(y, trk, meas) est.estimate(meas);` trong `nmpc_closed_loop`. Dòng trong `meas.I` theo quy ước của NMPC (sạc ≥ 0); bộ bọc tự đổi dấu. `xhat` trả về đủ `rom.nx` trạng thái, bộ đếm lão hoá đặt 0 (như `rom_from_dfn`).
 2. **Truyền đủ mẫu đo, không chỉ mẫu cuối.** Hiện `nmpc_closed_loop` chỉ đưa một mẫu (t, I, V, T) ở cuối mỗi chu kỳ 30 s. EKF được thử với mẫu 5 s. Nên đưa cả vectơ mẫu của đoạn vừa chạy: `meas = struct('t', t_truoc + o.t, 'I', -o.I, 'V', o.V, 'T', o.T)` (cùng lưới `dt = 5 s` mà `plant_run` đã dùng). `ekf_estimator.estimate` đã nhận vectơ. Thêm nhiễu cảm biến bằng `ekf_sensor(c, I, V, T, seed)` trước khi đưa vào.
 3. **Lần gọi đầu.** `meas.V = NaN` ⇒ EKF chỉ dự đoán. Nên cho EKF chạy 600 s đầu (giai đoạn hội tụ, mục 6) với dòng sạc thấp hoặc dùng biên η_Li rộng hơn trong khoảng đó.
-4. **R_film của NMPC.** Mô hình NMPC dùng R_film BOL cố định. EKF dùng cùng giá trị trong lần sạc (cấu hình chọn ở mục 6.2 giữ rf trong lần sạc), nên η_Li mà NMPC tính từ `xhat` trùng η_Li của EKF. Nếu sau này cập nhật rf giữa các lần sạc thì NMPC cần nhận rf làm tham số (thêm phần tử vào vectơ `p` của `nmpc_model.m`, nhân `rom.Rfilm_n` và `rom.ap.Rfilm`); nếu không, η_Li của NMPC và EKF sẽ khác nhau.
-5. **Biên an toàn.** `xhat` là ước lượng điểm. σ_η từ P quá nhỏ so với sai số thật (mục 6), nên **không** dùng η_ước − 3σ làm ràng buộc. Dùng biên lùi theo sai số thực nghiệm ở mục 6.4.
+4. **R_film của NMPC.** Mô hình NMPC dùng R_film BOL cố định. EKF dùng cùng giá trị trong lần sạc (cấu hình chọn ở mục 6.2 giữ rf = giá trị đầu trong lần sạc; mặc định BOL), nên η_Li mà NMPC tính từ `xhat` trùng η_Li của EKF. Nếu sau này cập nhật rf giữa các lần sạc thì NMPC cần nhận rf làm tham số (thêm phần tử vào vectơ `p` của `nmpc_model.m`, nhân `rom.Rfilm_n` và `rom.ap.Rfilm`); nếu không, η_Li của NMPC và EKF sẽ khác nhau.
+5. **Biên an toàn.** `xhat` là ước lượng điểm. σ_η từ P quá nhỏ so với sai số thật (mục 6), nên **không** dùng η_ước − 3σ làm ràng buộc. Dùng biên lùi theo sai số thực nghiệm (mục 6.5: ≈ 17 mV xấu nhất, người dùng quyết có cộng thêm hay không). Ràng buộc `delta` của NMPC là tham số `cfg.delta`, nên thử biên lùi không cần sửa code.
 6. **Thời gian.** ~0.5–0.9 s cho một bước 5 s ⇒ 3–6 s cho một chu kỳ NMPC 30 s, chấp nhận được cho mô phỏng (chưa phải thời gian thực).
 
 ## 8. Việc còn mở
 
-KQ_MO
+1. **Biên an toàn với EKF** (mục 6.5): sai số ước cao η_Li tới 17 mV không nằm trong biên 45 mV. Cần người dùng quyết: cộng thêm biên lùi (≈ 20 mV) cho phương án NMPC + EKF, hay giữ 45 mV và báo rủi ro.
+2. **Sai số có hệ thống do lệch tham số** (j₀, D_s): EKF không thấy được. Có thể giảm bằng cách thêm trạng thái tham số chậm cho j₀ hoặc D_s (như rf), nhưng thử với rf cho thấy các tham số này khó quan sát trong một lần sạc và dễ làm hỏng η_Li. Chưa làm.
+3. **Cập nhật R_film và LLI giữa các lần sạc** (GD-76): chưa cài, chưa kiểm chứng. Hiện EKF không cung cấp ước lượng lão hoá; lão hoá trong so sánh các phương án lấy từ pin "thật" (DFN).
+4. **Độ nhất quán:** σ của bộ lọc nhỏ hơn sai số thật hàng chục lần ở pin lệch tham số. Không dùng P làm biên an toàn.
+5. **Lệch không cảm biến dòng** (bms_off) làm SOC trôi tới 1.7–3 %. Có thể thêm trạng thái lệch dòng; chưa làm.
+6. **Lựa chọn (b) fading** gần như hoà với (a) (mục 6.3); nếu người dùng muốn ưu tiên sai số trung bình thì (a) tốt hơn ở nhóm bms.
+7. Chưa chạy vòng kín NMPC + EKF (mục 7; việc của luồng NMPC).
