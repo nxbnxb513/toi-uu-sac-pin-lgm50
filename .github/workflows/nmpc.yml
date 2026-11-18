@@ -24,6 +24,12 @@ on:
       ks:
         description: "pilot: danh sach chi so k (JSON), 1..7 = 0.8, 1, 1.25, 1.5, 2, 3, khong gioi han; debug: bieu thuc MATLAB"
         default: "[1,2,3,4,5,6,7]"
+      wins:
+        description: "pilot: danh sach chi so vung (JSON), chay lai mot phan"
+        default: "[3, 8, 12]"
+      cbases:
+        description: "pilot: danh sach dong CCCV goc (JSON, C)"
+        default: "[0.5, 1]"
       win:
         description: "debug: chi so vung (soc_windows.m)"
         default: "3"
@@ -87,8 +93,8 @@ jobs:
       fail-fast: false
       max-parallel: 20
       matrix:
-        win: [3, 8, 12]     # 0->60, 20->80, 40->100 trong soc_windows.m
-        cbase: [0.5, 1]     # dong CCCV goc (C)
+        win: ${{ fromJSON(inputs.wins) }}       # mac dinh [3, 8, 12] = 0->60, 20->80, 40->100 trong soc_windows.m
+        cbase: ${{ fromJSON(inputs.cbases) }}   # mac dinh [0.5, 1] dong CCCV goc (C)
         k: ${{ fromJSON(inputs.ks) }}
     steps:
       - uses: actions/checkout@v4
