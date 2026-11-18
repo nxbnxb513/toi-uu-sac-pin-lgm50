@@ -295,3 +295,7 @@ Với mỗi trường hợp (vùng sạc × mức dòng CCCV × nhiệt độ m�
 ### Bàn giao NMPC + EKF và phân tích dòng (19/11/2026)
 - **Xong:** vòng kín NMPC + EKF (GD-89, biến thể `pilot+ekf`), run 44332295621, 42 trường hợp: `tai_lieu/ket_qua_nmpc_ekf.md` / `.csv`. Phân tích dòng sạc (`src/nmpc/current_analysis.m`, stage `current`, run 44421878394): mục 5 của `ket_qua_pilot_nmpc.md`, mục 4 của `ket_qua_nmpc_ekf.md`, dữ liệu `tai_lieu/dong_sac/`.
 - **Cần quyết:** ở 40→100 % NMPC + EKF nạp thiếu 0.21–0.35 % SOC (5 trường hợp) và vượt V_cv 0.45–1.89 mV do nhiễu đo V gần ngưỡng (v_b và điều kiện dừng dùng một mẫu đo). Đề xuất: lọc bằng trung bình 30 s, chạy lại 14 job vùng 40→100 %; hoặc giữ và báo. Vòng kín với pin lệch tham số chưa chạy.
+
+## Quyết định người dùng 19/11/2026
+- **Lưới đầy đủ chỉ chạy mô hình 5 cơ chế** (tầng 1). Tầng silicon không dùng trong lưới; chỉ nêu trong báo cáo (kết quả `ket_qua_silicon.md`) và phần giới hạn cho các vùng chạm SOC thấp.
+- **Nạp thiếu / vượt áp nhỏ chấp nhận được** (không cần chính xác tuyệt đối): KHÔNG lọc điện áp đo, KHÔNG chạy lại 14 job 40→100 %. Phân loại theo dung sai GD-96: nạp thiếu ≤ 0.5 % SOC và vượt V_cv ≤ 2 mV được tính là "đạt (trong dung sai)", vẫn ghi số thật. η_Li < 45 mV vẫn là vi phạm.
