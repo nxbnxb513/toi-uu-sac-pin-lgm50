@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
     inputs:
       stage:
-        description: "rom | pilot | all | debug | replay"
+        description: "rom | pilot | all | debug | replay | current"
         default: all
       variant:
         description: "pilot: bien the so hoc NMPC (nmpc_variant.m)"
@@ -38,7 +38,7 @@ on:
         description: "debug: dong CCCV goc (C)"
         default: "0.5"
       src_run:
-        description: "replay: so run pilot cu de lay *_series.csv"
+        description: "replay: so run pilot cu de lay *_series.csv; current: so run NMPC + EKF (none = bo qua)"
         default: "44204442587"
       maxpar:
         description: "pilot: so job song song toi da (tong toan repo <= 20)"
@@ -189,6 +189,64 @@ jobs:
         with:
           name: replay-diag
           path: results/replay
+
+  # ---- phan tich dong sac (CCCV / NMPC biet het trang thai / NMPC + EKF) tu *_series.csv ----
+  # Nguon NMPC biet het trang thai giong tai_lieu/ket_qua_pilot_nmpc.md: 44249331640 (20->80 1C k = 0.8)
+  # truoc, 44258812043 (40->100), 44237965357 (chi 0->60, 20->80).
+  current:
+    if: github.event_name == 'workflow_dispatch' && inputs.stage == 'current'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: pilot-w8-c1-k1
+          path: results/fs1
+          run-id: 44249331640
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: pilot-w12-*
+          path: results/fs2
+          run-id: 44258812043
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: pilot-w3-*
+          path: results/fs3
+          run-id: 44237965357
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: pilot-w8-*
+          path: results/fs3
+          run-id: 44237965357
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/download-artifact@v4
+        if: inputs.src_run != 'none'
+        with:
+          pattern: pilot-w*
+          path: results/ekf
+          run-id: ${{ inputs.src_run }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: matlab-actions/setup-matlab@v2
+        with:
+          cache: true
+      - name: Phan tich dong sac
+        uses: matlab-actions/run-command@v2
+        with:
+          command: >
+            addpath('src/dfn'); addpath('src/nmpc');
+            current_analysis({'results/fs1', 'results/fs2', 'results/fs3'}, 'results/ekf', 'results/current');
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: current-analysis
+          path: results/current
 
   report:
     needs: pilot
