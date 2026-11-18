@@ -24,17 +24,25 @@ fprintf('  tai Xk: V %.4f, xs_sep %.5f, max xsn %.5f, min xsn %.5f, max xsp %.4f
 Ifun = @(s) -(Xk(nx+1) + uk*s/(3600*Xk(nX)));
 xr = [];
 try
-    rr = rom_sim_ode(E, M, rom, Xk(1:nx), Ifun, Ta, linspace(0, dt, 9).', struct('sat', false));
+    rr = rom_sim_ode(E, M, rom, Xk(1:nx), Ifun, Ta, linspace(0, dt, 129).', struct('sat', false));
     if strcmp(rr.reason, 'time'), xr = rr.X(:, end); end
     fprintf('  ode15s: %s, V cuoi %.4f, xs_sep max %.5f, %.2f s\n', rr.reason, rr.V(end), max(rr.xs_sep), rr.wall);
 catch e
     fprintf('  ode15s loi: %s\n', e.message);
 end
 cfgs = {8, 8, 'zero', true; 8, 20, 'zero', false; 16, 8, 'zero', false; 32, 8, 'zero', false; ...
-        64, 8, 'zero', false; 8, 8, 'f0', false; 32, 8, 'f0', false};
+        64, 8, 'zero', false; 128, 8, 'zero', false; 8, 8, 'f0', false; 32, 8, 'f0', false; ...
+        8, 8, 'sec', false; 16, 8, 'sec', false; 32, 8, 'sec', false};
 for c = 1:size(cfgs, 1)
     [nst, nit, kin, verbose] = cfgs{c, :};
-    if strcmp(kin, 'zero'), K0 = zeros(nX, 1); else, K0 = f0; end
+    switch kin
+        case 'zero', K0 = zeros(nX, 1);
+        case 'f0',   K0 = f0;
+        case 'sec'   % cat tuyen cua ode15s tren buoc dau (thoi gian chuan hoa tau)
+            if isempty(xr), continue; end
+            hs = dt/nst; xh = interp1(rr.t, rr.X.', hs).';
+            K0 = [(xh - Xk(1:nx))/(hs/dt/N); uk; 0];
+    end
     tw = tic;
     [Xn, first] = irk(nst, nit, K0, verbose);
     err = NaN; if ~isempty(xr) && all(isfinite(Xn)), err = max(abs(Xn(1:nx) - xr)); end
@@ -49,8 +57,7 @@ fprintf('=== het nmpc_irk_probe ===\n\n');
         for ss = 1:nst
             for it = 1:nit
                 Xs = [Xc + h*(A(1, 1)*K(:, 1) + A(1, 2)*K(:, 2)), Xc + h*(A(2, 1)*K(:, 1) + A(2, 2)*K(:, 2))];
-                [f1, J1, o1] = F(Xs(:, 1), uk, Ta); [f2, J2, o2] = F(Xs(:, 2), uk, Ta);
-                f1 = full(f1); f2 = full(f2); J1 = full(J1); J2 = full(J2); o1 = full(o1); o2 = full(o2);
+                [f1, J1, o1] = Fs(Xs(:, 1)); [f2, J2, o2] = Fs(Xs(:, 2));
                 G = [K(:, 1) - f1; K(:, 2) - f2];
                 DG = eye(2*nX) - [h*A(1, 1)*J1, h*A(1, 2)*J1; h*A(2, 1)*J2, h*A(2, 2)*J2];
                 bad = ~all(isfinite([G; DG(:)]));
@@ -73,19 +80,28 @@ fprintf('=== het nmpc_irk_probe ===\n\n');
         end
     end
 
+    function [f, J, o] = Fs(Xa)
+        % Newton sinh ma cua z that bai (CasADi bao loi; trong ma C cua acados: NaN) -> NaN
+        try
+            [f, J, o] = F(Xa, uk, Ta); f = full(f); J = full(J); o = full(o);
+        catch
+            f = nan(nX, 1); J = nan(nX); o = nan(io.xsp(end), 1);
+        end
+    end
+
     function s = stats(Xs, o)
         s = [min(Xs(rom.ix.thn)), max(Xs(rom.ix.thn)), o(io.xs_sep), min(Xs(rom.ix.ce)), max(Xs(rom.ix.ce)), Xs(rom.ix.T), o(io.V), 1e3*o(io.eta_sep)];
     end
 
-    function explain(Xs, Fs, Js)
+    function explain(Xs, FF, Js)
         % nac co NaN: z cua Newton sinh ma (fast_newton) so voi Newton tat dan (rom_solve_z)
         for j = 1:2
-            if all(isfinite([Fs(:, j); Js(:, j)])), continue; end
+            if all(isfinite([FF(:, j); Js(:, j)])), continue; end
             xs = Xs(1:nx, j); Ij = -Xs(nx+1, j);
             fprintf('    -> nac %d: I %.3f A, thn [%.4f %.4f], thp [%.4f %.4f], ce [%.4f %.4f], T %.2f, cLi max %.3g\n', j, -Ij, ...
                 min(xs(rom.ix.thn)), max(xs(rom.ix.thn)), min(xs(rom.ix.thp)), max(xs(rom.ix.thp)), min(xs(rom.ix.ce)), max(xs(rom.ix.ce)), ...
                 xs(rom.ix.T), max(xs(rom.ix.cLi)));
-            fprintf('       NaN trong f tai cac chi so: %s\n', mat2str(find(~isfinite(Fs(:, j))).'));
+            fprintf('       NaN trong f tai cac chi so: %s\n', mat2str(find(~isfinite(FF(:, j))).'));
             try
                 zg = full(E.ZG([xs; Ij; Ta])); zf = full(E.zfun(xs, Ij, Ta));
                 gf = full(M.G(zf, [xs; Ij; Ta])); gg = full(M.G(zg, [xs; Ij; Ta]));
