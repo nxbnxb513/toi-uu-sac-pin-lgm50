@@ -54,6 +54,10 @@ switch variant
                         bo.num_steps = [str2double(tk{i}(2:end)), ns*ones(1, bo.N - 1)];
                         continue
                     end
+                    if startsWith(tk{i}, 'h') && ~isnan(str2double(tk{i}(2:end)))
+                        bo.steps_hI = str2double(tk{i}(2:end));   % 'h18': dien tich nap toi da moi buoc IRK 18 A s (GD-87)
+                        continue
+                    end
                     if startsWith(tk{i}, 'n'), bo.max_solves = str2double(tk{i}(2:end));   % 'n8': dung sau 8 lan giai
                     else, error('nmpc_variant: tok %s', tk{i}); end
             end

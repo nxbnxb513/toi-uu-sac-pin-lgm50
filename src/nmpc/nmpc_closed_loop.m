@@ -65,28 +65,19 @@ tw = tic;
 % ---- thoi gian sac an toan nhanh nhat (ROM) va doan dau tu CCCV ----
 Imax = C.opt.Imax;
 tmax_prof = max(cfg.tmax, 1);
-Pf = nmpc_cccv_rom(M, rom, x0, Ta, soc_t, Imax, lim, 0, cfg.dt_prof, tmax_prof);
-R.T_min_safe = Pf.T;
-fprintf('  sac an toan nhanh nhat (ROM, I <= %.1f A): %s, t = %.0f s, SOC %.4f (%d lan tich phan, %.1f s)\n', ...
-    Imax, Pf.reason, Pf.t_end, Pf.soc_end, Pf.nsim, Pf.wall);
-if ~unlimited && R.T_min_safe > cfg.budget
+if isfield(cfg, 'guess') && ~isempty(cfg.guess)
+    G = cfg.guess;   % da tinh trong pilot_run.m (cung x0, cung cai dat) de chon so buoc IRK (GD-87)
+else
+    G = nmpc_guess(M, rom, x0, cfg, lim, Imax);
+end
+Pf = G.Pf; R.T_min_safe = Pf.T;
+if G.infeasible
     R.reason = 'infeasible_budget';
     R.t_prof = toc(tw); R.wall = toc(tw);
     fprintf('  => KHONG THE SAC AN TOAN trong ngan sach %.0f s (nhanh nhat %.0f s)\n', cfg.budget, R.T_min_safe);
     return
 end
-% doan dau "tu duong CCCV": CCCV an toan o dong goc; neu qua ngan sach thi dong CC
-% lon dan (I_cc T_CCCV / ngan sach, roi I_max) - duong an toan nhanh nhat da tinh.
-P = []; Icc_list = cfg.Icc_cccv;
-if ~unlimited
-    Icc_list = unique(min(Imax, [cfg.Icc_cccv, cfg.Icc_cccv*max(1, cfg.T_cccv/cfg.budget)*1.05]));
-end
-for Icc = Icc_list
-    Pc = nmpc_cccv_rom(M, rom, x0, Ta, soc_t, Icc, lim, 0, cfg.dt_prof, tmax_prof);
-    fprintf('  doan dau CCCV an toan tren ROM, I_cc = %.2f A: %s, t = %.0f s, SOC %.4f (%.1f s)\n', Icc, Pc.reason, Pc.t_end, Pc.soc_end, Pc.wall);
-    if isfinite(Pc.T) && (unlimited || Pc.T <= cfg.budget), P = Pc; break; end
-end
-if isempty(P), P = Pf; Icc = Imax; end
+P = G.P; Icc = G.Icc;
 R.guess_T = P.t_end; R.guess_Icc = Icc;
 R.guess_loss = P.X(rom.ix.nsei, end) + P.X(rom.ix.ndl, end);
 R.t_prof = toc(tw);

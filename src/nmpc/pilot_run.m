@@ -56,6 +56,23 @@ writetable(table(Sc.t, -Sc.I, Sc.V, Sc.T - 273.15, Sc.soc, Sc.xs_sep, 1e3*Sc.eta
 bo = struct('N', cfgn.N, 'Imax', cfgn.Imax, 'codegen_dir', fullfile(pwd, 'c_generated_code'), 'E', M.E);
 bo = nmpc_variant(bo, variant);
 if isfield(bo, 'w_loss_scale'), cfgn.w_loss_scale = bo.w_loss_scale; end
+% doan dau cua tung ngan sach (cung x0 voi vong kin, estimator mac dinh = rom_from_dfn)
+% -> so buoc IRK moi khoang theo dien tich nap moi buoc (GD-87), tru khi bien the dat san
+y0 = dfn_state_soc(parp, soc0, Ta);
+y0 = dfn_consistent_init(0, y0, parp, struct('mode', 'I', 'value', 0, 'Tamb', Ta));
+x0 = rom_from_dfn(rom, parp, y0, aging_track('init', parp));
+limg = struct('Vcv', v_limit(parp), 'Tmax', cfgn.Tmax, 'delta', cfgn.delta, 'xsmax', cfgn.xsmax, 'Icut', parp.Qnom/50, 'soc_tol', 0.005);
+Gs = cell(1, numel(Ks));
+for ik = iks(:).'
+    fprintf('doan dau, k = %g:\n', Ks(ik));
+    Gs{ik} = nmpc_guess(M, rom, x0, cl_cfg(Ks(ik)), limg, cfgn.Imax);
+end
+if ~isfield(bo, 'num_steps')
+    hI = 36; if isfield(bo, 'steps_hI'), hI = bo.steps_hI; end
+    Pl = cellfun(@(g) g.P, Gs(iks), 'UniformOutput', false);
+    bo.num_steps = nmpc_steps(Pl, cfgn.N, hI);
+end
+fprintf('So buoc IRK moi khoang (GD-87): %s (tong %d)\n', mat2str(bo.num_steps), sum(bo.num_steps .* ones(1, cfgn.N)));
 C = nmpc_build(rom, par, bo);
 fprintf('acados: tao + bien dich bo giai %.1f s\n', C.t_build);
 C.M = M; C.par = par; C.sweep = false;
@@ -66,10 +83,9 @@ for ik = iks(:).'
     left_s = 60*job_min - toc(tjob);
     nleft = sum(iks >= ik);
     fprintf('\n----- %s: k = %g, ngan sach %.0f s (con %.0f s thoi gian job cho %d lan) -----\n', tag, k, k*cc.T_CCCV, left_s, nleft);
-    cl = struct('soc0', soc0, 'soc1', soc1, 'soc_target', soc_t, 'Tamb', Ta, 'budget', k*cc.T_CCCV, 'Ts', cfgn.Ts, ...
-        'w_loss_scale', cfgn.w_loss_scale, 'w_dI', cfgn.w_dI, 'Tmax', cfgn.Tmax, 'delta', cfgn.delta, 'xsmax', cfgn.xsmax, ...
-        'tmax', cfgn.tmax_factor*cc.T_CCCV, 'Cdis', 0.5, 'Icc_cccv', Cbase*par.Qnom, 'T_cccv', cc.T_CCCV, ...
-        'wall_max', max(left_s/nleft, 60));
+    cl = cl_cfg(k);
+    cl.wall_max = max(left_s/nleft, 60);
+    cl.guess = Gs{ik};
     % cong tac cua bien the (chia doi tim loi, GD-86) chuyen sang vong kin
     ff = {'free_I0', 'guess_mode', 'shift', 'vb_on', 'w_abs', 'soc_rom', 'qp_dump', 'max_solves', 'irk_probe'};
     for i = 1:numel(ff), if isfield(bo, ff{i}), cl.(ff{i}) = bo.(ff{i}); end, end
@@ -118,6 +134,12 @@ for ik = iks(:).'
     end
 end
 fprintf('PILOT %s: XONG sau %.0f s\n', jtag, toc(tjob));
+
+    function cl = cl_cfg(k)
+        cl = struct('soc0', soc0, 'soc1', soc1, 'soc_target', soc_t, 'Tamb', Ta, 'budget', k*cc.T_CCCV, 'Ts', cfgn.Ts, ...
+            'w_loss_scale', cfgn.w_loss_scale, 'w_dI', cfgn.w_dI, 'Tmax', cfgn.Tmax, 'delta', cfgn.delta, 'xsmax', cfgn.xsmax, ...
+            'tmax', cfgn.tmax_factor*cc.T_CCCV, 'Cdis', 0.5, 'Icc_cccv', Cbase*par.Qnom, 'T_cccv', cc.T_CCCV, 'dt_prof', 30);
+    end
 end
 
 function parp = plant_params(par)
