@@ -247,3 +247,11 @@ Với mỗi trường hợp (vùng sạc × mức dòng CCCV × nhiệt độ m�
 - SOH mặc định = Q/4.865 Ah (GD-60); cột phụ `SOH_rpt0_pct`.
 - **Kết quả:** mô hình cho LLI/LAM khoảng ½ thực nghiệm; MPE_tot 22–25 % (Expt 2) so với 10–12 % của Li 2025. Không chỉnh tham số.
 - **Cần người dùng quyết:** chạy độ nhạy hay không — (a) hệ số SEI 1/2 như code tác giả thay vì 1/4 theo bài gốc; (b) biến thể `vcv42`. Với nhảy chu kỳ J_max = 20, mỗi phương án mất khoảng 1–1.7 h CI cho 6 trường hợp chạy song song.
+
+## Ghi chú bàn giao NMPC: NaN vùng SOC cao (18/11/2026)
+
+- **Nguyên nhân** status 1 (NaN, SQP vòng 0) ở 40→100 %: Newton của bộ tích phân IRK acados phân kỳ khi một bước nạp quá nhiều điện tích lúc dòng lớn (khoảng dự báo ~246 s, 8 bước = 31 s/bước). Không phải lỗi mô hình. Chi tiết và số liệu: GD-87 trong `gia_dinh.md`; công cụ `nmpc_irk_probe.m` (biến thể `+irk`).
+- **Sửa** (commit 5f2d3c3): số bước IRK mỗi khoảng chọn theo điện tích nạp mỗi bước ≤ 36 A·s (`nmpc_steps.m`), đoạn đầu tách ra `nmpc_guess.m` và tính trước khi tạo bộ giải trong `pilot_run.m`. Token biến thể mới: `f32` (khoảng đầu 32 bước), `s16`, `h<A·s>`, `irk`.
+- **Kiểm chứng**: runs 44246288104 / 44246300668 / 44246313263 / 44246325754: 96/96 lần giải không NaN.
+- `nmpc.yml` stage pilot có thêm input `wins`, `cbases` (JSON) để chạy lại một phần.
+- **Chạy lại**: run 44249312514 (40→100 %, 0.5C và 1C, đủ 7 k) và run 44249331640 (20→80 % 1C k = 0.8, 7 lần thất bại trong 44237965357). Các job vùng 12 của 44237965357 chạy code cũ ⇒ bỏ, dùng kết quả của 44249312514. Việc tiếp: tải artifact, gộp với các job vùng 3/8 của 44237965357 (`pilot_report`), điền `ket_qua_pilot_nmpc.md`.
