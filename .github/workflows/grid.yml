@@ -1,0 +1,144 @@
+name: Luoi so sanh day du (CCCV / NMPC / NMPC + EKF)
+
+# Luoi day du (nguoi dung chot 19/11/2026): chi mo hinh 5 co che, "pin that" = DFN CO lao hoa
+# (NMPC_PLANT_AGING=1 <=> par.aging.validated = true trong pilot_run.m > plant_params, GD-81/GD-97),
+# 15 vung x C_base 0.3/0.5/1 x 10/25/40 degC x 7 muc k x {NMPC biet het trang thai, NMPC + EKF};
+# CCCV chay trong moi job (cot cccv_*). Trang thai cham theo GD-96.
+# Chay tiep duoc: plan doc CSV cua cac run truoc (prev_runs), chi xep job cho truong hop chua xong;
+# report gop moi run. Mot run toi da 256 job; bam lai voi prev_runs = moi run da chay.
+on:
+  workflow_dispatch:
+    inputs:
+      wins:
+        description: "chi so vung (soc_windows.m), JSON"
+        default: "[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]"
+      cbases:
+        description: "dong CCCV goc (C), JSON"
+        default: "[0.3, 0.5, 1]"
+      temps:
+        description: "nhiet do moi truong (degC), JSON"
+        default: "[10, 25, 40]"
+      ks:
+        description: "chi so k (1..7 = 0.8, 1, 1.25, 1.5, 2, 3, khong gioi han), JSON"
+        default: "[1,2,3,4,5,6,7]"
+      methods:
+        description: "phuong phap, JSON: nmpc (biet het trang thai) / ekf (NMPC + EKF)"
+        default: '["nmpc", "ekf"]'
+      kper:
+        description: "so muc k toi da moi job"
+        default: "2"
+      maxjobs:
+        description: "so job toi da trong run nay (<= 256)"
+        default: "256"
+      maxpar:
+        description: "so job song song toi da (tong toan repo <= 20)"
+        default: "20"
+      prev_runs:
+        description: "cac run grid truoc (JSON, vd [123, 456]) de bo qua truong hop da xong va gop bao cao"
+        default: "[]"
+      tag:
+        description: "nhan cua run (sample | grid)"
+        default: "grid"
+
+concurrency:
+  group: grid-${{ github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      matrix: ${{ steps.p.outputs.matrix }}
+      njobs: ${{ steps.p.outputs.njobs }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tai ket qua cua cac run truoc
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p results/prev
+          for id in $(echo '${{ inputs.prev_runs }}' | python3 -c 'import json,sys; print(" ".join(str(x) for x in json.load(sys.stdin)))'); do
+            gh run download "$id" -R "$GITHUB_REPOSITORY" -p 'gcase-*' -D "results/prev/$id" || echo "run $id: khong tai duoc"
+          done
+      - id: p
+        name: Lap ke hoach (bo qua truong hop da xong)
+        run: |
+          python3 src/nmpc/grid.py plan results/prev '${{ inputs.wins }}' '${{ inputs.cbases }}' '${{ inputs.temps }}' \
+            '${{ inputs.ks }}' '${{ inputs.methods }}' ${{ inputs.kper }} ${{ inputs.maxjobs }} > matrix.json
+          echo "matrix=$(cat matrix.json)" >> "$GITHUB_OUTPUT"
+          echo "njobs=$(python3 -c 'import json; print(len(json.load(open("matrix.json"))["include"]))')" >> "$GITHUB_OUTPUT"
+
+  run:
+    needs: plan
+    if: needs.plan.outputs.njobs != '0'
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    env:
+      NMPC_PLANT_AGING: '1'   # pin that = DFN co lao hoa (par.aging.validated = true), GD-97
+    strategy:
+      fail-fast: false
+      max-parallel: ${{ fromJSON(inputs.maxpar) }}
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tao thu muc codegen truoc khi MATLAB chay
+        run: mkdir -p "${{ runner.temp }}/mwork/c_generated_code" results/grid
+      - uses: ./.github/actions/setup-acados
+        with:
+          casadi-matlab: 'true'
+          codegen-dir: ${{ runner.temp }}/mwork/c_generated_code
+      - uses: matlab-actions/setup-matlab@v2
+        with:
+          cache: true
+      - name: ${{ matrix.m }} vung ${{ matrix.w }}, ${{ matrix.c }}C, ${{ matrix.T }} degC, k so ${{ matrix.ks }}
+        uses: matlab-actions/run-command@v2
+        with:
+          command: >
+            cd(fullfile('${{ runner.temp }}', 'mwork'));
+            addpath('${{ github.workspace }}/src/dfn'); addpath('${{ github.workspace }}/src/nmpc'); addpath('${{ github.workspace }}/src/ekf');
+            pilot_run(${{ matrix.w }}, ${{ matrix.c }}, ${{ matrix.ks }}, '${{ github.workspace }}/results/grid', 'D', '${{ matrix.v }}', ${{ matrix.T }}, 330,
+            struct('wall', 'greedy', 'margin_s', 600, 'min_start_s', 1800));
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gcase-${{ matrix.m }}-w${{ matrix.w }}-c${{ matrix.c }}-T${{ matrix.T }}-k${{ matrix.n }}
+          path: results/grid
+          if-no-files-found: warn
+
+  report:
+    needs: [plan, run]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tai ket qua cua cac run truoc
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p results/all
+          for id in $(echo '${{ inputs.prev_runs }}' | python3 -c 'import json,sys; print(" ".join(str(x) for x in json.load(sys.stdin)))'); do
+            gh run download "$id" -R "$GITHUB_REPOSITORY" -p 'gcase-*' -D "results/all/$id" || echo "run $id: khong tai duoc"
+          done
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          pattern: gcase-*
+          path: results/all/${{ github.run_id }}
+      - name: Gop ket qua (GD-96)
+        run: |
+          python3 src/nmpc/grid.py report results/all results/report
+          python3 src/nmpc/grid.py plan results/all '${{ inputs.wins }}' '${{ inputs.cbases }}' '${{ inputs.temps }}' \
+            '${{ inputs.ks }}' '${{ inputs.methods }}' ${{ inputs.kper }} 100000 > results/report/remaining.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: grid-report-${{ inputs.tag }}
+          path: results/report

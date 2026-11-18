@@ -1,4 +1,4 @@
-function pilot_run(iw, Cbase, iks, outdir, romcfg, variant, Tamb_C, job_min)
+function pilot_run(iw, Cbase, iks, outdir, romcfg, variant, Tamb_C, job_min, gopt)
 %PILOT_RUN  Chay thu (dot 1, buoc G): MOT vung SOC x MOT muc dong CCCV, du cac
 % muc ngan sach, NMPC biet het trang thai, pin "that" = DFN day du.
 %   iw:    chi so trong luoi soc_windows.m (15 vung buoc 20 %); dot chay thu dung
@@ -24,6 +24,10 @@ if nargin < 5 || isempty(romcfg), romcfg = 'D'; end
 if nargin < 6 || isempty(variant), variant = 'base'; end
 if nargin < 7 || isempty(Tamb_C), Tamb_C = 25; end
 if nargin < 8 || isempty(job_min), job_min = 320; end
+if nargin < 9 || isempty(gopt), gopt = struct(); end
+if ~isfield(gopt, 'wall'), gopt.wall = 'split'; end
+if ~isfield(gopt, 'margin_s'), gopt.margin_s = 600; end
+if ~isfield(gopt, 'min_start_s'), gopt.min_start_s = 1800; end
 tjob = tic;
 if ~exist(outdir, 'dir'), mkdir(outdir); end
 % NMPC + EKF (GD-89): muc nhieu "BMS thuc te" (GD-71), sai SOC dau +10 % (GD-77), 60 s mau nghi
@@ -99,14 +103,24 @@ C = nmpc_build(rom, par, bo);
 fprintf('acados: tao + bien dich bo giai %.1f s\n', C.t_build);
 C.M = M; C.par = par; C.sweep = false;
 
+t_prep = toc(tjob);    % CCCV + doan dau + tao bo giai (chung cho moi k cua job)
 for ik = iks(:).'
     k = Ks(ik);
+    tcase = tic;
     tag = sprintf('%s_k%d', jtag, ik);
     left_s = 60*job_min - toc(tjob);
     nleft = sum(iks >= ik);
     fprintf('\n----- %s: k = %g, ngan sach %.0f s (con %.0f s thoi gian job cho %d lan) -----\n', tag, k, k*cc.T_CCCV, left_s, nleft);
     cl = cl_cfg(k);
-    cl.wall_max = max(left_s/nleft, 60);
+    if strcmp(gopt.wall, 'greedy')
+        if left_s < gopt.min_start_s
+            fprintf('BO QUA %s: con %.0f s < %.0f s (khong ghi CSV, luot sau chay lai)\n', tag, left_s, gopt.min_start_s);
+            continue
+        end
+        cl.wall_max = left_s - gopt.margin_s;
+    else
+        cl.wall_max = max(left_s/nleft, 60);
+    end
     cl.guess = Gs{ik};
     % cong tac cua bien the (chia doi tim loi, GD-86) chuyen sang vong kin
     ff = {'free_I0', 'guess_mode', 'shift', 'vb_on', 'w_abs', 'soc_rom', 'qp_dump', 'max_solves', 'irk_probe'};
@@ -130,6 +144,7 @@ for ik = iks(:).'
     end
     row = pilot_row(iw, soc0, soc1, Cbase, Tamb_C, k, romcfg, variant, cc, cv, cl, R, C, cfgn, rp_cc, rp);
     row.job_wall_s = toc(tjob);    % tu dau pilot_run (gom CCCV + tao bo giai) toi khi xong lan vong kin nay
+    row.case_wall_s = toc(tcase); row.prep_wall_s = t_prep;   % thoi gian mot truong hop (vong kin + xa + replay) / phan chung
     if use_ekf, row = est_cols(row, est, R, soc_off0, ekf_noise, ekf_socerr); end
     writetable(struct2table(row, 'AsArray', true), fullfile(outdir, ['pilot_' tag '.csv']));   % AsArray: truong rong ('') o dong infeasible
     if isempty(R) || strcmp(R.reason, 'infeasible_budget'), continue; end
