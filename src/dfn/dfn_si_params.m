@@ -42,8 +42,10 @@ si.dsto = 0.03;               % -      GD-91
 si.w_lo = 0.1; si.w_hi = 0.9; % -      GD-91
 si.m    = 2;                  % -      GD-91
 % Gia tri hieu chinh (GD-93; tai_lieu/ket_qua_silicon.md). form: 'A' | 'B' | 'C'
-si.form = 'B';
-si.k    = 3e-14;              % (m3/mol)^m / s  -- TAM, se thay bang gia tri hieu chinh (GD-93)
+% Hieu chinh 18/11/2026 (Expt 1, 25 C; probe run 44258818797, siB_k3e-14 va siB_k3e-15):
+% dang C co RMSE LAM_Si 7.9 diem % (B 13.2, A 28.4); k* = 3.53e-14 (probe 3e-14), 3.32e-14 (probe 3e-15).
+si.form = 'C';
+si.k    = 3.5e-14;            % (m3/mol)^m / s  (GD-93)
 fn = fieldnames(o);
 for i = 1:numel(fn), si.(fn{i}) = o.(fn{i}); end
 switch si.form
