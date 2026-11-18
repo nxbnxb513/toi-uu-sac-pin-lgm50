@@ -1,18 +1,78 @@
-# Kết quả chạy thử NMPC (biết hết trạng thái) — ĐANG CHẠY, CHƯA CÓ SỐ
+# Kết quả chạy thử NMPC (biết hết trạng thái) so với CCCV, 25 °C
 
-Cập nhật 18/11/2026. **Chưa có kết quả NMPC nào.** Tài liệu này ghi tình trạng để phiên sau điền bảng.
+Cập nhật 18/11/2026. 3 vùng (0→60, 20→80, 40→100 %) × CCCV 0.5C / 1C × 7 mức ngân sách k (t ≤ k·T_CCCV) = 42 trường hợp. Số liệu đầy đủ (mọi cột): `tai_lieu/ket_qua_pilot_nmpc.csv`.
 
-## 1. Đang chạy
-- Run pilot: https://github.com/nxbnxb513/toi-uu-sac-pin-lgm50/actions/runs/44204442587
-  (42 job = 3 vùng 0→60, 20→80, 40→100 % × CCCV 0.5C/1C × 7 mức k; 25 °C; biến thể số học `pilot`, GD-80; tối đa 20 job song song; job `report` gộp thành artifact `pilot-report`).
-- Pin "thật" = DFN **không** lão hoá; lão hoá chấm hậu kiểm TẠM THỜI (`aging_source = posthoc_provisional`, GD-81). Tự chuyển sang lão hoá của DFN khi `par.aging.validated = true`.
+**Lưu ý quan trọng:**
+- Lão hoá là chấm **hậu kiểm TẠM THỜI** (`aging_source = posthoc_provisional`, GD-81): pin "thật" là DFN không lão hoá, mất vĩnh viễn (SEI + Li chết) tính bằng `aging_rates.m` dọc quỹ đạo DFN, sau sạc **và** xả 0.5C về SOC đầu vùng. Số sẽ đổi khi DFN có lão hoá đã kiểm chứng.
+- Nguồn dòng: vùng 0→60 % và 20→80 % từ run 44237965357 (8 bước IRK cố định mỗi khoảng); riêng 20→80 % 1C k = 0.8 từ run 44249331640 (có GD-87; bản cũ có 7 lần giải thất bại). Vùng 40→100 % từ run 44258812043 (có GD-87, GD-88 và sửa `struct2table`); bỏ các dòng 40→100 % của 44237965357 (code cũ, NaN).
+- Trạng thái: ok = nạp đủ (tới SOC mà CCCV đạt) trong ngân sách, không vi phạm (ngưỡng 1 mV cho V/η); ok_violation = nạp đủ nhưng vi phạm ràng buộc trên DFN; infeasible = **không thể sạc an toàn trong thời gian này**.
+- "giảm" = 1 − mất NMPC / mất CCCV (dương = NMPC tốt hơn).
 
-## 2. Đã biết từ các lần gỡ lỗi
-- CCCV 0.5C, 0→60 % (run 44115620782): T_CCCV = 4200 s, dừng ở SOC đích trong pha CC; mất vĩnh viễn 0.01175 mAh (SEI 0.01149, Li chết 2.5·10⁻⁴) sau sạc + xả; Li mạ đỉnh 0.72 mAh (thống kê); không vi phạm (η_Li min 87 mV > 45 mV, x_s, T đều trong giới hạn).
-- NMPC với cài đặt cũ: mỗi lần giải chạy hết 60 vòng SQP, 145–200 s/lần giải (≈ 3 s/vòng: tuyến tính hoá ≈ 1.2 s, tìm kiếm đường ≈ 2 s) ⇒ một lần sạc 4200 s cần ~7 giờ: **không khả thi**.
-- Run debug 44195329318: SQP thực chất hội tụ sau 3–4 vòng (res_stat ≈ 2·10⁻⁴, res_eq ≈ 3·10⁻⁴ = sàn sai số tích phân IRK); 56 vòng sau gần như không đổi gì ⇒ biến thể `pilot` (GD-80). `jac_reuse = 1` cho NaN ⇒ bỏ.
-- Tạo + biên dịch bộ giải acados: 450–620 s mỗi job.
+## 1. Bảng kết quả
 
-## 3. Việc phiên sau
-1. Đọc artifact `pilot-report` của run 44204442587, điền bảng: T_CCCV, mất vĩnh viễn CCCV/NMPC, % giảm, Li mạ, vi phạm trên DFN, thống kê bộ giải, thời gian mỗi job.
-2. Ngoại suy lưới đầy đủ (15 vùng × 3 C_base × 3 T × 7 k) trên 20 job song song từ cột `job_wall_s`.
+| Vùng | CCCV | k | ngân sách (s) | trạng thái | t sạc (s) | mất CCCV (mAh) | mất NMPC (mAh) | giảm (%) | η_Li min (mV) | vi phạm V / η (mV) | lần giải / thất bại | giải TB (ms) | thời gian job (s) | run |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 0-60 | 0.5C | 0.8 | 3360 | ok | 3357 | 0.01175 | 0.01183 | -0.7 | 82.0 | 0.00 / 0.00 | 178 / 0 | 7849 | 2172 | 44237965357 |
+| 0-60 | 0.5C | 1 | 4200 | ok | 4138 | 0.01175 | 0.01170 | 0.4 | 84.9 | 0.00 / 0.00 | 204 / 0 | 6070 | 1918 | 44237965357 |
+| 0-60 | 0.5C | 1.25 | 5250 | ok | 4161 | 0.01175 | 0.01170 | 0.4 | 85.2 | 0.00 / 0.00 | 205 / 0 | 8950 | 2655 | 44237965357 |
+| 0-60 | 0.5C | 1.5 | 6300 | ok | 4161 | 0.01175 | 0.01170 | 0.5 | 85.3 | 0.00 / 0.00 | 205 / 0 | 11998 | 3267 | 44237965357 |
+| 0-60 | 0.5C | 2 | 8400 | ok | 4161 | 0.01175 | 0.01170 | 0.5 | 85.2 | 0.00 / 0.00 | 205 / 0 | 8291 | 2380 | 44237965357 |
+| 0-60 | 0.5C | 3 | 12599 | ok | 4161 | 0.01175 | 0.01170 | 0.5 | 85.2 | 0.00 / 0.00 | 205 / 0 | 17622 | 4239 | 44237965357 |
+| 0-60 | 0.5C | ∞ | ∞ | ok | 4160 | 0.01175 | 0.01170 | 0.5 | 85.1 | 0.00 / 0.00 | 205 / 0 | 8267 | 2433 | 44237965357 |
+| 0-60 | 1C | 0.8 | 1680 | ok | 1680 | 0.01355 | 0.01424 | -5.0 | 64.3 | 0.00 / 0.00 | 123 / 0 | 19555 | 3136 | 44237965357 |
+| 0-60 | 1C | 1 | 2100 | ok | 2100 | 0.01355 | 0.01309 | 3.4 | 70.9 | 0.00 / 0.00 | 137 / 0 | 27579 | 4499 | 44237965357 |
+| 0-60 | 1C | 1.25 | 2625 | ok | 2624 | 0.01355 | 0.01216 | 10.3 | 78.0 | 0.00 / 0.00 | 154 / 0 | 23592 | 4227 | 44237965357 |
+| 0-60 | 1C | 1.5 | 3150 | ok | 3071 | 0.01355 | 0.01184 | 12.7 | 84.1 | 0.00 / 0.00 | 169 / 0 | 15672 | 3259 | 44237965357 |
+| 0-60 | 1C | 2 | 4200 | ok | 3072 | 0.01355 | 0.01184 | 12.7 | 84.4 | 0.00 / 0.00 | 169 / 0 | 11977 | 2825 | 44237965357 |
+| 0-60 | 1C | 3 | 6300 | ok | 3072 | 0.01355 | 0.01184 | 12.7 | 84.3 | 0.00 / 0.00 | 169 / 0 | 19570 | 3963 | 44237965357 |
+| 0-60 | 1C | ∞ | ∞ | ok | 3073 | 0.01355 | 0.01184 | 12.7 | 84.4 | 0.00 / 0.00 | 169 / 0 | 9669 | 2102 | 44237965357 |
+| 20-80 | 0.5C | 0.8 | 3360 | ok | 3300 | 0.03641 | 0.03560 | 2.2 | 62.0 | 0.00 / 0.00 | 177 / 0 | 7208 | 1916 | 44237965357 |
+| 20-80 | 0.5C | 1 | 4200 | ok | 3741 | 0.03641 | 0.03558 | 2.3 | 62.3 | 0.00 / 0.00 | 191 / 0 | 13646 | 3248 | 44237965357 |
+| 20-80 | 0.5C | 1.25 | 5250 | ok | 3741 | 0.03641 | 0.03558 | 2.3 | 62.4 | 0.00 / 0.00 | 191 / 0 | 14092 | 3326 | 44237965357 |
+| 20-80 | 0.5C | 1.5 | 6300 | ok | 3741 | 0.03641 | 0.03558 | 2.3 | 62.4 | 0.00 / 0.00 | 191 / 0 | 8415 | 2425 | 44237965357 |
+| 20-80 | 0.5C | 2 | 8400 | ok | 3741 | 0.03641 | 0.03558 | 2.3 | 62.4 | 0.00 / 0.00 | 191 / 0 | 13255 | 3177 | 44237965357 |
+| 20-80 | 0.5C | 3 | 12599 | ok | 3741 | 0.03641 | 0.03558 | 2.3 | 62.4 | 0.00 / 0.00 | 191 / 0 | 6877 | 1990 | 44237965357 |
+| 20-80 | 0.5C | ∞ | ∞ | ok | 3741 | 0.03641 | 0.03558 | 2.3 | 62.4 | 0.00 / 0.00 | 191 / 0 | 6669 | 1941 | 44237965357 |
+| 20-80 | 1C | 0.8 | 1730 | ok | 1589 | 0.03736 | 0.04071 | -9.0 | 56.1 | 0.00 / 0.00 | 120 / 0 | 24445 | 3551 | 44249331640 |
+| 20-80 | 1C | 1 | 2163 | ok | 2163 | 0.03736 | 0.03716 | 0.5 | 57.2 | 0.00 / 0.00 | 139 / 0 | 10158 | 2043 | 44237965357 |
+| 20-80 | 1C | 1.25 | 2704 | ok | 2651 | 0.03736 | 0.03602 | 3.6 | 62.0 | 0.00 / 0.00 | 155 / 0 | 8015 | 1743 | 44237965357 |
+| 20-80 | 1C | 1.5 | 3245 | ok | 2651 | 0.03736 | 0.03602 | 3.6 | 62.0 | 0.00 / 0.00 | 155 / 0 | 21802 | 3987 | 44237965357 |
+| 20-80 | 1C | 2 | 4326 | ok | 2651 | 0.03736 | 0.03602 | 3.6 | 62.0 | 0.00 / 0.00 | 155 / 0 | 21002 | 3875 | 44237965357 |
+| 20-80 | 1C | 3 | 6489 | ok | 2651 | 0.03736 | 0.03602 | 3.6 | 62.0 | 0.00 / 0.00 | 155 / 0 | 11383 | 2519 | 44237965357 |
+| 20-80 | 1C | ∞ | ∞ | ok | 2652 | 0.03736 | 0.03602 | 3.6 | 62.0 | 0.00 / 0.00 | 155 / 0 | 22438 | 4248 | 44237965357 |
+| 40-100 | 0.5C | 0.8 | 4872 | ok_violation | 4528 | 0.08599 | 0.09502 | -10.5 | 42.5 | 1.19 / 2.47 | 216 / 0 | 26721 | 6736 | 44258812043 |
+| 40-100 | 0.5C | 1 | 6090 | ok | 6080 | 0.08599 | 0.08631 | -0.4 | 70.1 | 0.00 / 0.00 | 264 / 0 | 46572 | 12975 | 44258812043 |
+| 40-100 | 0.5C | 1.25 | 7613 | ok | 6197 | 0.08599 | 0.08660 | -0.7 | 70.5 | 0.00 / 0.00 | 265 / 0 | 35030 | 9956 | 44258812043 |
+| 40-100 | 0.5C | 1.5 | 9135 | ok | 6199 | 0.08599 | 0.08662 | -0.7 | 70.5 | 0.00 / 0.00 | 267 / 0 | 20708 | 6455 | 44258812043 |
+| 40-100 | 0.5C | 2 | 12180 | ok | 6198 | 0.08599 | 0.08661 | -0.7 | 70.5 | 0.00 / 0.00 | 267 / 0 | 17681 | 5427 | 44258812043 |
+| 40-100 | 0.5C | 3 | 18270 | ok | 6199 | 0.08599 | 0.08662 | -0.7 | 70.5 | 0.00 / 0.00 | 267 / 0 | 16110 | 4833 | 44258812043 |
+| 40-100 | 0.5C | ∞ | ∞ | ok | 6200 | 0.08599 | 0.08663 | -0.7 | 70.5 | 0.00 / 0.00 | 268 / 0 | 19096 | 5832 | 44258812043 |
+| 40-100 | 1C | 0.8 | 3839 | infeasible | — | 0.08888 | — | — | — | — / — | — / — | — | 567 | 44258812043 |
+| 40-100 | 1C | 1 | 4799 | ok_violation | 4525 | 0.08888 | 0.09498 | -6.9 | 42.5 | 1.19 / 2.47 | 212 / 0 | 23164 | 5500 | 44258812043 |
+| 40-100 | 1C | 1.25 | 5999 | ok | 5016 | 0.08888 | 0.08794 | 1.1 | 62.4 | 0.14 / 0.00 | 229 / 0 | 25603 | 6710 | 44258812043 |
+| 40-100 | 1C | 1.5 | 7199 | ok | 5016 | 0.08888 | 0.08791 | 1.1 | 62.4 | 0.14 / 0.00 | 227 / 0 | 26938 | 6919 | 44258812043 |
+| 40-100 | 1C | 2 | 9599 | ok | 5015 | 0.08888 | 0.08793 | 1.1 | 62.4 | 0.14 / 0.00 | 228 / 0 | 22968 | 5905 | 44258812043 |
+| 40-100 | 1C | 3 | 14398 | ok | 5016 | 0.08888 | 0.08794 | 1.1 | 62.4 | 0.14 / 0.00 | 229 / 0 | 21374 | 5571 | 44258812043 |
+| 40-100 | 1C | ∞ | ∞ | ok | 5015 | 0.08888 | 0.08792 | 1.1 | 62.4 | 0.14 / 0.00 | 227 / 0 | 28626 | 7337 | 44258812043 |
+
+## 2. Nhận xét
+
+- **0→60 % 1C:** lợi rõ nhất, giảm 10–13 % khi k ≥ 1.25; k = 1: 3.4 %; k = 0.8 (nhanh hơn CCCV): mất nhiều hơn 5 %.
+- **20→80 %:** 0.5C giảm 2.2–2.3 %; 1C giảm 3.6 % khi k ≥ 1.25, 0.5 % khi k = 1, k = 0.8 mất nhiều hơn 9 %.
+- **0→60 % 0.5C:** gần như bằng CCCV (−0.7 … +0.5 %).
+- **40→100 % 1C:** k ≥ 1.25 giảm 1.1 %; k = 0.8 không thể sạc an toàn (nhanh nhất trên ROM 4620 s > 3839 s); k = 1 nạp đủ nhưng **vi phạm** (η_Li min 42.5 mV < 45 mV, V vượt 1.2 mV) và mất nhiều hơn CCCV 6.9 %.
+- **40→100 % 0.5C:** NMPC **kém CCCV 0.4–0.7 %** ở mọi k ≥ 1; k = 0.8 vi phạm như trên (−10.5 %).
+- Với k ≥ 1.25 NMPC hội tụ về cùng thời gian sạc bất kể ngân sách: ngân sách không còn ràng buộc, chỉ tối thiểu lão hoá.
+- **Bộ giải (sau GD-87):** 0 lần thất bại ở cả 15 trường hợp 40→100 % chạy lại (trước: 1–11 lần/trường hợp, NaN). Giải trung bình 16–47 s ở 40→100 % (300–395 bước IRK mỗi lần tuyến tính hoá), 6–28 s ở hai vùng kia; job dài nhất 3.6 h (40→100 % 0.5C k = 1).
+
+## 3. Chẩn đoán (ROM chạy lại, run 44258903310)
+
+1. **Vi phạm ở 40→100 %, ngân sách sát (0.5C k = 0.8, 1C k = 1):** không do ROM lệch DFN. Chạy lại cùng profile trên ROM cho η_Li min **giống** DFN (41.2 / 41.2 mV ở bản cũ); lệch η pin − ROM đo trong vòng kín chỉ −0.06 mV (cột `eb_min_mV`). Kiểm tra trên DFN (`nmpc_safe_plant`, GD-88) cho thấy có cách sạc an toàn trong 4500 s < ngân sách, nên ngân sách **khả thi**; vi phạm là do bộ điều khiển. Nguyên nhân có thể (chưa kiểm chứng riêng): ràng buộc chỉ áp ở 20 nút dự báo (cách nhau ~225 s) và là ràng buộc mềm, nên giữa hai nút ở dòng lớn η có thể xuống dưới δ; thêm nghiệm status 2 (chưa hội tụ, ≤ 4 vòng SQP) được chấp nhận.
+2. **40→100 % 0.5C kém CCCV 0.4–0.7 %:** ROM cũng xếp hạng như DFN (ROM: CCCV 0.07619, NMPC 0.0778 mAh), lệch V ROM − DFN ở 1/4 cuối chỉ 0.3 mV ⇒ không do ROM. NMPC sạc lâu hơn ~110 s (6197 so với 6090 s): đoạn đầu "CCCV an toàn" trên ROM dùng bậc dòng không đổi 30 s (6180 s), chậm hơn pha CV liên tục của CCCV; SQP (≤ 4 vòng mỗi lần giải nóng) không rời xa đoạn đầu. Ở vùng kết thúc gần đầy, pha CV chiếm phần lớn nên lợi tối đa có thể rất nhỏ.
+
+## 4. Giới hạn và hướng cải thiện (chưa làm)
+
+- Lão hoá hậu kiểm tạm thời (xem trên).
+- Vi phạm η/V ở ngân sách sát của 40→100 %: có thể thêm ràng buộc giữa các nút hoặc tăng N; chưa làm.
+- Khoảng 0.4–0.7 % kém CCCV ở 40→100 % 0.5C: hướng cải thiện là đoạn đầu CCCV với pha CV liên tục trên ROM. **Người dùng quyết định không làm lúc này** (18/11/2026); báo cáo đúng như số liệu.
+- Chỉ 25 °C, 3 vùng, NMPC biết hết trạng thái.
