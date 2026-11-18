@@ -237,3 +237,13 @@ Với mỗi trường hợp (vùng sạc × mức dòng CCCV × nhiệt độ m�
 
 - Chọn cấu hình theo tiêu chí đặt trước (bo_uoc_luong_ekf.md mục 6.1–6.2): IEKF 5 lần lặp, **giữ rf/LLI cả lần sạc** (`t_hold = Inf`), P₀ rf 0.2, LLI 0.05 Ah (GD-75, GD-76). Ước cao η_Li xấu nhất trên 3 ca khó: 8.9 mV (cũ 19.5).
 - Đang chạy lưới đầy đủ 76 ca: run 44202422495 (`ekf.yml` stage=full, GD-77). Việc tiếp: tải artifact `ekf-report`, điền mục 6.3–6.4 và 8 của bo_uoc_luong_ekf.md, mục EKF trong README.
+
+## Ghi chú bàn giao kiểm chứng lão hoá (18/11/2026)
+
+- **Xong:** đủ 6 trường hợp (Expt 2/3 × 10/25/40 °C), V_cv = 4.116 V, mô phỏng từng chu kỳ (run 44123422399 + 44196614322). Báo cáo: `tai_lieu/ket_qua_lao_hoa.md`, bản sao artifact ở `tai_lieu/ket_qua_lao_hoa/`; README mục "Kết quả kiểm chứng lão hoá".
+- **Sửa lỗi:**
+  - Expt 2 25 °C hỏng vì runner mất kết nối, không phải lỗi số. Đã thêm tải checkpoint giữa chặng, `resume_run` và `mode=report`.
+  - 4 job jumpcheck hỏng vì ngoại suy mọi trạng thái. Đã viết `ag_jump.m` (GD-58); 12/12 job đạt, sai số ≤ 0.09 điểm SOH.
+- SOH mặc định = Q/4.865 Ah (GD-60); cột phụ `SOH_rpt0_pct`.
+- **Kết quả:** mô hình cho LLI/LAM khoảng ½ thực nghiệm; MPE_tot 22–25 % (Expt 2) so với 10–12 % của Li 2025. Không chỉnh tham số.
+- **Cần người dùng quyết:** chạy độ nhạy hay không — (a) hệ số SEI 1/2 như code tác giả thay vì 1/4 theo bài gốc; (b) biến thể `vcv42`. Với nhảy chu kỳ J_max = 20, mỗi phương án mất khoảng 1–1.7 h CI cho 6 trường hợp chạy song song.

@@ -89,9 +89,45 @@ Bật bằng `par = dfn_params(struct('aging', true))`. Đủ năm cơ chế c�
 | `aging/ag_run.m`, `ag_rpt.m`, `ag_cycle.m`, `ag_set.m` | Mô phỏng Expt 2 (70–85 %) và Expt 3 (85–100 %) của Li 2025 / Kirkaldy 2024, có checkpoint; tuỳ chọn nhảy chu kỳ |
 | `aging/ag_selftest.m`, `ag_report.m` | Tự kiểm tra (tương đương DFN khi tốc độ = 0, JPattern, bảo toàn Li, cạn khô) và so sánh với Kirkaldy 2024 / sai số Li 2025 |
 
-Workflow `.github/workflows/aging.yml` (chạy tay): selftest → 12 job song song (2 thí nghiệm × 10/25/40 °C × 2 biến thể V_cv: 4.116 V mặc định và 4.2 V của giao thức), mỗi job tối đa 3 chặng × 5.1 h nối bằng checkpoint → báo cáo `aging_validation.md` (artifact `aging-report`).
+Workflow `.github/workflows/aging.yml` (chạy tay):
 
-KETQUA_LAO_HOA
+- Các bước: selftest, rồi mô phỏng (mỗi trường hợp Expt × T × biến thể là một chuỗi tối đa 3 chặng; mỗi chặng 3 đoạn × 1.6 h, sau mỗi đoạn tải checkpoint lên), rồi kiểm chứng nhảy chu kỳ (Expt 2/3 × 10/25/40 °C × J_max 20/50, đủ 12 set), cuối cùng là báo cáo `aging_validation.md` (artifact `aging-report`).
+- `resume_run`: chạy tiếp từ checkpoint của một lần chạy trước.
+- `mode=report` cùng `report_runs`: chỉ gộp báo cáo từ các lần chạy đã có.
+
+### Kết quả kiểm chứng lão hoá (18/11/2026)
+
+Chi tiết ở [tai_lieu/ket_qua_lao_hoa.md](tai_lieu/ket_qua_lao_hoa.md). Các lần chạy CI: [44123422399](https://github.com/nxbnxb513/toi-uu-sac-pin-lgm50/actions/runs/44123422399) và [44196614322](https://github.com/nxbnxb513/toi-uu-sac-pin-lgm50/actions/runs/44196614322).
+
+Điều kiện chạy:
+- Mỗi trường hợp gồm 12 set × 515 chu kỳ, mô phỏng từng chu kỳ.
+- V_cv = 4.116 V.
+- SOH = Q_0.1C / 4.865 Ah. Cột phụ "SOH theo RPT0" chia cho dung lượng ở lần đo đầu.
+- So với Kirkaldy 2024 (trung bình các cell).
+
+**MPE_tot (%)** của mô hình này, so với số Li 2025 công bố:
+
+| | 10 °C | 25 °C | 40 °C |
+|---|---|---|---|
+| Expt 2 (70–85 %) | 24.8 / 12.0 | 22.2 / 10.4 | 22.7 / 12.1 |
+| Expt 3 (85–100 %) | 28.6 / 26.1 | 19.6 / 16.0 | 15.4 / 10.6 |
+
+**MPE_SOH (%)** ở 10/25/40 °C:
+
+| | Theo 4.865 Ah | Theo RPT0 | Li 2025 công bố |
+|---|---|---|---|
+| Expt 2 | 0.74 / 0.76 / 0.74 | 3.40 / 2.55 / 3.87 | 0.42 / 0.88 / 0.57 |
+| Expt 3 | 4.60 / 1.88 / 1.97 | 8.13 / 3.88 / 2.00 | 5.30 / 2.44 / 0.75 |
+
+Nhận xét:
+- LLI, LAM_NE và LAM_PE của mô hình chỉ bằng khoảng **một nửa** thực nghiệm. MPE_LLI là 34–62 %, trong khi Li 2025 công bố 23–38 %.
+- SOH theo 4.865 Ah khớp ở Expt 2 phần lớn là nhờ hai sai lệch bù trừ nhau. Dung lượng RPT0 ở 4.116 V chỉ có 4.672 Ah, tức SOH bắt đầu ở 96.0 %. Sau đó mô hình lại suy giảm chậm hơn thực nghiệm.
+- Mô hình gần như không phụ thuộc nhiệt độ. Mô hình của tác giả cũng vậy.
+- **Không chỉnh tham số.** Ứng viên lớn nhất là hệ số 1/4 của tốc độ dày SEI: hệ số này lấy theo bài gốc, còn code của tác giả dùng 1/2. Ứng viên thứ hai là V_cv = 4.116 V. Người dùng cần quyết có chạy thử độ nhạy hay không.
+
+**Nhảy chu kỳ** (bản mới, `ag_jump.m`, GD-58), so với mô phỏng từng chu kỳ, trên đủ 12 set:
+- Với J_max = 20, sai lệch lớn nhất là ≤ 0.09 điểm SOH, ≤ 0.06 điểm LLI, ≤ 0.03 điểm LAM và ≤ 0.11 mΩ.
+- Thời gian chạy nhanh hơn 3.4–5.4 lần.
 
 ## Chạy trên GitHub
 
