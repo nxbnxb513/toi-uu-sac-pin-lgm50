@@ -13,7 +13,7 @@ on:
   workflow_dispatch:
     inputs:
       stage:
-        description: "rom | pilot | all | debug"
+        description: "rom | pilot | all | debug | replay"
         default: all
       variant:
         description: "pilot: bien the so hoc NMPC (nmpc_variant.m)"
@@ -30,6 +30,9 @@ on:
       cbase:
         description: "debug: dong CCCV goc (C)"
         default: "0.5"
+      src_run:
+        description: "replay: so run pilot cu de lay *_series.csv"
+        default: "44204442587"
 
 # Nhom rieng cho moi lan bam Run workflow (chay song song, khong dung cham lan chay
 # cu dang xep hang 44068312720 thuoc nhom cu 'nmpc-refs/heads/main').
@@ -141,6 +144,41 @@ jobs:
           name: debug-${{ matrix.variant }}
           path: results/debug
           if-no-files-found: warn
+
+  # ---- chan doan: ROM chay lai profile dong da ap len DFN (khong can acados) ----
+  replay:
+    if: github.event_name == 'workflow_dispatch' && inputs.stage == 'replay'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: pilot-w*
+          path: results/src
+          run-id: ${{ inputs.src_run }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: ./.github/actions/setup-acados
+        with:
+          casadi-matlab: 'true'
+          codegen-dir: ${{ runner.temp }}/mwork/c_generated_code
+      - uses: matlab-actions/setup-matlab@v2
+        with:
+          cache: true
+      - name: ROM chay lai profile CCCV va NMPC
+        uses: matlab-actions/run-command@v2
+        with:
+          command: >
+            addpath('${{ github.workspace }}/src/dfn'); addpath('${{ github.workspace }}/src/nmpc');
+            nmpc_replay_diag('${{ github.workspace }}/results/src', '${{ github.workspace }}/results/replay', 'D');
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: replay-diag
+          path: results/replay
 
   report:
     needs: pilot
