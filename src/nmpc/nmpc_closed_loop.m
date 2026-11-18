@@ -47,6 +47,7 @@ if ~isfield(cfg, 'w_abs'), cfg.w_abs = NaN; end
 if ~isfield(cfg, 'soc_rom'), cfg.soc_rom = true; end
 if ~isfield(cfg, 'qp_dump'), cfg.qp_dump = 0; end
 if ~isfield(cfg, 'max_solves'), cfg.max_solves = Inf; end
+if ~isfield(cfg, 'irk_probe'), cfg.irk_probe = false; end   % go loi: tich phan lai nut 0 bang ban sao IRK (nmpc_irk_probe.m)
 Ta = cfg.Tamb; Csoc = rom.Csoc; soc_t = cfg.soc_target;
 Qstop = -(soc_t - cfg.soc0)*Csoc;
 Vcv = v_limit(par); Icut = par.Qnom/50;
@@ -180,6 +181,9 @@ while t < cfg.tmax
         nfail = nfail + 1; ncons = ncons + 1; cold = true;
         R.max_consec_fail = max(R.max_consec_fail, ncons);
         if nfail <= 2, nmpc_diag(C, prm); end
+        if nfail <= 2 && cfg.irk_probe
+            try, nmpc_irk_probe(C, C.par, C.solver.get('x', 0), C.solver.get('u', 0), Ta, 0); catch e, fprintf('nmpc_irk_probe loi: %s\n', e.message); end
+        end
         C.solver.reset();
         rem_h = max(prm(3), 0.05);
         Ineed = (soc_t - xhat(rom.ix.soc))*Csoc/rem_h;

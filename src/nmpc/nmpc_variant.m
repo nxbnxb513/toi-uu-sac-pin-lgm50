@@ -45,7 +45,15 @@ switch variant
                 case 'wabs',    bo.w_abs = 10;              % trong so cu w_loss = 10 /mAh (khong chuan hoa)
                 case 'socr',    bo.soc_rom = false;         % SOC dich du bao = SOC dich (khong lay SOC ROM dat)
                 case 'qd',      bo.qp_dump = 2;             % in du lieu QP 2 lan giai dau
+                case 'irk',     bo.irk_probe = true;        % tich phan lai nut 0 bang ban sao IRK khi that bai
+                case 's16',     bo.num_steps = 16;          % 16 buoc IRK moi khoang
                 otherwise
+                    if startsWith(tk{i}, 'f') && ~isnan(str2double(tk{i}(2:end)))
+                        % 'f32': khoang dau 32 buoc IRK, cac khoang sau giu so buoc mac dinh
+                        ns = 8; if isfield(bo, 'num_steps'), ns = bo.num_steps(end); end
+                        bo.num_steps = [str2double(tk{i}(2:end)), ns*ones(1, bo.N - 1)];
+                        continue
+                    end
                     if startsWith(tk{i}, 'n'), bo.max_solves = str2double(tk{i}(2:end));   % 'n8': dung sau 8 lan giai
                     else, error('nmpc_variant: tok %s', tk{i}); end
             end

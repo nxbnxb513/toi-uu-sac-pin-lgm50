@@ -71,7 +71,7 @@ for ik = iks(:).'
         'tmax', cfgn.tmax_factor*cc.T_CCCV, 'Cdis', 0.5, 'Icc_cccv', Cbase*par.Qnom, 'T_cccv', cc.T_CCCV, ...
         'wall_max', max(left_s/nleft, 60));
     % cong tac cua bien the (chia doi tim loi, GD-86) chuyen sang vong kin
-    ff = {'free_I0', 'guess_mode', 'shift', 'vb_on', 'w_abs', 'soc_rom', 'qp_dump', 'max_solves'};
+    ff = {'free_I0', 'guess_mode', 'shift', 'vb_on', 'w_abs', 'soc_rom', 'qp_dump', 'max_solves', 'irk_probe'};
     for i = 1:numel(ff), if isfield(bo, ff{i}), cl.(ff{i}) = bo.(ff{i}); end, end
     try
         R = nmpc_closed_loop(C, M, parp, cl);
