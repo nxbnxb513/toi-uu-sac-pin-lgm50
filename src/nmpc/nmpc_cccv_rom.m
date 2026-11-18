@@ -16,6 +16,7 @@ function P = nmpc_cccv_rom(M, rom, x0, Ta, soc_t, Icc, lim, vb, dt, tmax)
 % P.t; phan tu cuoi lap lai), P.T (thoi gian toi soc_t, Inf neu khong toi), P.reason,
 % P.nsim (so lan tich phan), P.wall.
 if nargin < 8 || isempty(vb), vb = 0; end
+eb = 0; if isfield(lim, 'eb'), eb = lim.eb; end   % lech the ma lithium pin - ROM (GD-88)
 if nargin < 9 || isempty(dt), dt = 30; end
 if nargin < 10 || isempty(tmax), tmax = 12*3600; end
 E = M.E; ix = rom.ix; io = M.iout;
@@ -85,6 +86,6 @@ P.nsim = nsim; P.wall = toc(tw);
 
     function ok = okc(o)
         ok = all(isfinite(o)) && o(io.V) + vb <= lim.Vcv + 1e-6 && o(io.T) <= lim.Tmax ...
-            && o(io.eta_sep) >= lim.delta && o(io.xs_sep) <= lim.xsmax;
+            && o(io.eta_sep) + eb >= lim.delta && o(io.xs_sep) <= lim.xsmax;
     end
 end

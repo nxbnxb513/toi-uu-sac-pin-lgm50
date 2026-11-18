@@ -11,9 +11,10 @@ if nargin < 5 || isempty(E), E = rom_elim(rom, par); end
 nx = rom.nx; nX = nx + 2;
 x  = MX.sym('x', nx); Ich = MX.sym('Ich'); tf = MX.sym('tf_h');
 X  = [x; Ich; tf]; Xd = MX.sym('Xdot', nX);
-u  = MX.sym('u'); p = MX.sym('p', 9);
+u  = MX.sym('u'); p = MX.sym('p', 10);
 Ta = p(1); soc_t = p(2); bud = p(3); wl = p(4); wd = p(5); Tmax = p(6); dlt = p(7); xsm = p(8);
 vb = p(9);   % V: lech dien ap do duoc (pin) - ROM tai trang thai hien tai, giu khong doi tren tam du bao (GD-83)
+eb = p(10);  % V: lech the ma lithium phia mang ngan (pin - ROM) tai trang thai hien tai, giu khong doi (GD-88)
 [fx, ov] = E.sym(x, -Ich, Ta);
 V = ov(1); T = ov(2); xs_sep = ov(4); eta_sep = ov(6);
 model = AcadosModel();
@@ -26,8 +27,8 @@ loss = x(rom.ix.nsei) + x(rom.ix.ndl);           % mAh, mat vinh vien du doan
 model.cost_y_expr_0 = sqrt(wd)*u;
 model.cost_y_expr   = sqrt(wd)*u;
 model.cost_y_expr_e = sqrt(rom_smax(wl*loss, 0, 1e-3) + eps_cost);
-hpath = [V + vb - v_limit(par); T - Tmax; dlt - eta_sep; xs_sep - xsm; tf - bud];
+hpath = [V + vb - v_limit(par); T - Tmax; dlt - (eta_sep + eb); xs_sep - xsm; tf - bud];
 model.con_h_expr   = hpath;
-model.con_h_expr_e = [soc_t - x(rom.ix.soc); tf - bud; V + vb - v_limit(par); dlt - eta_sep; xs_sep - xsm];
+model.con_h_expr_e = [soc_t - x(rom.ix.soc); tf - bud; V + vb - v_limit(par); dlt - (eta_sep + eb); xs_sep - xsm];
 nh = numel(hpath);
 end

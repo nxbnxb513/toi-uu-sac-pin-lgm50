@@ -187,11 +187,12 @@ nanf = {'t_charge_s', 'soc_end', 'nmpc_perm_mAh', 'nmpc_perm_sei_mAh', 'nmpc_per
     'n_status_other', 'solve_mean_ms', 'solve_median_ms', 'solve_p95_ms', 'solve_max_ms', 'wall_solve_mean_ms', ...
     'sqp_mean', 'sqp_max', 'closed_loop_wall_s', 'plant_wall_s', 'lin_mean_ms', 'sim_mean_ms', 'qp_mean_ms', 'glob_mean_ms', ...
     'n_status2_warm', 'max_iter_warm', 'T_min_safe_s', 'guess_T_s', 'guess_Icc_A', 'guess_loss_mAh', 'w_loss', ...
-    'nmpc_charge_loss_mAh', 'nmpc_dis_part_mAh', 'rom_replay_nmpc_mAh', 'max_consec_fail', 't_fallback_s', 'guess_mean_s'};
+    'nmpc_charge_loss_mAh', 'nmpc_dis_part_mAh', 'rom_replay_nmpc_mAh', 'max_consec_fail', 't_fallback_s', 'guess_mean_s', 'T_min_safe_plant_s', 'eb_min_mV'};
 for i = 1:numel(nanf), row.(nanf{i}) = NaN; end
 row.nmpc_reason = 'error'; row.dis_reason = ''; row.status = 'error';
 if isempty(R), return; end
 row.nmpc_reason = R.reason; row.T_min_safe_s = R.T_min_safe;
+if isfield(R, 'T_min_safe_plant'), row.T_min_safe_plant_s = R.T_min_safe_plant; end
 if strcmp(R.reason, 'infeasible_budget')
     % "khong the sac an toan trong thoi gian nay" - KHONG phai mot muc giam lao hoa
     row.status = 'infeasible'; return
@@ -208,6 +209,7 @@ row.loss_pred0_mAh = R.loss_pred0;
 row.nmpc_charge_loss_mAh = R.nsei + R.ndl; row.nmpc_dis_part_mAh = R.perm - R.nsei - R.ndl;
 if ~isempty(rp), row.rom_replay_nmpc_mAh = rp.loss; end
 row.guess_mean_s = mean(K.guess_s);
+if isfield(K, 'eb_mV') && ~isempty(K.eb_mV), row.eb_min_mV = min(K.eb_mV); end
 % trang thai: chi so sanh voi CCCV khi NMPC nap DU (toi SOC dich hoac dung nhu CCCV o I <= C/50)
 % va trong ngan sach. Lan chay that bai / dung giua chung KHONG bao la muc giam (sua loi bao cao cu).
 done = any(strcmp(R.reason, {'soc_reached', 'Icut'})) && R.soc_end >= cl.soc_target - 2e-3 ...

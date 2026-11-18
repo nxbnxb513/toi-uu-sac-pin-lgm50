@@ -27,7 +27,8 @@ function R = nmpc_closed_loop(C, M, par, cfg)
 %     toan) va khoi tao lai tu do; dung han khi > 20 lan that bai LIEN TIEP;
 %   - ket thuc nhu CCCV (GD-25): SOC dich, hoac dien ap o nguong va dong <= C/50.
 rom = C.rom; E = M.E; io = M.iout;
-if ~isfield(cfg, 'estimator') || isempty(cfg.estimator)
+full_state = ~isfield(cfg, 'estimator') || isempty(cfg.estimator);
+if full_state
     cfg.estimator = @(y, trk, meas) rom_from_dfn(rom, par, y, trk);
 end
 if ~isfield(cfg, 'soc_target') || isempty(cfg.soc_target), cfg.soc_target = cfg.soc1; end
@@ -47,7 +48,14 @@ if ~isfield(cfg, 'w_abs'), cfg.w_abs = NaN; end
 if ~isfield(cfg, 'soc_rom'), cfg.soc_rom = true; end
 if ~isfield(cfg, 'qp_dump'), cfg.qp_dump = 0; end
 if ~isfield(cfg, 'max_solves'), cfg.max_solves = Inf; end
-if ~isfield(cfg, 'irk_probe'), cfg.irk_probe = false; end   % go loi: tich phan lai nut 0 bang ban sao IRK (nmpc_irk_probe.m)
+if ~isfield(cfg, 'irk_probe'), cfg.irk_probe = false; end
+% GD-88: lech the ma lithium phia mang ngan (pin - ROM) trong rang buoc eta - chi khi biet het
+% trang thai (eta cua pin tinh tu trang thai DFN); NMPC + EKF de 0 (chua co uoc luong lech)
+if ~isfield(cfg, 'eb_on'), cfg.eb_on = full_state; end
+% GD-88: kiem tra ngan sach bang sac an toan nhanh nhat TREN PIN (DFN) khi ROM cho la kha thi
+% nhung ngan sach < plant_check_factor x thoi gian nhanh nhat cua ROM
+if ~isfield(cfg, 'plant_check'), cfg.plant_check = full_state; end
+if ~isfield(cfg, 'plant_check_factor'), cfg.plant_check_factor = 1.25; end   % go loi: tich phan lai nut 0 bang ban sao IRK (nmpc_irk_probe.m)
 Ta = cfg.Tamb; Csoc = rom.Csoc; soc_t = cfg.soc_target;
 Qstop = -(soc_t - cfg.soc0)*Csoc;
 Vcv = v_limit(par); Icut = par.Qnom/50;
@@ -59,7 +67,7 @@ trk = aging_track('init', par);
 t = 0; Ich = 0;
 yc = dfn_consistent_init(0, y, par, struct('mode', 'I', 'value', 0, 'Tamb', Ta));
 x0 = cfg.estimator(yc, trk, struct('t', 0, 'I', 0, 'V', NaN, 'T', Ta));
-R = struct('reason', '', 'T_min_safe', NaN, 'guess_T', NaN, 'guess_Icc', NaN, 'guess_loss', NaN, 'w_loss', NaN, ...
+R = struct('reason', '', 'T_min_safe', NaN, 'T_min_safe_plant', NaN, 'guess_T', NaN, 'guess_Icc', NaN, 'guess_loss', NaN, 'w_loss', NaN, ...
     'nfail', 0, 'max_consec_fail', 0, 't_fallback', 0, 'wall', 0, 'plant_wall', 0, 't_prof', 0);
 tw = tic;
 % ---- thoi gian sac an toan nhanh nhat (ROM) va doan dau tu CCCV ----
@@ -71,6 +79,11 @@ else
     G = nmpc_guess(M, rom, x0, cfg, lim, Imax);
 end
 Pf = G.Pf; R.T_min_safe = Pf.T;
+if ~G.infeasible && ~unlimited && cfg.plant_check && cfg.budget < cfg.plant_check_factor*Pf.T
+    Pp = nmpc_safe_plant(par, yc, Ta, soc_t, Qstop, Imax, lim, cfg.dt_prof, max(cfg.tmax, 1));
+    R.T_min_safe_plant = Pp.T;
+    if Pp.T > cfg.budget, G.infeasible = true; R.T_min_safe = Pp.T; end
+end
 if G.infeasible
     R.reason = 'infeasible_budget';
     R.t_prof = toc(tw); R.wall = toc(tw);
@@ -87,7 +100,7 @@ wl = cfg.w_loss_scale/max(R.guess_loss, 1e-6); if isfinite(cfg.w_abs), wl = cfg.
 % (sai so dien ap ROM, vung ket thuc 100 %) thi dung muc do lam dich cua bai toan toi uu;
 % vong kin van dung theo SOC dich tren pin that hoac theo dieu kien CV (GD-82).
 soc_t_rom = soc_t; if cfg.soc_rom && strcmp(P.reason, 'Icut'), soc_t_rom = min(soc_t, P.soc_end); end
-prm = [Ta; soc_t_rom; 1; wl; cfg.w_dI; cfg.Tmax; cfg.delta; cfg.xsmax; 0];
+prm = [Ta; soc_t_rom; 1; wl; cfg.w_dI; cfg.Tmax; cfg.delta; cfg.xsmax; 0; 0];
 tf_ref = P.t_end/3600;
 if strcmp(cfg.guess_mode, 'ramp')
     % doan dau cu (ae443c1): I = 0 tai nut 0, tang tuyen tinh toi dong trung binh can thiet
@@ -104,8 +117,8 @@ end
 % ---- vong lap ----
 S = struct('t', [], 'I', [], 'V', [], 'T', [], 'soc', [], 'xs_sep', [], 'eta_sep', [], 'dphi_sep', [], 'nsei', [], 'npl', []);
 K = struct('t', [], 'status', [], 'sqp_iter', [], 'time_tot', [], 'wall', [], 'tf_h', [], 'slope', [], 'loss_pred', [], 'soc_end', [], 'nrep', [], ...
-    'time_lin', [], 'time_sim', [], 'time_qp', [], 'time_glob', [], 'max_iter', [], 'vb_mV', [], 'fallback', [], 'guess_s', []);
-reason = 'tmax'; nfail = 0; ncons = 0; meas = struct('t', 0, 'I', 0, 'V', NaN, 'T', Ta);
+    'time_lin', [], 'time_sim', [], 'time_qp', [], 'time_glob', [], 'max_iter', [], 'vb_mV', [], 'eb_mV', [], 'fallback', [], 'guess_s', []);
+reason = 'tmax'; nfail = 0; ncons = 0; meas = struct('t', 0, 'I', 0, 'V', NaN, 'T', Ta, 'eta', NaN);
 tplant = 0; tfb = 0;
 cold = true; first = true; prev = [];
 if ~cfg.free_I0 && ~strcmp(cfg.guess_mode, 'ramp'), Ich = P.I(1); end   % dong dau co dinh = dong dau cua doan dau CCCV
@@ -122,6 +135,10 @@ while t < cfg.tmax
     % lech dien ap do duoc - ROM tai trang thai hien tai (GD-83)
     if isfinite(meas.V) && cfg.vb_on
         o = full(E.out(xhat, -Ich, Ta)); prm(9) = meas.V - o(io.V);
+    end
+    % lech the ma lithium phia mang ngan pin - ROM tai trang thai hien tai (GD-88)
+    if isfinite(meas.eta) && cfg.eb_on
+        o = full(E.out(xhat, -Ich, Ta)); prm(10) = meas.eta - o(io.eta_sep);
     end
     % doan dau: ke hoach truoc dich theo thoi gian, mo phong lai ROM tu xhat
     tg = tic;
@@ -154,10 +171,10 @@ while t < cfg.tmax
     K.tf_h(end+1, 1) = plan.tf_h; K.slope(end+1, 1) = plan.slope; K.loss_pred(end+1, 1) = plan.loss_pred;
     K.soc_end(end+1, 1) = plan.soc_end; K.nrep(end+1, 1) = rep;
     K.time_lin(end+1, 1) = tbr(1); K.time_sim(end+1, 1) = tbr(2); K.time_qp(end+1, 1) = tbr(3); K.time_glob(end+1, 1) = tbr(4);
-    K.max_iter(end+1, 1) = mi; K.vb_mV(end+1, 1) = 1e3*prm(9); K.fallback(end+1, 1) = fb; K.guess_s(end+1, 1) = tguess;
+    K.max_iter(end+1, 1) = mi; K.vb_mV(end+1, 1) = 1e3*prm(9); K.eb_mV(end+1, 1) = 1e3*prm(10); K.fallback(end+1, 1) = fb; K.guess_s(end+1, 1) = tguess;
     if numel(K.t) <= 10 || mod(numel(K.t), 20) == 0 || fb
-        fprintf('  [%4d] t %6.0f s soc %.4f I %.2f A | status %d sqp %2d/%d rep %d %.0f ms (lin %.0f, sim %.0f, qp %.0f, glob %.0f) | tf %.3f h I0 %.2f slope %.2e A/s loss %.5f mAh soc_N %.4f | vb %.1f mV | doan dau %.1f s | wall %.0f s\n', ...
-            numel(K.t), t, xhat(rom.ix.soc), Ich, info.status, info.sqp_iter, mi, rep, 1e3*info.time_tot, 1e3*tbr, plan.tf_h, plan.I0, plan.slope, plan.loss_pred, plan.soc_end, 1e3*prm(9), tguess, toc(tw));
+        fprintf('  [%4d] t %6.0f s soc %.4f I %.2f A | status %d sqp %2d/%d rep %d %.0f ms (lin %.0f, sim %.0f, qp %.0f, glob %.0f) | tf %.3f h I0 %.2f slope %.2e A/s loss %.5f mAh soc_N %.4f | vb %.1f eb %.1f mV | doan dau %.1f s | wall %.0f s\n', ...
+            numel(K.t), t, xhat(rom.ix.soc), Ich, info.status, info.sqp_iter, mi, rep, 1e3*info.time_tot, 1e3*tbr, plan.tf_h, plan.I0, plan.slope, plan.loss_pred, plan.soc_end, 1e3*prm(9), 1e3*prm(10), tguess, toc(tw));
     end
     if plan.ok
         cold = false; ncons = 0;
@@ -178,7 +195,8 @@ while t < cfg.tmax
         C.solver.reset();
         rem_h = max(prm(3), 0.05);
         Ineed = (soc_t - xhat(rom.ix.soc))*Csoc/rem_h;
-        Pfb = nmpc_cccv_rom(M, rom, xhat, Ta, soc_t, min(Imax, max([Ich, Ineed, cfg.Icc_cccv])), lim, prm(9), cfg.dt_prof, tmax_prof);
+        limf = lim; limf.eb = prm(10);
+        Pfb = nmpc_cccv_rom(M, rom, xhat, Ta, soc_t, min(Imax, max([Ich, Ineed, cfg.Icc_cccv])), limf, prm(9), cfg.dt_prof, tmax_prof);
         fprintf('  du phong: CCCV an toan ROM tu SOC %.4f: %s, con %.0f s, I dau %.2f A\n', xhat(rom.ix.soc), Pfb.reason, Pfb.t_end, Pfb.I(1));
         Tseg = cfg.Ts;
         Ifb = Pfb.I(1);
@@ -210,7 +228,8 @@ while t < cfg.tmax
         tf_ref = max(plan.tf_h - tseg/3600, C.opt.tf_min_h);
         prev.elapsed = tseg;
     end
-    meas = struct('t', t, 'I', Ich, 'V', o.V(end), 'T', o.T(end));
+    meas = struct('t', t, 'I', Ich, 'V', o.V(end), 'T', o.T(end), 'eta', NaN);
+    if cfg.eb_on, meas.eta = o.eta_sep(end); end
     if strcmp(o.reason{end}, 'Qstop'), reason = 'soc_reached'; break; end
     if ~strcmp(o.reason{end}, 'time'), reason = ['plant_' o.reason{end}]; break; end
     % ket thuc nhu pha CV cua CCCV (GD-25): dien ap o nguong va dong <= C/50

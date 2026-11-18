@@ -61,7 +61,7 @@ zu = [1e4; 1e2; 1e4; 1e4; 1e2]; Zu = [1e5; 1e2; 1e5; 1e5; 1e2];
 ocp.cost.zl = zu; ocp.cost.zu = zu; ocp.cost.Zl = Zu; ocp.cost.Zu = Zu;
 zue = [1e3; 1e2; zu(1); zu(3); zu(4)]; Zue = [1e4; 1e2; Zu(1); Zu(3); Zu(4)];
 ocp.cost.zl_e = zue; ocp.cost.zu_e = zue; ocp.cost.Zl_e = Zue; ocp.cost.Zu_e = Zue;
-ocp.parameter_values = [298.15; 0.5; 1; 10; 1e-4; 318.15; 0.01; 0.99; 0];
+ocp.parameter_values = [298.15; 0.5; 1; 10; 1e-4; 318.15; 0.01; 0.99; 0; 0];
 
 so = ocp.solver_options;
 so.N_horizon = opt.N; so.tf = 1;
@@ -92,5 +92,5 @@ t0 = tic;
 C.solver = AcadosOcpSolver(ocp);
 C.t_build = toc(t0);
 C.ocp = ocp; C.opt = opt; C.rom = rom; C.nX = nX; C.iI = iI; C.itf = itf; C.N = opt.N;
-C.ip = struct('Tamb', 1, 'soc_t', 2, 'bud', 3, 'wl', 4, 'wd', 5, 'Tmax', 6, 'dlt', 7, 'xsm', 8, 'vb', 9);
+C.ip = struct('Tamb', 1, 'soc_t', 2, 'bud', 3, 'wl', 4, 'wd', 5, 'Tmax', 6, 'dlt', 7, 'xsm', 8, 'vb', 9, 'eb', 10);
 end
