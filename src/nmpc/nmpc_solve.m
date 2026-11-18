@@ -1,4 +1,4 @@
-function [plan, info] = nmpc_solve(C, xhat, Ich, prm, tfband)
+function [plan, info] = nmpc_solve(C, xhat, Ich, prm, tfband, free0)
 %NMPC_SOLVE  Mot lan giai NMPC tu UOC LUONG trang thai xhat (trang thai ROM).
 % Giao dien danh cho ca hai bien the: "biet het trang thai" (xhat = anh xa
 % cua trang thai DFN, rom_from_dfn.m) va "NMPC + EKF" (buoc F: xhat = uoc
@@ -16,7 +16,14 @@ for k = 1:C.N
     s.set('constr_lbx', [0; tfband(1)], k);
     s.set('constr_ubx', [C.opt.Imax; tfband(2)], k);
 end
-s.set('constr_x0', [xhat(:); Ich]);
+if nargin < 6, free0 = false; end
+if free0
+    % lan giai DAU (chua co dong nao duoc ap): dong sac tai nut 0 tu do trong [0, I_max]
+    % de bo sac co the bat dau ngay o dong bat ky nhu CCCV, khong bi buoc doc tu I = 0 (GD-82)
+    s.set('constr_lbx', [xhat(:); 0], 0); s.set('constr_ubx', [xhat(:); C.opt.Imax], 0);
+else
+    s.set('constr_x0', [xhat(:); Ich]);
+end
 for k = 0:C.N, s.set('p', prm(:), k); end
 tw = tic; s.solve(); info.wall = toc(tw);
 info.status = s.get('status');
@@ -32,7 +39,11 @@ u0 = s.get('u', 0);
 plan.tf_h = X0(C.itf);
 plan.dt1 = 3600*plan.tf_h/C.N;
 plan.slope = u0/(3600*plan.tf_h);
-plan.I1 = Ich + u0/C.N;
+plan.I0 = X0(C.iI);                  % = Ich, tru lan giai dau (free0)
+plan.I1 = plan.I0 + u0/C.N;
+% quy dao du bao (de dich lam doan dau cho lan giai sau, nmpc_closed_loop.m)
+plan.Inodes = zeros(C.N + 1, 1);
+for k = 0:C.N, xk = s.get('x', k); plan.Inodes(k+1) = xk(C.iI); end
 rom = C.rom;
 plan.loss_pred = XN(rom.ix.nsei) + XN(rom.ix.ndl);            % mat vinh vien du doan (mAh)
 plan.pl_pred = XN(rom.ix.npl);                                 % lithium ma du doan cuoi (chan doan)

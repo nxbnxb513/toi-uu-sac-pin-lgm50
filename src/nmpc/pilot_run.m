@@ -42,6 +42,13 @@ fprintf(['CCCV %gC: %s, T_CCCV = %.0f s, SOC cuoi %.4f; sau sac + xa: mat vinh v
     Cbase, cc.reason, cc.T_CCCV, cc.soc_end, cc.perm, cc.dis.nsei, cc.dis.ndl, cc.dis.source, cc.pl_peak, cc.dis.pl_rev_left, ...
     1e3*cv.V, cv.T, 1e3*cv.eta, 1e3*cc.eta_min, cv.xs, cc.wall);
 Sc = cc.ser;
+% SOC dich cua NMPC = SOC ma CCCV thuc su dat (GD-82): CCCV dung o I <= C/50 (GD-25) truoc
+% 100 % o vung ket thuc 100 %; NMPC phai nap dung luong do de so sanh cung mot viec.
+soc_t = min(soc1, cc.soc_end);
+fprintf('SOC dich cua NMPC: %.4f (vung %.2f, CCCV dat %.4f)\n', soc_t, soc1, cc.soc_end);
+% ROM chay lai profile dong CCCV (chan doan sai lech lao hoa ROM - DFN, GD-85)
+rp_cc = rom_replay(M, rom, par, soc0, Ta, Sc.t, -Sc.I);
+fprintf('ROM chay lai CCCV: mat (SEI + chet) ROM %.6f mAh, DFN %.6f mAh (lech %+.2f %%)\n', rp_cc.loss, cc.nsei + cc.ndl, 100*(rp_cc.loss/(cc.nsei + cc.ndl) - 1));
 writetable(table(Sc.t, -Sc.I, Sc.V, Sc.T - 273.15, Sc.soc, Sc.xs_sep, 1e3*Sc.eta_sep, Sc.nsei, Sc.npl, ...
     'VariableNames', {'t_s', 'I_A', 'V', 'T_C', 'soc', 'xs_sep', 'eta_sep_mV', 'sei_mAh', 'pl_mAh'}), fullfile(outdir, ['pilot_' jtag '_cccv_series.csv']));
 
@@ -58,24 +65,32 @@ for ik = iks(:).'
     left_s = 60*job_min - toc(tjob);
     nleft = sum(iks >= ik);
     fprintf('\n----- %s: k = %g, ngan sach %.0f s (con %.0f s thoi gian job cho %d lan) -----\n', tag, k, k*cc.T_CCCV, left_s, nleft);
-    cl = struct('soc0', soc0, 'soc1', soc1, 'Tamb', Ta, 'budget', k*cc.T_CCCV, 'Ts', cfgn.Ts, ...
-        'w_loss', cfgn.w_loss, 'w_dI', cfgn.w_dI, 'Tmax', cfgn.Tmax, 'delta', cfgn.delta, 'xsmax', cfgn.xsmax, ...
-        'tmax', cfgn.tmax_factor*cc.T_CCCV, 'tf_guess', 1.5*cc.T_CCCV, 'Cdis', 0.5, ...
-        'wall_max', max(left_s/nleft, 60), 'Ich0_guess', Cbase*par.Qnom);
+    cl = struct('soc0', soc0, 'soc1', soc1, 'soc_target', soc_t, 'Tamb', Ta, 'budget', k*cc.T_CCCV, 'Ts', cfgn.Ts, ...
+        'w_loss_scale', cfgn.w_loss_scale, 'w_dI', cfgn.w_dI, 'Tmax', cfgn.Tmax, 'delta', cfgn.delta, 'xsmax', cfgn.xsmax, ...
+        'tmax', cfgn.tmax_factor*cc.T_CCCV, 'Cdis', 0.5, 'Icc_cccv', Cbase*par.Qnom, 'T_cccv', cc.T_CCCV, ...
+        'wall_max', max(left_s/nleft, 60));
     try
         R = nmpc_closed_loop(C, M, parp, cl);
     catch e
         fprintf('NMPC LOI: %s\n%s\n', e.message, getReport(e, 'extended', 'hyperlinks', 'off'));
         R = [];
     end
-    row = pilot_row(iw, soc0, soc1, Cbase, Tamb_C, k, romcfg, variant, cc, cv, cl, R, C, cfgn);
+    rp = [];
+    if ~isempty(R) && isfield(R, 'ser') && ~isempty(R.ser.t)
+        try, rp = rom_replay(M, rom, par, soc0, Ta, R.ser.t, R.ser.I); catch e, fprintf('rom_replay loi: %s\n', e.message); end
+    end
+    row = pilot_row(iw, soc0, soc1, Cbase, Tamb_C, k, romcfg, variant, cc, cv, cl, R, C, cfgn, rp_cc, rp);
     row.job_wall_s = toc(tjob);    % tu dau pilot_run (gom CCCV + tao bo giai) toi khi xong lan vong kin nay
     writetable(struct2table(row), fullfile(outdir, ['pilot_' tag '.csv']));
-    if isempty(R), continue; end
+    if isempty(R) || strcmp(R.reason, 'infeasible_budget'), continue; end
     K = R.solve;
     fprintf(['NMPC: %s, t = %.0f s (ngan sach %.0f s), SOC cuoi %.4f; mat vinh vien %.5f mAh (CCCV %.5f, giam %.1f %%) [%s]; ' ...
-        'Li ma dinh %.4f mAh; %d lan giai, that bai %d; vong kin %.0f s\n'], ...
-        R.reason, R.t_charge, cl.budget, R.soc_end, R.perm, cc.perm, 100*(1 - R.perm/cc.perm), R.dis.source, R.pl_peak, numel(K.t), R.nfail, R.wall);
+        'Li ma dinh %.4f mAh; %d lan giai, that bai %d; vong kin %.0f s; trang thai %s\n'], ...
+        R.reason, R.t_charge, cl.budget, R.soc_end, R.perm, cc.perm, row.reduction_pct, R.dis.source, R.pl_peak, numel(K.t), R.nfail, R.wall, row.status);
+    if ~isempty(rp)
+        fprintf('  du doan vs DFN (pha sac, mAh): NMPC lan giai dau %.6f | ROM chay lai profile NMPC %.6f | DFN %.6f; CCCV: ROM %.6f, DFN %.6f\n', ...
+            R.loss_pred0, rp.loss, R.nsei + R.ndl, rp_cc.loss, cc.nsei + cc.ndl);
+    end
     fprintf('  giai (acados time_tot): TB %.1f ms, trung vi %.1f ms, max %.1f ms; SQP lap TB %.1f, max %d\n', ...
         1e3*mean(K.time_tot), 1e3*median(K.time_tot), 1e3*max(K.time_tot), mean(K.sqp_iter), max(K.sqp_iter));
     fprintf('  vi pham tren DFN: V %.2f mV, T %.3f K, eta_Li %.2f mV, x_s %.4f, ngan sach %.0f s\n', ...
@@ -127,7 +142,7 @@ v.eta = max(cfgn.delta - min(S.eta_sep), 0);
 v.xs = max(max(S.xs_sep) - cfgn.xsmax, 0);
 end
 
-function row = pilot_row(iw, soc0, soc1, Cbase, Tamb_C, k, romcfg, variant, cc, cv, cl, R, C, cfgn)
+function row = pilot_row(iw, soc0, soc1, Cbase, Tamb_C, k, romcfg, variant, cc, cv, cl, R, C, cfgn, rp_cc, rp)
 row = struct('iw', iw, 'window', sprintf('%g-%g', 100*soc0, 100*soc1), 'Cbase', Cbase, 'Tamb_C', Tamb_C, 'k', k, ...
     'rom', romcfg, 'variant', variant, 'aging_source', cc.dis.source, ...
     'T_CCCV_s', cc.T_CCCV, 'cccv_reason', cc.reason, 'cccv_soc_end', cc.soc_end, 'cccv_complete', cc.complete, ...
@@ -137,24 +152,47 @@ row = struct('iw', iw, 'window', sprintf('%g-%g', 100*soc0, 100*soc1), 'Cbase', 
     'cccv_Vmax', cc.Vmax, 'cccv_eta_min_mV', 1e3*cc.eta_min, 'cccv_xs_max', cc.xs_max, 'cccv_Tmax_C', cc.Tmax - 273.15, ...
     'cccv_viol_V_mV', 1e3*cv.V, 'cccv_viol_T_K', cv.T, 'cccv_viol_eta_mV', 1e3*cv.eta, 'cccv_viol_xs', cv.xs, ...
     'cccv_wall_s', cc.wall, 'budget_s', cl.budget, 'build_s', C.t_build, ...
-    'Imax_A', cfgn.Imax, 'Ts_s', cfgn.Ts, 'N', cfgn.N);
+    'Imax_A', cfgn.Imax, 'Ts_s', cfgn.Ts, 'N', cfgn.N, 'soc_target', cl.soc_target, ...
+    'cccv_charge_loss_mAh', cc.nsei + cc.ndl, 'cccv_dis_part_mAh', cc.perm - cc.nsei - cc.ndl, 'rom_replay_cccv_mAh', rp_cc.loss);
 nanf = {'t_charge_s', 'soc_end', 'nmpc_perm_mAh', 'nmpc_perm_sei_mAh', 'nmpc_perm_dead_mAh', 'nmpc_perm_lam_mAh', 'nmpc_pl_left_mAh', ...
     'nmpc_pl_peak_mAh', 'nmpc_sei_charge_mAh', 'nmpc_pl_charge_end_mAh', 'reduction_pct', 'loss_pred0_mAh', ...
     'nmpc_Vmax', 'nmpc_eta_min_mV', 'nmpc_xs_max', 'nmpc_Tmax_C', ...
     'viol_V_mV', 'viol_T_K', 'viol_eta_mV', 'viol_xs', 'viol_budget_s', 'n_solves', 'n_fail', 'n_status0', 'n_status2', ...
     'n_status_other', 'solve_mean_ms', 'solve_median_ms', 'solve_p95_ms', 'solve_max_ms', 'wall_solve_mean_ms', ...
     'sqp_mean', 'sqp_max', 'closed_loop_wall_s', 'plant_wall_s', 'lin_mean_ms', 'sim_mean_ms', 'qp_mean_ms', 'glob_mean_ms', ...
-    'n_status2_warm', 'max_iter_warm'};
+    'n_status2_warm', 'max_iter_warm', 'T_min_safe_s', 'guess_T_s', 'guess_Icc_A', 'guess_loss_mAh', 'w_loss', ...
+    'nmpc_charge_loss_mAh', 'nmpc_dis_part_mAh', 'rom_replay_nmpc_mAh', 'max_consec_fail', 't_fallback_s', 'guess_mean_s'};
 for i = 1:numel(nanf), row.(nanf{i}) = NaN; end
-row.nmpc_reason = 'error'; row.dis_reason = '';
+row.nmpc_reason = 'error'; row.dis_reason = ''; row.status = 'error';
 if isempty(R), return; end
+row.nmpc_reason = R.reason; row.T_min_safe_s = R.T_min_safe;
+if strcmp(R.reason, 'infeasible_budget')
+    % "khong the sac an toan trong thoi gian nay" - KHONG phai mot muc giam lao hoa
+    row.status = 'infeasible'; return
+end
+row.guess_T_s = R.guess_T; row.guess_Icc_A = R.guess_Icc; row.guess_loss_mAh = R.guess_loss; row.w_loss = R.w_loss;
+row.max_consec_fail = R.max_consec_fail; row.t_fallback_s = R.t_fallback;
 K = R.solve; st = K.status; S = R.ser;
-row.nmpc_reason = R.reason; row.dis_reason = R.dis.reason;
+row.dis_reason = R.dis.reason;
 row.t_charge_s = R.t_charge; row.soc_end = R.soc_end;
 row.nmpc_perm_mAh = R.perm; row.nmpc_perm_sei_mAh = R.dis.nsei; row.nmpc_perm_dead_mAh = R.dis.ndl; row.nmpc_perm_lam_mAh = R.dis.nlam;
 row.nmpc_pl_left_mAh = R.dis.pl_rev_left; row.nmpc_pl_peak_mAh = R.pl_peak;
 row.nmpc_sei_charge_mAh = R.nsei; row.nmpc_pl_charge_end_mAh = R.npl;
-row.reduction_pct = 100*(1 - R.perm/cc.perm); row.loss_pred0_mAh = R.loss_pred0;
+row.loss_pred0_mAh = R.loss_pred0;
+row.nmpc_charge_loss_mAh = R.nsei + R.ndl; row.nmpc_dis_part_mAh = R.perm - R.nsei - R.ndl;
+if ~isempty(rp), row.rom_replay_nmpc_mAh = rp.loss; end
+row.guess_mean_s = mean(K.guess_s);
+% trang thai: chi so sanh voi CCCV khi NMPC nap DU (toi SOC dich hoac dung nhu CCCV o I <= C/50)
+% va trong ngan sach. Lan chay that bai / dung giua chung KHONG bao la muc giam (sua loi bao cao cu).
+done = any(strcmp(R.reason, {'soc_reached', 'Icut'})) && R.soc_end >= cl.soc_target - 2e-3 ...
+    && R.viol.budget <= max(cl.Ts, 1e-3*cl.budget);
+if ~done
+    row.status = 'failed';
+else
+    row.reduction_pct = 100*(1 - R.perm/cc.perm);
+    vio = R.viol.V > 1e-3 || R.viol.eta > 1e-3 || R.viol.xs > 1e-3 || R.viol.T > 0.1;
+    if vio, row.status = 'ok_violation'; else, row.status = 'ok'; end
+end
 row.nmpc_Vmax = max(S.V); row.nmpc_eta_min_mV = 1e3*min(S.eta_sep); row.nmpc_xs_max = max(S.xs_sep); row.nmpc_Tmax_C = max(S.T) - 273.15;
 row.viol_V_mV = 1e3*R.viol.V; row.viol_T_K = R.viol.T; row.viol_eta_mV = 1e3*R.viol.eta; row.viol_xs = R.viol.xs; row.viol_budget_s = R.viol.budget;
 row.n_solves = numel(K.t); row.n_fail = R.nfail;

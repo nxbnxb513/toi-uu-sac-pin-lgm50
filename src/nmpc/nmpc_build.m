@@ -15,7 +15,7 @@ function C = nmpc_build(rom, par, opt)
 %          t_f <= ngan sach con lai;   cuoi: SOC >= SOC_dich, t_f <= ngan sach, V, eta, x_s
 % Ham muc tieu viet dang binh phuong toi thieu (NONLINEAR_LS) de dung
 % Gauss-Newton: y_e = sqrt(w_loss (n_SEI + n_dl) + eps)  (n >= 0), y = sqrt(w_dI) u.
-% Tham so acados p = [T_amb; SOC_dich; ngan sach (h); w_loss; w_dI; T_max; delta; x_s,max].
+% Tham so acados p = [T_amb; SOC_dich; ngan sach (h); w_loss; w_dI; T_max; delta; x_s,max; lech V (GD-83)].
 % Che do "ngan sach": ngan sach = k T_CCCV - t (thu hep dan); che do "khong
 % gioi han": ngan sach = opt.tf_cap_h (chi la can so hoc, phai bao neu cham).
 % Xem tai_lieu/mo_hinh_rut_gon.md muc 8.
@@ -57,7 +57,7 @@ zu = [1e4; 1e2; 1e4; 1e4; 1e2]; Zu = [1e5; 1e2; 1e5; 1e5; 1e2];
 ocp.cost.zl = zu; ocp.cost.zu = zu; ocp.cost.Zl = Zu; ocp.cost.Zu = Zu;
 zue = [1e3; 1e2; zu(1); zu(3); zu(4)]; Zue = [1e4; 1e2; Zu(1); Zu(3); Zu(4)];
 ocp.cost.zl_e = zue; ocp.cost.zu_e = zue; ocp.cost.Zl_e = Zue; ocp.cost.Zu_e = Zue;
-ocp.parameter_values = [298.15; 0.5; 1; 10; 1e-4; 318.15; 0.01; 0.99];
+ocp.parameter_values = [298.15; 0.5; 1; 10; 1e-4; 318.15; 0.01; 0.99; 0];
 
 so = ocp.solver_options;
 so.N_horizon = opt.N; so.tf = 1;
@@ -88,5 +88,5 @@ t0 = tic;
 C.solver = AcadosOcpSolver(ocp);
 C.t_build = toc(t0);
 C.ocp = ocp; C.opt = opt; C.rom = rom; C.nX = nX; C.iI = iI; C.itf = itf; C.N = opt.N;
-C.ip = struct('Tamb', 1, 'soc_t', 2, 'bud', 3, 'wl', 4, 'wd', 5, 'Tmax', 6, 'dlt', 7, 'xsm', 8);
+C.ip = struct('Tamb', 1, 'soc_t', 2, 'bud', 3, 'wl', 4, 'wd', 5, 'Tmax', 6, 'dlt', 7, 'xsm', 8, 'vb', 9);
 end
