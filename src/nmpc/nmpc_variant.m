@@ -47,6 +47,7 @@ switch variant
                 case 'qd',      bo.qp_dump = 2;             % in du lieu QP 2 lan giai dau
                 case 'irk',     bo.irk_probe = true;        % tich phan lai nut 0 bang ban sao IRK khi that bai
                 case 's16',     bo.num_steps = 16;          % 16 buoc IRK moi khoang
+                case 'ekf',     bo.est = 'ekf';             % NMPC + EKF: chi dung tin hieu do (GD-89), pilot_run.m
                 otherwise
                     if startsWith(tk{i}, 'f') && ~isnan(str2double(tk{i}(2:end)))
                         % 'f32': khoang dau 32 buoc IRK, cac khoang sau giu so buoc mac dinh

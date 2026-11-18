@@ -15,6 +15,12 @@ function R = nmpc_closed_loop(C, M, par, cfg)
 %   cfg.estimator           @(y, trk, meas) -> xhat ; mac dinh: biet het trang
 %                           thai = rom_from_dfn (anh xa DFN -> ROM). Buoc F thay
 %                           bang EKF dung meas = (t, I, V, T) do duoc.
+%   cfg.sensor              (NMPC + EKF, GD-89) @(I, V, T, n) -> [Im, Vm, Tm]: tin hieu
+%                           DO (nhieu cam bien, ekf_sensor.m) cua doan thu n. Khi co:
+%                           estimator nhan MOI mau 5 s cua doan vua chay (gia tri do),
+%                           v_b (GD-83) va dieu kien dung CV dung V do; SOC dich cua bai
+%                           toan toi uu = SOC uoc luong + dien tich con phai nap (dem
+%                           Coulomb tu dong do), dung khi da nap du dien tich nhu CCCV.
 % Thay doi 18/11/2026 (sau chay thu 44204442587, GD-82..GD-85):
 %   - truoc vong lap: tinh thoi gian sac AN TOAN NHANH NHAT tren ROM (nmpc_cccv_rom, I_max);
 %     neu > ngan sach: R.reason = 'infeasible_budget' ("khong the sac an toan trong thoi
@@ -67,6 +73,12 @@ trk = aging_track('init', par);
 t = 0; Ich = 0;
 yc = dfn_consistent_init(0, y, par, struct('mode', 'I', 'value', 0, 'Tamb', Ta));
 x0 = cfg.estimator(yc, trk, struct('t', 0, 'I', 0, 'V', NaN, 'T', Ta));
+% NMPC + EKF (GD-89): SOC dich viet theo DIEN TICH can nap (giong CCCV), khong theo SOC
+% tuyet doi: soc_off = SOC uoc luong - SOC dem Coulomb (= soc0 + dien tich da nap / C_soc).
+% Biet het trang thai: soc_off = 0, moi thu nhu cu.
+est_mode = isfield(cfg, 'sensor') && ~isempty(cfg.sensor);
+soc_off0 = 0; if est_mode, soc_off0 = x0(rom.ix.soc) - cfg.soc0; end
+qm = 0; nseg = 0;   % dien tich da nap theo dong DO [Ah], so doan da chay
 R = struct('reason', '', 'T_min_safe', NaN, 'T_min_safe_plant', NaN, 'guess_T', NaN, 'guess_Icc', NaN, 'guess_loss', NaN, 'w_loss', NaN, ...
     'nfail', 0, 'max_consec_fail', 0, 't_fallback', 0, 'wall', 0, 'plant_wall', 0, 't_prof', 0);
 tw = tic;
@@ -76,7 +88,8 @@ tmax_prof = max(cfg.tmax, 1);
 if isfield(cfg, 'guess') && ~isempty(cfg.guess)
     G = cfg.guess;   % da tinh trong pilot_run.m (cung x0, cung cai dat) de chon so buoc IRK (GD-87)
 else
-    G = nmpc_guess(M, rom, x0, cfg, lim, Imax);
+    gcfg = cfg; gcfg.soc_target = soc_t + soc_off0;
+    G = nmpc_guess(M, rom, x0, gcfg, lim, Imax);
 end
 Pf = G.Pf; R.T_min_safe = Pf.T;
 if ~G.infeasible && ~unlimited && cfg.plant_check && cfg.budget < cfg.plant_check_factor*Pf.T
@@ -99,7 +112,7 @@ wl = cfg.w_loss_scale/max(R.guess_loss, 1e-6); if isfinite(cfg.w_abs), wl = cfg.
 % SOC dich trong du bao: neu ROM chi toi duoc SOC thap hon mot chut truoc khi I <= C/50
 % (sai so dien ap ROM, vung ket thuc 100 %) thi dung muc do lam dich cua bai toan toi uu;
 % vong kin van dung theo SOC dich tren pin that hoac theo dieu kien CV (GD-82).
-soc_t_rom = soc_t; if cfg.soc_rom && strcmp(P.reason, 'Icut'), soc_t_rom = min(soc_t, P.soc_end); end
+soc_t_rom = soc_t + soc_off0; if cfg.soc_rom && strcmp(P.reason, 'Icut'), soc_t_rom = min(soc_t_rom, P.soc_end); end
 prm = [Ta; soc_t_rom; 1; wl; cfg.w_dI; cfg.Tmax; cfg.delta; cfg.xsmax; 0; 0];
 tf_ref = P.t_end/3600;
 if strcmp(cfg.guess_mode, 'ramp')
@@ -126,15 +139,23 @@ while t < cfg.tmax
     if toc(tw) > cfg.wall_max, reason = 'wall_limit'; break; end
     if numel(K.t) >= cfg.max_solves, reason = 'max_solves'; break; end
     xhat = cfg.estimator(y, trk, meas);
-    if xhat(rom.ix.soc) >= soc_t - 1e-6, reason = 'soc_reached'; break; end
+    soc_fb = soc_t;
+    if est_mode
+        soc_cc = cfg.soc0 + qm/Csoc;                      % SOC dem Coulomb (dong do)
+        if soc_cc >= soc_t - 1e-6, reason = 'soc_reached'; break; end
+        prm(2) = soc_t_rom - soc_off0 + (xhat(rom.ix.soc) - soc_cc);
+        soc_fb = soc_t + (xhat(rom.ix.soc) - soc_cc);
+    elseif xhat(rom.ix.soc) >= soc_t - 1e-6
+        reason = 'soc_reached'; break;
+    end
     if unlimited
         prm(3) = C.opt.tf_cap_h;
     else
         prm(3) = max((cfg.budget - t)/3600, C.opt.tf_min_h);
     end
     % lech dien ap do duoc - ROM tai trang thai hien tai (GD-83)
-    if isfinite(meas.V) && cfg.vb_on
-        o = full(E.out(xhat, -Ich, Ta)); prm(9) = meas.V - o(io.V);
+    if isfinite(meas.V(end)) && cfg.vb_on
+        o = full(E.out(xhat, -Ich, Ta)); prm(9) = meas.V(end) - o(io.V);
     end
     % lech the ma lithium phia mang ngan pin - ROM tai trang thai hien tai (GD-88)
     if isfinite(meas.eta) && cfg.eb_on
@@ -194,9 +215,9 @@ while t < cfg.tmax
         end
         C.solver.reset();
         rem_h = max(prm(3), 0.05);
-        Ineed = (soc_t - xhat(rom.ix.soc))*Csoc/rem_h;
+        Ineed = (soc_fb - xhat(rom.ix.soc))*Csoc/rem_h;
         limf = lim; limf.eb = prm(10);
-        Pfb = nmpc_cccv_rom(M, rom, xhat, Ta, soc_t, min(Imax, max([Ich, Ineed, cfg.Icc_cccv])), limf, prm(9), cfg.dt_prof, tmax_prof);
+        Pfb = nmpc_cccv_rom(M, rom, xhat, Ta, soc_fb, min(Imax, max([Ich, Ineed, cfg.Icc_cccv])), limf, prm(9), cfg.dt_prof, tmax_prof);
         fprintf('  du phong: CCCV an toan ROM tu SOC %.4f: %s, con %.0f s, I dau %.2f A\n', xhat(rom.ix.soc), Pfb.reason, Pfb.t_end, Pfb.I(1));
         Tseg = cfg.Ts;
         Ifb = Pfb.I(1);
@@ -223,17 +244,28 @@ while t < cfg.tmax
         if strcmp(f{i}, 'I'), v = -v; end
         S.(f{i}) = [S.(f{i}); v];
     end
+    tprev = t;
     y = o.y_end; tseg = o.t(end); t = t + tseg; Ich = max(I0 + sl*tseg, 0);
     if plan.ok
         tf_ref = max(plan.tf_h - tseg/3600, C.opt.tf_min_h);
         prev.elapsed = tseg;
     end
-    meas = struct('t', t, 'I', Ich, 'V', o.V(end), 'T', o.T(end), 'eta', NaN);
+    if est_mode
+        % GD-89: estimator chi thay tin hieu DO (moi mau 5 s cua doan), dong theo quy uoc sac >= 0
+        nseg = nseg + 1;
+        [Im, Vm, Tm] = cfg.sensor(-o.I, o.V, o.T, nseg);
+        qm = qm + trapz(o.t, Im)/3600;
+        meas = struct('t', tprev + o.t, 'I', Im, 'V', Vm, 'T', Tm, 'eta', NaN);
+        Vend = Vm(end);
+    else
+        meas = struct('t', t, 'I', Ich, 'V', o.V(end), 'T', o.T(end), 'eta', NaN);
+        Vend = o.V(end);
+    end
     if cfg.eb_on, meas.eta = o.eta_sep(end); end
     if strcmp(o.reason{end}, 'Qstop'), reason = 'soc_reached'; break; end
     if ~strcmp(o.reason{end}, 'time'), reason = ['plant_' o.reason{end}]; break; end
-    % ket thuc nhu pha CV cua CCCV (GD-25): dien ap o nguong va dong <= C/50
-    if o.V(end) >= Vcv - 2e-3 && Ich <= Icut, reason = 'Icut'; break; end
+    % ket thuc nhu pha CV cua CCCV (GD-25): dien ap (do) o nguong va dong <= C/50
+    if Vend >= Vcv - 2e-3 && Ich <= Icut, reason = 'Icut'; break; end
 end
 R.wall = toc(tw); R.plant_wall = tplant; R.t_fallback = tfb;
 R.reason = reason; R.ser = S; R.solve = K; R.nfail = nfail;

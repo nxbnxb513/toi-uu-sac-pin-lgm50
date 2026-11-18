@@ -3,7 +3,8 @@ name: NMPC - mo hinh rut gon va chay thu
 # Buoc E (mo hinh rut gon, so voi DFN) va buoc G (NMPC acados, chay thu vong kin).
 # Khi sua src/nmpc/** hoac workflow nay: chi chay job rom. Job pilot chi chay khi
 # bam Run workflow (stage = pilot hoac all): 3 vung x 2 muc dong CCCV x 7 ngan sach k
-# = 42 job, moi job MOT lan vong kin (toi da 20 job song song).
+# = 42 job, moi job MOT lan vong kin (toi da 20 job song song). NMPC + EKF: variant
+# co tok 'ekf' (vd pilot+ekf, GD-89).
 on:
   push:
     branches: [main]
@@ -39,6 +40,9 @@ on:
       src_run:
         description: "replay: so run pilot cu de lay *_series.csv"
         default: "44204442587"
+      maxpar:
+        description: "pilot: so job song song toi da (tong toan repo <= 20)"
+        default: "20"
 
 # Nhom rieng cho moi lan bam Run workflow (chay song song, khong dung cham lan chay
 # cu dang xep hang 44068312720 thuoc nhom cu 'nmpc-refs/heads/main').
@@ -91,7 +95,7 @@ jobs:
     timeout-minutes: 355
     strategy:
       fail-fast: false
-      max-parallel: 20
+      max-parallel: ${{ fromJSON(inputs.maxpar || '20') }}
       matrix:
         win: ${{ fromJSON(inputs.wins) }}       # mac dinh [3, 8, 12] = 0->60, 20->80, 40->100 trong soc_windows.m
         cbase: ${{ fromJSON(inputs.cbases) }}   # mac dinh [0.5, 1] dong CCCV goc (C)
@@ -110,7 +114,7 @@ jobs:
         with:
           command: >
             cd(fullfile('${{ runner.temp }}', 'mwork'));
-            addpath('${{ github.workspace }}/src/dfn'); addpath('${{ github.workspace }}/src/nmpc');
+            addpath('${{ github.workspace }}/src/dfn'); addpath('${{ github.workspace }}/src/nmpc'); addpath('${{ github.workspace }}/src/ekf');
             pilot_run(${{ matrix.win }}, ${{ matrix.cbase }}, ${{ matrix.k }}, '${{ github.workspace }}/results/pilot', 'D', '${{ inputs.variant }}', 25, 325);
       - uses: actions/upload-artifact@v4
         if: always()
@@ -142,7 +146,7 @@ jobs:
         with:
           command: >
             cd(fullfile('${{ runner.temp }}', 'mwork'));
-            addpath('${{ github.workspace }}/src/dfn'); addpath('${{ github.workspace }}/src/nmpc');
+            addpath('${{ github.workspace }}/src/dfn'); addpath('${{ github.workspace }}/src/nmpc'); addpath('${{ github.workspace }}/src/ekf');
             pilot_run(${{ inputs.win }}, ${{ inputs.cbase }}, ${{ inputs.ks }}, '${{ github.workspace }}/results/debug', 'D', '${{ matrix.variant }}', 25, 60);
       - uses: actions/upload-artifact@v4
         if: always()

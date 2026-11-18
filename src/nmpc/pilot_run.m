@@ -10,6 +10,11 @@ function pilot_run(iw, Cbase, iks, outdir, romcfg, variant, Tamb_C, job_min)
 %          cua ca job [phut] de chia ngan sach thoi gian chay cho tung lan vong kin.
 % Bo giai acados duoc tao MOT lan trong job (nmpc_build.m); CCCV chay mot lan;
 % sau do lan luot tung k. Moi k ghi CSV ngay khi xong (job bi ngat van con ket qua).
+% NMPC + EKF (bien the co tok 'ekf', vd 'pilot+ekf', GD-89): bo dieu khien chi thay
+% tin hieu DO (V, I, T, nhieu BMS 'bms' cua ekf_sensor.m), trang thai = EKF lap
+% (ekf_estimator.m, cau hinh ekf_config: IEKF 5 lan lap, tim theo duong + fading GD-78,
+% rf/LLI giu co dinh ca lan sac GD-75); EKF doan SOC dau = soc0 + 10 % (GD-77) roi doc
+% 60 s mau nghi truoc khi sac. DFN van la pin that va cham diem.
 % Lao hoa: neu DFN chua co lao hoa (buoc C) thi TAM THOI tinh hau kiem bang
 % aging_rates.m tren quy dao DFN; tu dong dung lao hoa cua DFN khi da co
 % (aging_from_plant.m). Cot aging_source ghi ro cach nao.
@@ -21,6 +26,8 @@ if nargin < 7 || isempty(Tamb_C), Tamb_C = 25; end
 if nargin < 8 || isempty(job_min), job_min = 320; end
 tjob = tic;
 if ~exist(outdir, 'dir'), mkdir(outdir); end
+% NMPC + EKF (GD-89): muc nhieu "BMS thuc te" (GD-71), sai SOC dau +10 % (GD-77), 60 s mau nghi
+ekf_noise = 'bms'; ekf_socerr = 0.10; ekf_trest = 60;
 W = soc_windows();
 Ks = [0.8 1 1.25 1.5 2 3 Inf];
 soc0 = W(iw, 1); soc1 = W(iw, 2);
@@ -61,11 +68,26 @@ if isfield(bo, 'w_loss_scale'), cfgn.w_loss_scale = bo.w_loss_scale; end
 y0 = dfn_state_soc(parp, soc0, Ta);
 y0 = dfn_consistent_init(0, y0, parp, struct('mode', 'I', 'value', 0, 'Tamb', Ta));
 x0 = rom_from_dfn(rom, parp, y0, aging_track('init', parp));
+use_ekf = isfield(bo, 'est') && strcmp(bo.est, 'ekf');
+soc_off0 = 0;
+if use_ekf
+    tb = tic; Eekf = ekf_build(par); cek = ekf_config(ekf_noise);
+    fprintf('NMPC + EKF (GD-89): ekf_build %.1f s; nhieu cam bien %s; EKF doan SOC dau %.2f (that %.2f)\n', toc(tb), ekf_noise, soc0 + ekf_socerr, soc0);
+    % pin dang nghi o trang thai dau: dien ap / nhiet do that cua y0
+    ctl0 = struct('mode', 'I', 'value', 0, 'tmax', 1, 'Tamb', Ta, 'tout', [], ...
+        'stop', struct('Vmin', NaN, 'Vmax', NaN, 'Icut', NaN, 'Qstop', NaN));
+    [~, a0] = dfn_rhs(0, y0, parp, ctl0);
+    seed0 = 100000 + 1000*iw + 10*round(10*Cbase) + round(Tamb_C);
+    [est0, x0] = make_est();
+    soc_off0 = x0(rom.ix.soc) - soc0;
+    fprintf('EKF sau %g s nghi: SOC uoc %.4f (that %.4f, sai %+.2f %%), eta uoc %.1f mV\n', ekf_trest, x0(rom.ix.soc), soc0, 100*soc_off0, 1e3*est0.log.eta(end));
+end
 limg = struct('Vcv', v_limit(parp), 'Tmax', cfgn.Tmax, 'delta', cfgn.delta, 'xsmax', cfgn.xsmax, 'Icut', parp.Qnom/50, 'soc_tol', 0.005);
 Gs = cell(1, numel(Ks));
 for ik = iks(:).'
     fprintf('doan dau, k = %g:\n', Ks(ik));
-    Gs{ik} = nmpc_guess(M, rom, x0, cl_cfg(Ks(ik)), limg, cfgn.Imax);
+    cg = cl_cfg(Ks(ik)); cg.soc_target = cg.soc_target + soc_off0;   % GD-89: = soc_t khi biet het trang thai
+    Gs{ik} = nmpc_guess(M, rom, x0, cg, limg, cfgn.Imax);
 end
 if ~isfield(bo, 'num_steps')
     hI = 36; if isfield(bo, 'steps_hI'), hI = bo.steps_hI; end
@@ -89,6 +111,13 @@ for ik = iks(:).'
     % cong tac cua bien the (chia doi tim loi, GD-86) chuyen sang vong kin
     ff = {'free_I0', 'guess_mode', 'shift', 'vb_on', 'w_abs', 'soc_rom', 'qp_dump', 'max_solves', 'irk_probe'};
     for i = 1:numel(ff), if isfield(bo, ff{i}), cl.(ff{i}) = bo.(ff{i}); end, end
+    est = [];
+    if use_ekf
+        % moi k mot EKF moi, cung chuoi nhieu (cung seed) => cung uoc luong dau x0 nhu doan dau
+        est = make_est();
+        cl.estimator = @(yy, tk, meas) est.estimate(meas);
+        cl.sensor = @(I, V, T, n) ekf_sensor(cek, I, V, T, seed0 + n);
+    end
     try
         R = nmpc_closed_loop(C, M, parp, cl);
     catch e
@@ -101,6 +130,7 @@ for ik = iks(:).'
     end
     row = pilot_row(iw, soc0, soc1, Cbase, Tamb_C, k, romcfg, variant, cc, cv, cl, R, C, cfgn, rp_cc, rp);
     row.job_wall_s = toc(tjob);    % tu dau pilot_run (gom CCCV + tao bo giai) toi khi xong lan vong kin nay
+    if use_ekf, row = est_cols(row, est, R, soc_off0, ekf_noise, ekf_socerr); end
     writetable(struct2table(row, 'AsArray', true), fullfile(outdir, ['pilot_' tag '.csv']));   % AsArray: truong rong ('') o dong infeasible
     if isempty(R) || strcmp(R.reason, 'infeasible_budget'), continue; end
     K = R.solve;
@@ -119,11 +149,17 @@ for ik = iks(:).'
     writetable(table(S.t, S.I, S.V, S.T - 273.15, S.soc, S.xs_sep, 1e3*S.eta_sep, S.nsei, S.npl, ...
         'VariableNames', {'t_s', 'I_A', 'V', 'T_C', 'soc', 'xs_sep', 'eta_sep_mV', 'sei_mAh', 'pl_mAh'}), fullfile(outdir, ['pilot_' tag '_nmpc_series.csv']));
     writetable(struct2table(K), fullfile(outdir, ['pilot_' tag '_solves.csv']));
+    if use_ekf
+        L = est.log;
+        writetable(table(L.t, L.soc, L.s_soc, 1e3*L.eta, 1e3*L.s_eta, L.nis, 'VariableNames', ...
+            {'t_s', 'soc_est', 'soc_sd', 'eta_est_mV', 'eta_sd_mV', 'nis'}), fullfile(outdir, ['pilot_' tag '_ekf_series.csv']));
+    end
     try
         fig = figure('Visible', 'off', 'Position', [0 0 1200 800]);
         subplot(2, 3, 1); plot(Sc.t/60, -Sc.I, 'k', S.t/60, S.I, 'r'); ylabel('I sac (A)'); grid on; legend(sprintf('CCCV %gC', Cbase), 'NMPC', 'Location', 'best');
         subplot(2, 3, 2); plot(Sc.t/60, Sc.V, 'k', S.t/60, S.V, 'r'); yline(v_limit(par), ':'); ylabel('V (V)'); grid on;
         subplot(2, 3, 3); plot(Sc.t/60, 1e3*Sc.eta_sep, 'k', S.t/60, 1e3*S.eta_sep, 'r'); yline(1e3*cfgn.delta, ':'); yline(0, 'k:'); ylabel('\eta_{Li} phia mang ngan (mV)'); grid on;
+        if use_ekf, hold on; plot(est.log.t/60, 1e3*est.log.eta, 'b--'); end
         subplot(2, 3, 4); plot(Sc.t/60, Sc.soc, 'k', S.t/60, S.soc, 'r'); ylabel('SOC'); xlabel('t (phut)'); grid on;
         subplot(2, 3, 5); plot(Sc.t/60, Sc.xs_sep, 'k', S.t/60, S.xs_sep, 'r'); yline(cfgn.xsmax, ':'); ylabel('x_s phia mang ngan'); xlabel('t (phut)'); grid on;
         subplot(2, 3, 6); plot(Sc.t/60, Sc.nsei, 'k', S.t/60, S.nsei, 'r', Sc.t/60, Sc.npl, 'k:', S.t/60, S.npl, 'r:'); ylabel('SEI (-), Li ma (:) (mAh)'); xlabel('t (phut)'); grid on;
@@ -134,6 +170,14 @@ for ik = iks(:).'
     end
 end
 fprintf('PILOT %s: XONG sau %.0f s\n', jtag, toc(tjob));
+
+    function [es, xh] = make_est()
+        % EKF moi: doan SOC sai (GD-77: +10 %), roi doc ekf_trest giay mau NGHI (I = 0) truoc khi sac (GD-89)
+        tr = (-ekf_trest:cek.dt:0).'; nr = numel(tr);
+        [Ir, Vr, Tr] = ekf_sensor(cek, zeros(nr, 1), a0.V*ones(nr, 1), a0.T*ones(nr, 1), seed0);
+        es = ekf_estimator(par, ekf_noise, min(soc0 + ekf_socerr, 1), Tr(1), Ta, Eekf, tr(1));
+        xh = es.estimate(struct('t', tr(2:end), 'I', Ir(2:end), 'V', Vr(2:end), 'T', Tr(2:end)));
+    end
 
     function cl = cl_cfg(k)
         cl = struct('soc0', soc0, 'soc1', soc1, 'soc_target', soc_t, 'Tamb', Ta, 'budget', k*cc.T_CCCV, 'Ts', cfgn.Ts, ...
@@ -232,4 +276,30 @@ row.closed_loop_wall_s = R.wall; row.plant_wall_s = R.plant_wall;
 row.lin_mean_ms = 1e3*mean(K.time_lin); row.sim_mean_ms = 1e3*mean(K.time_sim);
 row.qp_mean_ms = 1e3*mean(K.time_qp); row.glob_mean_ms = 1e3*mean(K.time_glob);
 row.max_iter_warm = C.opt.max_iter_warm; row.n_status2_warm = sum(st == 2 & K.max_iter == C.opt.max_iter_warm);
+end
+
+function row = est_cols(row, est, R, soc_off0, noise, socerr)
+% sai so uoc luong (GD-89) so voi pin that (DFN) tai moi buoc EKF trong luc sac
+f = {'est_soc0_err_pct', 'est_soc_rmse_pct', 'est_soc_maxabs_pct', 'est_soc_end_err_pct', 'est_eta_rmse_mV', ...
+    'est_eta_over_max_mV', 'est_eta_under_max_mV', 'est_eta_over_max_late_mV', 'est_eta_rmse_late_mV', 'est_eta_min_mV', ...
+    'est_eta_sd_med_mV', 'ekf_ms_per_step', 'ekf_steps', 'ekf_wall_s'};
+for i = 1:numel(f), row.(f{i}) = NaN; end
+row.est_noise = noise; row.est_socerr0 = socerr;
+row.est_soc0_err_pct = 100*soc_off0;
+if isempty(est), return; end
+row.ekf_steps = est.nstep; row.ekf_wall_s = est.twall; row.ekf_ms_per_step = 1e3*est.twall/max(est.nstep, 1);
+if isempty(R) || ~isfield(R, 'ser') || isempty(R.ser.t), return; end
+L = est.log; S = R.ser;
+[ts, iu] = unique(S.t, 'last');
+k = L.t > 0 & L.t <= ts(end);
+if ~any(k), return; end
+st = interp1(ts, S.soc(iu), L.t(k)); et = interp1(ts, S.eta_sep(iu), L.t(k));
+es = L.soc(k) - st; ee = L.eta(k) - et; late = L.t(k) >= 600;
+row.est_soc_rmse_pct = 100*sqrt(mean(es.^2)); row.est_soc_maxabs_pct = 100*max(abs(es)); row.est_soc_end_err_pct = 100*es(end);
+row.est_eta_rmse_mV = 1e3*sqrt(mean(ee.^2));
+row.est_eta_over_max_mV = 1e3*max(ee);      % uoc CAO (phia nguy hiem)
+row.est_eta_under_max_mV = -1e3*min(ee);
+if any(late), row.est_eta_over_max_late_mV = 1e3*max(ee(late)); row.est_eta_rmse_late_mV = 1e3*sqrt(mean(ee(late).^2)); end
+row.est_eta_min_mV = 1e3*min(L.eta(k));
+row.est_eta_sd_med_mV = 1e3*median(L.s_eta(k));
 end
