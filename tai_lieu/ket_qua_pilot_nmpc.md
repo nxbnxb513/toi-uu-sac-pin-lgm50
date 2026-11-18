@@ -7,6 +7,7 @@ Cập nhật 18/11/2026. 3 vùng (0→60, 20→80, 40→100 %) × CCCV 0.5C / 1C
 - Nguồn dòng: vùng 0→60 % và 20→80 % từ run 44237965357 (8 bước IRK cố định mỗi khoảng); riêng 20→80 % 1C k = 0.8 từ run 44249331640 (có GD-87; bản cũ có 7 lần giải thất bại). Vùng 40→100 % từ run 44258812043 (có GD-87, GD-88 và sửa `struct2table`); bỏ các dòng 40→100 % của 44237965357 (code cũ, NaN).
 - Trạng thái: ok = nạp đủ (tới SOC mà CCCV đạt) trong ngân sách, không vi phạm (ngưỡng 1 mV cho V/η); ok_violation = nạp đủ nhưng vi phạm ràng buộc trên DFN; infeasible = **không thể sạc an toàn trong thời gian này**.
 - "giảm" = 1 − mất NMPC / mất CCCV (dương = NMPC tốt hơn).
+- **Dung sai GD-96 (19/11/2026):** nạp thiếu so với điện tích CCCV ≤ 0.5 % SOC và vượt V_cv ≤ 2 mV được tính là "đạt trong dung sai" (ok_tol); η_Li < 45 mV vẫn là vi phạm. Phân loại lại bảng này: **không trường hợp nào đổi trạng thái** (nạp thiếu lớn nhất 0.05 % SOC; hai dòng ok_violation vi phạm η 2.47 mV nên giữ nguyên; CCCV cả 6 trường hợp ok). CSV thêm cột `under_pct`, `status_gd96`, `cccv_status_gd96` (tính bằng `src/nmpc/gd96.py`).
 
 ## 1. Bảng kết quả
 
