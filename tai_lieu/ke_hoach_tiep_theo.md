@@ -290,3 +290,4 @@ Với mỗi trường hợp (vùng sạc × mức dòng CCCV × nhiệt độ m�
 ### Quyết định người dùng 18/11/2026 (sau bàn giao)
 - KHÔNG thử warm start CV liên tục cho vùng gần đầy lúc này. Hoàn thành toàn bộ dự án theo kế hoạch trước (silicon bước D, NMPC+EKF, bước H, lưới đầy đủ, K, L); chênh lệch 0,5–0,7 % ở 40→100 % 0,5C được báo cáo như hiện tại.
 - **18/11/2026 (sau):** đã gộp 42 trường hợp (44237965357 + 44249331640 + 44258812043) vào `ket_qua_pilot_nmpc.md` / `.csv`, sửa GD-88. Còn mở: vi phạm η 2.5 mV ở 40→100 % ngân sách sát (0.5C k = 0.8, 1C k = 1); NMPC kém CCCV 0.4–0.7 % ở 40→100 % 0.5C (người dùng: chưa sửa, ghi là giới hạn).
+- **Cập nhật 19/11/2026: bước D XONG.** Dạng C, k = 3.5e-14 (68debba); tầng 2 chạy đủ (run 44319826055). Kết quả: `tai_lieu/ket_qua_silicon.md`, artifact sao ở `tai_lieu/ket_qua_silicon/`; README và GD-93/95 đã điền.

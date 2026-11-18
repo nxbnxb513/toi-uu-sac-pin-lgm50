@@ -145,6 +145,24 @@ Nhận xét:
 - Với J_max = 20, sai lệch lớn nhất là ≤ 0.09 điểm SOH, ≤ 0.06 điểm LLI, ≤ 0.03 điểm LAM và ≤ 0.11 mΩ.
 - Thời gian chạy nhanh hơn 3.4–5.4 lần.
 
+### Tầng 2: lão hoá silicon ở SOC thấp (giả định, bước D, 19/11/2026)
+
+Tuỳ chọn riêng, **mặc định tắt**: `dfn_params(struct('aging', true, 'si', true))` hoặc biến thể `si` của `ag_run`; tham số trong `src/dfn/dfn_si_params.m`. Khi tắt, tầng 1 không đổi (tự kiểm tra `ag_si_selftest.m`: lệch 0). Thêm một trạng thái ε_Si; silicon mất do ứng suất khi cực âm nhả lithium ở mức lithium thấp (dạng luật LAM của Li 2025 áp cho Si, số liệu hạt Si của Ai 2022). Chỉ hiệu chỉnh k và dạng đường cong trên 0–30 %, 25 °C (dạng C, k = 3.5·10⁻¹⁴); các tập khác là kiểm tra. Giả định GD-90 … GD-95. Chi tiết: [tai_lieu/ket_qua_silicon.md](tai_lieu/ket_qua_silicon.md). `ag_run` nay chạy cả Expt 1 (0–30 %) và Expt 5 (0–100 %).
+
+Ở 4 kAh, 25 °C (đo / tầng 1 / tầng 2):
+
+| Cửa sổ | SOH | LLI | LAM_NE | Si mất (đo / T2) |
+|---|---|---|---|---|
+| 0–30 % | 82.6 / 95.6 / 94.5 | 16.8 / 0.3 / 1.1 | 19.8 / 0.3 / 9.0 | 65.9 / 58.5 |
+| 0–100 % | 87.7 / 93.7 / 93.0 | 12.7 / 2.0 / 2.5 | 14.9 / 1.6 / 6.7 | 27.6 / 35.8 |
+| 70–85 % | 94.0 / 93.1 / 92.5 | 6.0 / 2.6 / 3.0 | 4.2 / 1.8 / 2.8 | 8.4 / 8.3 |
+| 85–100 % | 90.9 / 90.5 / 89.8 | 9.1 / 4.9 / 5.4 | 7.2 / 3.6 / 4.6 | 11.2 / 9.5 |
+
+- Tầng 2 giảm sai số LAM_NE ở mọi cửa sổ, nhưng **không** giải thích được mất lithium lớn ở 0–30 % (đo 17 %, mô hình 1 %). SOH ở 0–30 % vẫn sai khoảng 12 điểm.
+- Không có phụ thuộc nhiệt độ riêng cho silicon: 10 °C bị tính mất Si quá nhiều, 40 °C quá ít.
+- Ở 70–85 % và 85–100 %, tầng 2 làm thay đổi nhỏ (SOH ≤ 1.4, LLI ≤ 1.0, LAM_NE ≤ 2.0 điểm sau 9.5 kAh), cỡ đúng với lượng Si mất đo được ở hai cửa sổ này. Kết luận của tầng 1 không đổi.
+- Lần chạy: tầng 1 [44258808944](https://github.com/nxbnxb513/toi-uu-sac-pin-lgm50/actions/runs/44258808944), dò hiệu chỉnh [44258818797](https://github.com/nxbnxb513/toi-uu-sac-pin-lgm50/actions/runs/44258818797), tầng 2 [44319826055](https://github.com/nxbnxb513/toi-uu-sac-pin-lgm50/actions/runs/44319826055).
+
 ## Chạy trên GitHub
 
 Workflow `.github/workflows/simulate.yml` (mô hình cũ) chỉ chạy khi bấm **Run workflow** trong tab Actions.
@@ -160,7 +178,7 @@ Repo cần để ở chế độ public để MATLAB được cấp license tự
 
 ## Giới hạn chính
 
-- Mô hình không có cơ chế lão hoá của silicon ở SOC thấp. So sánh "tối ưu so với CCCV trong cùng một vùng" là kết quả chính; xếp hạng giữa các vùng chỉ để tham khảo.
+- Mất silicon ở SOC thấp chỉ có ở tầng 2 (giả định, chỉnh trên một tập dữ liệu); cả hai tầng đều thiếu phần lớn mất lithium ở 0–30 %. So sánh "tối ưu so với CCCV trong cùng một vùng" là kết quả chính; xếp hạng giữa các vùng chỉ để tham khảo.
 - Mô hình lão hoá chỉ được tác giả gốc kiểm chứng ở vùng 70–100 % và dòng sạc 0.3C.
 - Không có thực nghiệm kiểm chứng cho profile tối ưu.
 - Một số giá trị là giả định, được liệt kê trong `tai_lieu/de_bai.md` và `src/default_cfg.m`.
