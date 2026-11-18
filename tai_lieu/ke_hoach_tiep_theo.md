@@ -256,3 +256,9 @@ Với mỗi trường hợp (vùng sạc × mức dòng CCCV × nhiệt độ m�
 - `nmpc.yml` stage pilot có thêm input `wins`, `cbases` (JSON) để chạy lại một phần.
 - **Chạy lại**: run 44249312514 (40→100 %, 0.5C và 1C, đủ 7 k) và run 44249331640 (20→80 % 1C k = 0.8, 7 lần thất bại trong 44237965357). Các job vùng 12 của 44237965357 chạy code cũ ⇒ bỏ, dùng kết quả của 44249312514. Việc tiếp: tải artifact, gộp với các job vùng 3/8 của 44237965357 (`pilot_report`), điền `ket_qua_pilot_nmpc.md`.
 - **Cập nhật 18/11/2026 (sáng):** lưới đầy đủ lần 1 (run 44202422495) có 15 ca dừng ở 0.5C sai SOC +10 % ⇒ thêm tìm theo đường + fading memory (GD-78). Lưới lại: run 44219685690 (chỉ tìm theo đường) và 44219690606 (thêm fading, **được chọn** theo tiêu chí đặt trước, gần hoà). 0/76 ca dừng. Ước cao η_Li xấu nhất 17 mV (pin lệch tham số) ⇒ biên 45 mV không che sai số ước lượng; **cần người dùng quyết** có cộng biên lùi ≈ 20 mV cho NMPC + EKF không. bo_uoc_luong_ekf.md mục 5–8 và README đã điền.
+
+## Quyết định người dùng (18/11/2026)
+
+- **Lão hoá:** giữ nguyên mô hình như hiện tại (hệ số SEI 1/4 theo bài gốc, V_cv = 4.116 V). **Không chạy** hai phép thử độ nhạy (hệ số 1/2, sạc 4.2 V). Báo cáo phải nêu rõ: mô hình cho LLI/LAM khoảng một nửa số đo Kirkaldy 2024 (MPE_tot 15–29 % so với 10–26 % của Li 2025), kèm các nguyên nhân có thể (tai_lieu/ket_qua_lao_hoa.md).
+- **EKF:** giữ biên an toàn 45 mV cho cả NMPC + EKF. **Không** nâng lên 65 mV. Báo cáo phải nêu rủi ro: khi tham số pin lệch, EKF có thể ước lượng η_Li cao hơn thật tới 17 mV (phía nguy hiểm) và tính số lần vi phạm thật trên DFN trong kết quả NMPC + EKF.
+- Lão hoá trong DFN được coi là đã kiểm chứng (kèm giới hạn trên) để dùng làm "pin thật" cho lưới so sánh: đặt `par.aging.validated = true` khi chạy lưới.
