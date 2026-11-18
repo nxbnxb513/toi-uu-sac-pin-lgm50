@@ -60,6 +60,11 @@ if aging
     ag.epsp = (n+1 : n+Np).'; n = n + Np;
     ag.xavp = (n+1 : n+Np).'; n = n + Np;
     ag.nLAMn = n+1; ag.nLAMp = n+2; ag.Qthr = n+3; n = n + 3;
+    if si_on(par)
+        % TANG 2 (gia dinh): eps_Si phan the tich silicon (duong luong dung luong) moi nut x
+        % cuc am; eps_s,n (epsn) van la tong Gr + Si (dfn_si_params.m)
+        ag.epsSi = (n+1 : n+Nn).'; n = n + Nn;
+    end
     ix.ag = ag;
 end
 ix.nd  = n;                    % so trang thai vi phan
@@ -88,6 +93,7 @@ if aging
     at([ix.ag.xavn; ix.ag.xavp]) = 1e-8;
     at([ix.ag.nLAMn, ix.ag.nLAMp]) = 1e-10;                                     % mol/m2
     at(ix.ag.Qthr) = 1e-6;                                                      % Ah
+    if si_on(par), at(ix.ag.epsSi) = 1e-10; end
 end
 par.atol = at;
 
@@ -152,6 +158,7 @@ par.grp_aa = dfn_color(par.Saa);
         % aging_selftest.m kiem tra moi phan tu khac 0 con lai nam trong JPattern.
         G = ix.ag;
         locN = {G.Lin, G.Lout, G.Lcin, G.Lcout, G.cLi, G.cdl, G.lcr, G.epsn, G.xavn};
+        if isfield(G, 'epsSi'), locN{end+1} = G.epsSi; end       % tang 2: cung nguon cuc bo
         for k = 1:Nn
             Kk = cellfun(@(v) v(k), locN).';                      % trang thai lao hoa nut k
             src = [Kk; ix.phisn(k); phn(k); cen(k); ix.jn(k); ix.T; Mn(end,k); Mn(end-1,k)];
@@ -186,4 +193,8 @@ par.grp_aa = dfn_color(par.Saa);
         add(rows(2:end), cols(1:end-1));
         add(rows(1:end-1), cols(2:end));
     end
+end
+
+function tf = si_on(par)
+tf = isfield(par, 'ag') && isfield(par.ag, 'si') && par.ag.si.on;
 end

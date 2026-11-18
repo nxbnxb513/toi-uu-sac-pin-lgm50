@@ -14,15 +14,15 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "selftest | smoke (chi chay thu ngan) | full (selftest + mo phong + jumpcheck + bao cao) | runs (mo phong + jumpcheck + bao cao, khong selftest) | report"
+        description: "selftest | smoke (chi chay thu ngan) | si_selftest (chi tu kiem tra tang 2) | full (selftest + mo phong + jumpcheck + bao cao) | runs (mo phong + jumpcheck + bao cao, khong selftest) | report"
         required: false
         default: 'full'
       variants:
-        description: 'Bien the, JSON (default = V_cv 4.116 V; vcv42 = 4.2 V)'
+        description: 'Bien the, JSON (default = tang 1, V_cv 4.116 V; vcv42 = 4.2 V; si = tang 2 silicon; siB_k3e-14 = tang 2 dang/k cho truoc)'
         required: false
         default: '["default"]'
       expts:
-        description: 'Thi nghiem, JSON ([] = khong mo phong brute force)'
+        description: 'Thi nghiem, JSON (1: 0-30 %, 2: 70-85 %, 3: 85-100 %, 5: 0-100 %; [] = khong mo phong)'
         required: false
         default: '[2,3]'
       temps:
@@ -49,6 +49,10 @@ on:
         description: 'ID cac lan chay khac (cach nhau dau cach) de gop vao bao cao (artifact ck3-*, jc-*)'
         required: false
         default: ''
+      extra:
+        description: 'Tuy chon them, JSON: nsets (12), jc_expts ([2,3]), jc_variant ("default"), jc_nsets (12)'
+        required: false
+        default: '{}'
 
 permissions:
   contents: read
@@ -60,7 +64,7 @@ concurrency:
 
 jobs:
   selftest:
-    if: ${{ github.event.inputs.mode == 'selftest' || github.event.inputs.mode == 'smoke' || github.event.inputs.mode == 'full' }}
+    if: ${{ github.event.inputs.mode == 'selftest' || github.event.inputs.mode == 'smoke' || github.event.inputs.mode == 'full' || github.event.inputs.mode == 'si_selftest' }}
     runs-on: ubuntu-latest
     timeout-minutes: 150
     steps:
@@ -70,17 +74,28 @@ jobs:
           release: R2024b
           cache: true
       - name: Tu kiem tra lao hoa
-        if: ${{ github.event.inputs.mode != 'smoke' }}
+        if: ${{ github.event.inputs.mode != 'smoke' && github.event.inputs.mode != 'si_selftest' }}
         uses: matlab-actions/run-command@v2
         with:
           command: addpath('src/dfn'); addpath('src/dfn/aging'); ag_selftest('results/aging_selftest');
+      - name: Tu kiem tra tang 2 (silicon, gia dinh)
+        if: ${{ !cancelled() && github.event.inputs.mode != 'smoke' }}
+        uses: matlab-actions/run-command@v2
+        with:
+          command: addpath('src/dfn'); addpath('src/dfn/aging'); ag_si_selftest('results/aging_selftest');
+      - name: Chay thu ngan tang 2 (Expt 1, 25 C, 2 set x 6 chu ky, Jmax 2; Expt 5, 1 set x 4 chu ky)
+        if: ${{ !cancelled() && github.event.inputs.mode == 'si_selftest' }}
+        uses: matlab-actions/run-command@v2
+        with:
+          command: addpath('src/dfn'); addpath('src/dfn/aging'); ag_run(1, 25, 'results/aging_selftest/smoke_si/a', struct('variant', 'si', 'N', 6, 'nsets', 2, 'Jmax', 2)); ag_run(5, 40, 'results/aging_selftest/smoke_si/b', struct('variant', 'si', 'N', 4, 'nsets', 1, 'Jmax', 0)); ag_si_report('results/aging_selftest/smoke_si', 'results/aging_selftest/smoke_si_report', 'data/derived');
       - name: Chay thu ngan (ag_run 2 set x 4 chu ky; nhay chu ky 30 chu ky, Jmax 5) + ag_report
+        if: ${{ !cancelled() && github.event.inputs.mode != 'si_selftest' }}
         uses: matlab-actions/run-command@v2
         with:
           command: addpath('src/dfn'); addpath('src/dfn/aging'); ag_run(3, 25, 'results/aging_selftest/smoke/a', struct('N', 4, 'nsets', 2, 'Jmax', 0)); ag_run(2, 40, 'results/aging_selftest/smoke/b', struct('N', 30, 'nsets', 1, 'Jmax', 5)); ag_report('results/aging_selftest/smoke', 'results/aging_selftest/smoke_report', 'data/derived');
       - name: Tom tat
         if: always()
-        run: if [ -f results/aging_selftest/aging_selftest.md ]; then cat results/aging_selftest/aging_selftest.md >> "$GITHUB_STEP_SUMMARY"; fi
+        run: for f in results/aging_selftest/aging_selftest.md results/aging_selftest/aging_si_selftest.md results/aging_selftest/smoke_si_report/silicon_report.md; do if [ -f "$f" ]; then cat "$f" >> "$GITHUB_STEP_SUMMARY"; fi; done
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -121,7 +136,7 @@ jobs:
         if: ${{ !cancelled() && steps.st.outputs.done != 'true' }}
         uses: matlab-actions/run-command@v2
         with:
-          command: addpath('src/dfn'); addpath('src/dfn/aging'); ag_run(${{ matrix.expt }}, ${{ matrix.temp }}, 'results/run', struct('variant', '${{ matrix.variant }}', 'Jmax', ${{ github.event.inputs.jmax || 0 }}, 'budget_s', 1.6*3600));
+          command: addpath('src/dfn'); addpath('src/dfn/aging'); ag_run(${{ matrix.expt }}, ${{ matrix.temp }}, 'results/run', struct('variant', '${{ matrix.variant }}', 'Jmax', ${{ github.event.inputs.jmax || 0 }}, 'budget_s', 1.6*3600, 'nsets', ${{ fromJSON(github.event.inputs.extra || '{}').nsets || 12 }}));
       - uses: actions/upload-artifact@v4
         if: ${{ always() && hashFiles('results/run/checkpoint.mat') != '' }}
         with:
@@ -133,7 +148,7 @@ jobs:
         if: ${{ !cancelled() && steps.st.outputs.done != 'true' }}
         uses: matlab-actions/run-command@v2
         with:
-          command: addpath('src/dfn'); addpath('src/dfn/aging'); ag_run(${{ matrix.expt }}, ${{ matrix.temp }}, 'results/run', struct('variant', '${{ matrix.variant }}', 'Jmax', ${{ github.event.inputs.jmax || 0 }}, 'budget_s', 1.6*3600));
+          command: addpath('src/dfn'); addpath('src/dfn/aging'); ag_run(${{ matrix.expt }}, ${{ matrix.temp }}, 'results/run', struct('variant', '${{ matrix.variant }}', 'Jmax', ${{ github.event.inputs.jmax || 0 }}, 'budget_s', 1.6*3600, 'nsets', ${{ fromJSON(github.event.inputs.extra || '{}').nsets || 12 }}));
       - uses: actions/upload-artifact@v4
         if: ${{ always() && hashFiles('results/run/checkpoint.mat') != '' }}
         with:
@@ -145,7 +160,7 @@ jobs:
         if: ${{ !cancelled() && steps.st.outputs.done != 'true' }}
         uses: matlab-actions/run-command@v2
         with:
-          command: addpath('src/dfn'); addpath('src/dfn/aging'); ag_run(${{ matrix.expt }}, ${{ matrix.temp }}, 'results/run', struct('variant', '${{ matrix.variant }}', 'Jmax', ${{ github.event.inputs.jmax || 0 }}, 'budget_s', 1.6*3600));
+          command: addpath('src/dfn'); addpath('src/dfn/aging'); ag_run(${{ matrix.expt }}, ${{ matrix.temp }}, 'results/run', struct('variant', '${{ matrix.variant }}', 'Jmax', ${{ github.event.inputs.jmax || 0 }}, 'budget_s', 1.6*3600, 'nsets', ${{ fromJSON(github.event.inputs.extra || '{}').nsets || 12 }}));
       - uses: actions/upload-artifact@v4
         if: ${{ always() && hashFiles('results/run/checkpoint.mat') != '' }}
         with:
@@ -188,7 +203,7 @@ jobs:
         if: ${{ !cancelled() && steps.st.outputs.done != 'true' }}
         uses: matlab-actions/run-command@v2
         with:
-          command: addpath('src/dfn'); addpath('src/dfn/aging'); ag_run(${{ matrix.expt }}, ${{ matrix.temp }}, 'results/run', struct('variant', '${{ matrix.variant }}', 'Jmax', ${{ github.event.inputs.jmax || 0 }}, 'budget_s', 1.6*3600));
+          command: addpath('src/dfn'); addpath('src/dfn/aging'); ag_run(${{ matrix.expt }}, ${{ matrix.temp }}, 'results/run', struct('variant', '${{ matrix.variant }}', 'Jmax', ${{ github.event.inputs.jmax || 0 }}, 'budget_s', 1.6*3600, 'nsets', ${{ fromJSON(github.event.inputs.extra || '{}').nsets || 12 }}));
       - uses: actions/upload-artifact@v4
         if: ${{ always() && hashFiles('results/run/checkpoint.mat') != '' }}
         with:
@@ -200,7 +215,7 @@ jobs:
         if: ${{ !cancelled() && steps.st.outputs.done != 'true' }}
         uses: matlab-actions/run-command@v2
         with:
-          command: addpath('src/dfn'); addpath('src/dfn/aging'); ag_run(${{ matrix.expt }}, ${{ matrix.temp }}, 'results/run', struct('variant', '${{ matrix.variant }}', 'Jmax', ${{ github.event.inputs.jmax || 0 }}, 'budget_s', 1.6*3600));
+          command: addpath('src/dfn'); addpath('src/dfn/aging'); ag_run(${{ matrix.expt }}, ${{ matrix.temp }}, 'results/run', struct('variant', '${{ matrix.variant }}', 'Jmax', ${{ github.event.inputs.jmax || 0 }}, 'budget_s', 1.6*3600, 'nsets', ${{ fromJSON(github.event.inputs.extra || '{}').nsets || 12 }}));
       - uses: actions/upload-artifact@v4
         if: ${{ always() && hashFiles('results/run/checkpoint.mat') != '' }}
         with:
@@ -212,7 +227,7 @@ jobs:
         if: ${{ !cancelled() && steps.st.outputs.done != 'true' }}
         uses: matlab-actions/run-command@v2
         with:
-          command: addpath('src/dfn'); addpath('src/dfn/aging'); ag_run(${{ matrix.expt }}, ${{ matrix.temp }}, 'results/run', struct('variant', '${{ matrix.variant }}', 'Jmax', ${{ github.event.inputs.jmax || 0 }}, 'budget_s', 1.6*3600));
+          command: addpath('src/dfn'); addpath('src/dfn/aging'); ag_run(${{ matrix.expt }}, ${{ matrix.temp }}, 'results/run', struct('variant', '${{ matrix.variant }}', 'Jmax', ${{ github.event.inputs.jmax || 0 }}, 'budget_s', 1.6*3600, 'nsets', ${{ fromJSON(github.event.inputs.extra || '{}').nsets || 12 }}));
       - uses: actions/upload-artifact@v4
         if: ${{ always() && hashFiles('results/run/checkpoint.mat') != '' }}
         with:
@@ -255,7 +270,7 @@ jobs:
         if: ${{ !cancelled() && steps.st.outputs.done != 'true' }}
         uses: matlab-actions/run-command@v2
         with:
-          command: addpath('src/dfn'); addpath('src/dfn/aging'); ag_run(${{ matrix.expt }}, ${{ matrix.temp }}, 'results/run', struct('variant', '${{ matrix.variant }}', 'Jmax', ${{ github.event.inputs.jmax || 0 }}, 'budget_s', 1.6*3600));
+          command: addpath('src/dfn'); addpath('src/dfn/aging'); ag_run(${{ matrix.expt }}, ${{ matrix.temp }}, 'results/run', struct('variant', '${{ matrix.variant }}', 'Jmax', ${{ github.event.inputs.jmax || 0 }}, 'budget_s', 1.6*3600, 'nsets', ${{ fromJSON(github.event.inputs.extra || '{}').nsets || 12 }}));
       - uses: actions/upload-artifact@v4
         if: ${{ always() && hashFiles('results/run/checkpoint.mat') != '' }}
         with:
@@ -267,7 +282,7 @@ jobs:
         if: ${{ !cancelled() && steps.st.outputs.done != 'true' }}
         uses: matlab-actions/run-command@v2
         with:
-          command: addpath('src/dfn'); addpath('src/dfn/aging'); ag_run(${{ matrix.expt }}, ${{ matrix.temp }}, 'results/run', struct('variant', '${{ matrix.variant }}', 'Jmax', ${{ github.event.inputs.jmax || 0 }}, 'budget_s', 1.6*3600));
+          command: addpath('src/dfn'); addpath('src/dfn/aging'); ag_run(${{ matrix.expt }}, ${{ matrix.temp }}, 'results/run', struct('variant', '${{ matrix.variant }}', 'Jmax', ${{ github.event.inputs.jmax || 0 }}, 'budget_s', 1.6*3600, 'nsets', ${{ fromJSON(github.event.inputs.extra || '{}').nsets || 12 }}));
       - uses: actions/upload-artifact@v4
         if: ${{ always() && hashFiles('results/run/checkpoint.mat') != '' }}
         with:
@@ -279,7 +294,7 @@ jobs:
         if: ${{ !cancelled() && steps.st.outputs.done != 'true' }}
         uses: matlab-actions/run-command@v2
         with:
-          command: addpath('src/dfn'); addpath('src/dfn/aging'); ag_run(${{ matrix.expt }}, ${{ matrix.temp }}, 'results/run', struct('variant', '${{ matrix.variant }}', 'Jmax', ${{ github.event.inputs.jmax || 0 }}, 'budget_s', 1.6*3600));
+          command: addpath('src/dfn'); addpath('src/dfn/aging'); ag_run(${{ matrix.expt }}, ${{ matrix.temp }}, 'results/run', struct('variant', '${{ matrix.variant }}', 'Jmax', ${{ github.event.inputs.jmax || 0 }}, 'budget_s', 1.6*3600, 'nsets', ${{ fromJSON(github.event.inputs.extra || '{}').nsets || 12 }}));
       - uses: actions/upload-artifact@v4
         if: ${{ always() && hashFiles('results/run/checkpoint.mat') != '' }}
         with:
@@ -296,7 +311,7 @@ jobs:
       fail-fast: false
       max-parallel: 20
       matrix:
-        expt: [2, 3]
+        expt: ${{ fromJSON(github.event.inputs.extra || '{}').jc_expts || fromJSON('[2,3]') }}
         temp: ${{ fromJSON(github.event.inputs.jc_temps || '[10,25,40]') }}
         jmax: ${{ fromJSON(github.event.inputs.jumpcheck || '[20,50]') }}
     steps:
@@ -305,14 +320,14 @@ jobs:
         with:
           release: R2024b
           cache: true
-      - name: Expt ${{ matrix.expt }}, ${{ matrix.temp }} C, Jmax = ${{ matrix.jmax }}, 12 set
+      - name: Expt ${{ matrix.expt }}, ${{ matrix.temp }} C, Jmax = ${{ matrix.jmax }}
         uses: matlab-actions/run-command@v2
         with:
-          command: addpath('src/dfn'); addpath('src/dfn/aging'); ag_run(${{ matrix.expt }}, ${{ matrix.temp }}, 'results/jc', struct('Jmax', ${{ matrix.jmax }}, 'nsets', 12, 'budget_s', 5.4*3600));
+          command: addpath('src/dfn'); addpath('src/dfn/aging'); ag_run(${{ matrix.expt }}, ${{ matrix.temp }}, 'results/jc', struct('variant', '${{ fromJSON(github.event.inputs.extra || '{}').jc_variant || 'default' }}', 'Jmax', ${{ matrix.jmax }}, 'nsets', ${{ fromJSON(github.event.inputs.extra || '{}').jc_nsets || 12 }}, 'budget_s', 5.4*3600));
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: jc-e${{ matrix.expt }}-T${{ matrix.temp }}-J${{ matrix.jmax }}
+          name: jc-e${{ matrix.expt }}-T${{ matrix.temp }}-J${{ matrix.jmax }}-${{ fromJSON(github.event.inputs.extra || '{}').jc_variant || 'default' }}
           path: results/jc
           retention-days: 30
 
@@ -339,9 +354,14 @@ jobs:
         uses: matlab-actions/run-command@v2
         with:
           command: addpath('src/dfn'); addpath('src/dfn/aging'); ag_report('results/all', 'results/report', 'data/derived');
+      - name: Bao cao tang 2 (silicon) + Expt 1/5
+        if: ${{ !cancelled() }}
+        uses: matlab-actions/run-command@v2
+        with:
+          command: addpath('src/dfn'); addpath('src/dfn/aging'); ag_si_report('results/all', 'results/report/silicon', 'data/derived');
       - name: Tom tat
         if: always()
-        run: if [ -f results/report/aging_validation.md ]; then cat results/report/aging_validation.md >> "$GITHUB_STEP_SUMMARY"; fi
+        run: for f in results/report/aging_validation.md results/report/silicon/silicon_report.md; do if [ -f "$f" ]; then cat "$f" >> "$GITHUB_STEP_SUMMARY"; fi; done
       - uses: actions/upload-artifact@v4
         if: always()
         with:

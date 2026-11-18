@@ -47,6 +47,20 @@ dlcr = A.k_cr/A.t0_cr*Kic.^A.m_cr;
 % ---- LAM ----------------------------------------------------------------
 depsn_s = -A.beta_n/A.t0_lam*(max(sigh_n, 0)/A.sigc_n).^A.m2_n;
 depsp_s = -A.beta_p/A.t0_lam*(max(sigh_p, 0)/A.sigc_p).^A.m2_p;
+% ---- TANG 2 (GIA DINH): LAM silicon o SOC thap (dfn_si_params.m; dac_ta muc 16; GD-90..95) --
+% So hang tang 1 o tren duoc coi la LAM graphite (khong phu thuoc eps). Phan Si cong vao
+% d eps_s,n/dt nen a_n, dung luong cuc am, do xop va so sach nLAMn (Li trong vat lieu mat,
+% theo c_rav cua hat gop) dung nguyen co che tang 1 -> bao toan Li khong doi.
+dSi = [];
+if isfield(A, 'si') && A.si.on
+    s2 = A.si;
+    rr = max(ag.epsSi/s2.eps0, s2.rmin);
+    w  = s2.w_lo + (s2.w_hi - s2.w_lo)*(1 - tanh((thsn - s2.sto)/s2.dsto))/2;
+    jSi = w.*ag.as_n.*jin./(s2.a0*rr.^s2.q_a);
+    dc  = s2.cdc*jSi;
+    dSi = -s2.k*max(dc, 0).^s2.m.*rr.^s2.s;
+    depsn_s = depsn_s + dSi;
+end
 
 % ---- SEI ----------------------------------------------------------------
 zF = par.sei.z*F;
@@ -83,9 +97,10 @@ fa(G.xavn) = dxavn; fa(G.xavp) = dxavp;
 fa(G.nSEI) = dnSEI; fa(G.nSEIcr) = dnSEIcr;
 fa(G.nLAMn) = dnLAMn; fa(G.nLAMp) = dnLAMp;
 fa(G.Qthr) = abs(I)/3600;
+if ~isempty(dSi), fa(G.epsSi) = dSi; end
 
 if nargout > 2
     da.sigt_n = sigt_n; da.sigt_p = sigt_p; da.dlcr = dlcr;
-    da.depsn_s = depsn_s; da.depsp_s = depsp_s; da.gamma = gam;
+    da.depsn_s = depsn_s; da.depsp_s = depsp_s; da.gamma = gam; da.dSi = dSi;
 end
 end

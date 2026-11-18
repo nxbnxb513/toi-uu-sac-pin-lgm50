@@ -42,6 +42,7 @@ for i = 1:numel(files)
     if height(M) < 2, continue; end
     M.SOH = 100*M.Qdis01_Ah/Qref;
     M.SOH0 = 100*M.Qdis01_Ah/M.Qdis01_Ah(M.rpt == 0);
+    if ~any(M.expt(1) == [2 3]), continue; end     % Expt 1/5 (buoc D): ag_si_report.m
     MM{end+1} = M; %#ok<AGROW>
 end
 % trung lap (cung bien the, Expt, T, Jmax tu nhieu lan chay): giu ban co nhieu RPT nhat

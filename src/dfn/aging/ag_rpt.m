@@ -13,11 +13,14 @@ function [y, r] = ag_rpt(par, y, expt, first)
 %         xung, V2 tai 0.1 s sau khi dat xung) - theo bai bao
 %   nap lai: CCCV 0.3C; nghi 1 h (Expt 2) / 4 h (Expt 3) (Kirkaldy 2024: chuan bi Expt 3
 %         nghi 4 h); Expt 2: xa 1C 730 mAh, nghi 3 h (Kirkaldy 2024).
+%   Expt 1 (0-30 %): pre nhu Expt 2; sau RPT: CCCV, nghi 1 h, xa 1C toi 2.5 V, CV 2.5 V toi C/100,
+%         nghi 4 h. Expt 5 (0-100 %): nhu Expt 3 (Kirkaldy 2024 Table 2, 6; GD-94).
 % CCCV: CC toi V_cv = par.V_cv (GD-43), CV toi C/100.
 T25 = 298.15; Q = par.Qnom;
 r = struct();
 if ~first
-    if expt == 2, st = ag_cccv(par, 0.3*Q, T25, 3600); else, st = ag_step('I', 0, 3600, T25); end
+    % Expt 1 (vua xa toi 2.5 V) nhu Expt 2; Expt 5 (vua sac day) nhu Expt 3 (GD-94)
+    if expt == 2 || expt == 1, st = ag_cccv(par, 0.3*Q, T25, 3600); else, st = ag_step('I', 0, 3600, T25); end
     y = run(y, st);
 end
 % (i) 0.1C
@@ -47,10 +50,14 @@ for k = 1:25
 end
 r.R12 = r.R(12);
 % nap lai + chuan bi
-if expt == 2, trest = 3600; else, trest = 4*3600; end
+if expt == 2 || expt == 1, trest = 3600; else, trest = 4*3600; end
 y = run(y, ag_cccv(par, 0.3*Q, T25, trest));
 if expt == 2
     y = run(y, [ag_step('I', Q, 0.730/Q*3600, T25, struct('Vmin', par.Vmin)), ag_step('I', 0, 3*3600, T25)]);
+elseif expt == 1
+    % Kirkaldy 2024 Table 2: xa 1C toi 2.5 V -> CV 2.5 V toi C/100 -> nghi 4 h (GD-94)
+    y = run(y, [ag_step('I', Q, 2*3600, T25, struct('Vmin', par.Vmin)), ...
+                ag_step('V', par.Vmin, 30*3600, T25, struct('Icut', Q/100)), ag_step('I', 0, 4*3600, T25)]);
 end
 
     function yy = run(yy, st)

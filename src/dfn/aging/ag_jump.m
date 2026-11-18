@@ -23,6 +23,7 @@ function [y, info] = ag_jump(par, ya, yb, J)
 ix = par.ix; G = ix.ag; g = par.grid; A = par.A;
 y = yb;
 slow = [G.Lin; G.Lout; G.Lcin; G.Lcout; G.cdl; G.lcr; G.epsn; G.epsp; G.nSEI; G.nSEIcr; G.nLAMn; G.nLAMp; G.Qthr];
+if isfield(G, 'epsSi'), slow = [slow; G.epsSi]; end    % tang 2 (gia dinh): eps_Si cung la trang thai cham
 y(slow) = yb(slow) + J*(yb(slow) - ya(slow));
 L1 = dfn_li_inventory(par, yb);
 La = dfn_li_inventory(par, ya);
@@ -50,6 +51,7 @@ thn = y(ix.thn); thp = y(ix.thp);
 ag = dfn_aging_state(par, y);
 info.ok = all(thn > 1e-6 & thn < 1 - 1e-6) && all(thp > 1e-6 & thp < 1 - 1e-6) ...
     && all(y(G.epsn) > 0) && all(y(G.epsp) > 0) && all(ag.eps > 0) ...
+    && (~isfield(G, 'epsSi') || (all(y(G.epsSi) > 0) && all(y(G.epsSi) < y(G.epsn)))) ...
     && all(y([G.Lin; G.Lout; G.Lcin; G.Lcout]) > 0) && all(y(G.cdl) >= 0) && all(y(G.lcr) > 0);
 
     function yy = shift(yy, el, target)

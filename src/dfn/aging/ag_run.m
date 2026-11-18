@@ -1,15 +1,18 @@
 function status = ag_run(expt, TdegC, outdir, opt)
-%AG_RUN  Mo phong thi nghiem lao hoa Li 2025 (Expt 2: 70-85 %, Expt 3: 85-100 %) bang DFN
+%AG_RUN  Mo phong thi nghiem lao hoa Li 2025 (Expt 2: 70-85 %, Expt 3: 85-100 %; buoc D them
+% Expt 1: 0-30 %, Expt 5: 0-100 % cua Kirkaldy 2024) bang DFN
 % + mo hinh lao hoa "5 coupled", co diem luu (checkpoint) de chay noi tiep nhieu job CI.
 %   status = ag_run(expt, TdegC, outdir, opt)   status = 'done' | 'incomplete'
-% opt: .variant ('default'), .Jmax (20; 0 = brute force), .nsets (12), .N (515),
+% opt: .variant ('default'), .Jmax (20; 0 = brute force), .nsets (12), .N (515; Expt 1: 258, Expt 5: 78),
 %      .budget_s (5.0 h: dung va luu khi vuot), .ckpt_every_s (900)
 % Giao thuc (dac_ta_lao_hoa.md muc 13; GD-59):
 %   break-in (theo code): tu 100 % SOC (x100, y100, Li 2025 SI Table 6), 25 C: xa 0.5C toi
 %   4.0 V; sac CCCV 0.3C; nghi 1 h. -> RPT0 -> [can kho; ageing set k (T_amb = T);
 %   can kho; RPT k] k = 1..nsets.  Can kho (dfn_dryout_update) truoc moi set va moi RPT.
 if nargin < 4, opt = struct(); end
-opt = defaults(opt, struct('variant', 'default', 'Jmax', 20, 'nsets', 12, 'N', 515, ...
+% N mac dinh theo thi nghiem (Kirkaldy 2024 Table 1): Expt 2/3 515, Expt 1 258, Expt 5 78
+Ndef = 515; if expt == 1, Ndef = 258; elseif expt == 5, Ndef = 78; end
+opt = defaults(opt, struct('variant', 'default', 'Jmax', 20, 'nsets', 12, 'N', Ndef, ...
     'budget_s', 5.0*3600, 'ckpt_every_s', 900));
 if ~exist(outdir, 'dir'), mkdir(outdir); end
 ck = fullfile(outdir, 'checkpoint.mat');
@@ -141,6 +144,12 @@ row.LAM_NE_pct = 100*(1 - inv.Cn/i0.Cn);
 row.LAM_PE_pct = 100*(1 - inv.Cp/i0.Cp);
 row.LAM_dry_pct = 100*(1 - S.dry.A/S.dry.Amax);
 row.R_mOhm = 1e3*r.R12;
+if isfield(inv, 'CSi')
+    % tang 2 (gia dinh): LAM silicon / graphite (ke ca phan can kho qua dien tich A)
+    row.LAM_Si_pct = 100*(1 - inv.CSi/i0.CSi);
+    row.LAM_Gr_pct = 100*(1 - (inv.Cn - inv.CSi)/(i0.Cn - i0.CSi));
+    row.si_k = par.ag.si.k; row.si_form = par.ag.si.form;
+end
 % phan ra LLI (phan tram cua Li trong hat tai RPT0)
 row.LLI_SEI_pct   = 100*(inv.sei - i0.sei)/p0;
 row.LLI_SEIcr_pct = 100*(inv.seicr - i0.seicr)/p0;
@@ -161,6 +170,7 @@ row.wall_h = (S.wall)/3600;
 if isempty(S.rows), S.rows = row; else, S.rows(end+1) = row; end
 fprintf('RPT %2d: Qthr %.0f Ah, SOH %.2f %%, LLI %.2f %%, LAM_NE %.2f %%, LAM_PE %.2f %%, R %.2f mOhm, Li %.1e\n', ...
     k, row.Qthr_Ah, row.SOH_pct, row.LLI_pct, row.LAM_NE_pct, row.LAM_PE_pct, row.R_mOhm, row.Li_cons_rel);
+if isfield(row, 'LAM_Si_pct'), fprintf('        tang 2: LAM_Si %.2f %%, LAM_Gr %.2f %%\n', row.LAM_Si_pct, row.LAM_Gr_pct); end
 end
 
 function write_outputs(S, outdir, status)

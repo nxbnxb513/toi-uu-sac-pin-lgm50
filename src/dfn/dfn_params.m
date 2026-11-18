@@ -6,7 +6,8 @@ function par = dfn_params(opt)
 %                             src ('approved'|'paper'|'code'), E_Ds_n, V_SEI, contact_heat, h,
 %                             Rcontact, stress_diffusion, sei_init ('code'|'paper'), use_tdf,
 %                             dUdT_scale, L_SEI_layer0, ocp_n_branch ('delith'|'hyst'), V_cv,
-%                             aging (false|true: bat mo hinh lao hoa "5 coupled", buoc C)
+%                             aging (false|true: bat mo hinh lao hoa "5 coupled", buoc C),
+%                             si (false|true|struct: TANG 2 silicon, gia dinh; dfn_si_params.m)
 %
 % BO THAM SO: baseline cua Li et al. 2025 (Nat. Commun. 16:2776) = O'Regan
 % et al. 2022 (Electrochim. Acta 425:140700) + cac muc danh dau * trong
@@ -372,6 +373,11 @@ par.ag = ag;
 % Dung luong moi dien cuc tren mot don vi stoich [Ah]
 par.neg.Qcap = par.neg.cmax*par.neg.eps_s*par.neg.L*par.A*par.F/3600;
 par.pos.Qcap = par.pos.cmax*par.pos.eps_s*par.pos.L*par.A*par.F/3600;
+
+% TANG 2 (lao hoa silicon o SOC thap, GIA DINH; chi khi aging = true va si = true|struct;
+% MAC DINH TAT: khong them trang thai, khong doi so nao). dfn_si_params.m, GD-90..GD-95.
+par.ag.si = dfn_si_params(getopt(opt, 'si', false), par);
+if par.ag.si.on && ~par.aging.on, error('dfn_params: si can aging = true'); end
 
 par.opt = opt;                   % tuy chon da dung (de dung lai bo tham so co lao hoa: dfn_perm_loss)
 par.neg = dfn_Ktable(par.neg);   % bang tich phan Kirchhoff cua D_s (GD-15)

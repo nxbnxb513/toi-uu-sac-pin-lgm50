@@ -13,5 +13,6 @@ y(G.Lin) = A.L0; y(G.Lout) = A.L0; y(G.Lcin) = A.L0; y(G.Lcout) = A.L0;
 y(G.cLi) = 0; y(G.cdl) = 0; y(G.lcr) = A.l_cr0;
 y(G.epsn) = A.epsn0; y(G.epsp) = A.epsp0;
 y(G.nSEI) = 0; y(G.nSEIcr) = 0; y(G.nLAMn) = 0; y(G.nLAMp) = 0; y(G.Qthr) = 0;
+if isfield(G, 'epsSi'), y(G.epsSi) = A.si.eps0; end   % tang 2: eps_Si,0 = f_Si eps_s,n,0 (GD-91)
 y = dfn_aging_sync_xav(par, y);
 end

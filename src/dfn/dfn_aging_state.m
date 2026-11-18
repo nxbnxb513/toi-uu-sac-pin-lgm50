@@ -35,6 +35,7 @@ ag.cLi  = y(G.cLi);  ag.cdl   = y(G.cdl);
 ag.lcr  = y(G.lcr);
 ag.epsn = y(G.epsn); ag.epsp  = y(G.epsp);
 ag.xavn = y(G.xavn); ag.xavp  = y(G.xavp);
+if isfield(G, 'epsSi'), ag.epsSi = y(G.epsSi); end     % tang 2 (gia dinh, dfn_si_params.m)
 ag.S    = 1 + 2*ag.lcr*A.w_cr*A.rho_cr;
 ag.as_n = 3*ag.epsn/par.neg.Rp;
 ag.as_p = 3*ag.epsp/par.pos.Rp;

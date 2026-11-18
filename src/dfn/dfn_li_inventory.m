@@ -8,6 +8,7 @@ function L = dfn_li_inventory(par, y)
 %   L.total             tong cac muc tren (bao toan trong mot doan mo phong; can kho: dfn_dryout_update)
 %   L.Cn, L.Cp [Ah]     dung luong dien cuc: A sum_x eps_s dx c_max F/3600
 %   L.xav_err           max |x_av - sum(theta Vsh)/sum(Vsh)| (kiem tra bat bien)
+%   L.CSi [Ah]          (chi tang 2) dung luong silicon A sum_x eps_Si dx c_max F/3600
 g = par.grid; ix = par.ix; A = par.A;
 thn = reshape(y(ix.thn), g.Nrn, g.Nn); thp = reshape(y(ix.thp), g.Nrp, g.Np);
 xn = (g.Vshn.'*thn).'/sum(g.Vshn); xp = (g.Vshp.'*thp).'/sum(g.Vshp);
@@ -34,4 +35,8 @@ L.total  = L.part_n + L.part_p + L.elyte + L.sei + L.seicr + L.plated + L.dead +
 L.Cn = A*sum(en)*g.dxn*par.neg.cmax*par.F/3600;
 L.Cp = A*sum(ep)*g.dxp*par.pos.cmax*par.F/3600;
 L.Vpore = A*sum(ag.eps.*g.dx);
+% tang 2 (gia dinh): dung luong silicon [Ah] (phan cua L.Cn)
+if isfield(ix, 'ag') && isfield(ix.ag, 'epsSi')
+    L.CSi = A*sum(y(ix.ag.epsSi))*g.dxn*par.neg.cmax*par.F/3600;
+end
 end
