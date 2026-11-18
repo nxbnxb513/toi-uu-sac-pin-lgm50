@@ -22,6 +22,12 @@ switch variant
     % (jac_reuse = 1 cho NaN o do nhay IRK ngay lan dau - khong dung.)
     case 'pilot', bo.max_iter = 15; bo.max_iter_warm = 4; bo.tol_stat = 2.5e-4; bo.tol_eq = 5e-4;
         bo.tol_ineq = 1e-6; bo.tol_comp = 1e-6;
+    % 18/11/2026 (sau run 44230426135): thu LM lon hon / trong so cu khi lan giai dau NaN
+    case {'pilot_lm1', 'pilot_lm10', 'pilot_wold', 'pilot_lm1_wold', 'pilot_fix0', 'pilot_wold_fix0'}
+        bo = nmpc_variant(bo, 'pilot');
+        if contains(variant, 'fix0'), bo.free_I0 = false; end
+        if contains(variant, 'lm10'), bo.lm = 10; elseif contains(variant, 'lm1'), bo.lm = 1; end
+        if contains(variant, 'wold'), bo.w_loss_scale = 0.1; end   % ~ w_loss = 10 /mAh cu (muc tieu ~0.1)
     otherwise, error('nmpc_variant: bien the %s', variant);
 end
 fprintf('Bien the so hoc NMPC: %s\n', variant);

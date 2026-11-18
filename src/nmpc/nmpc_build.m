@@ -39,7 +39,7 @@ ocp.cost.yref_0 = 0; ocp.cost.yref = 0; ocp.cost.yref_e = 0;
 % nut dau: co dinh x_ROM va I_ch (do/uoc luong), t_f tu do
 ocp.constraints.idxbx_0 = 0:nx;
 ocp.constraints.lbx_0 = zeros(nx + 1, 1); ocp.constraints.ubx_0 = zeros(nx + 1, 1);
-ocp.constraints.idxbxe_0 = 0:nx;
+ocp.constraints.idxbxe_0 = 0:nx-1;   % I_ch (chi so nx) KHONG khai bao la dang thuc: lan giai dau de I_ch tu do (GD-82)
 % bien cung: dong sac va t_f
 ocp.constraints.idxbx = [iI - 1, itf - 1];
 ocp.constraints.lbx = [0; opt.tf_min_h]; ocp.constraints.ubx = [opt.Imax; opt.tf_cap_h];

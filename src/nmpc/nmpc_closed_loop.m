@@ -38,6 +38,7 @@ if ~isfield(cfg, 'dt_prof'), cfg.dt_prof = 30; end
 if ~isfield(cfg, 'w_loss_scale'), cfg.w_loss_scale = 10; end
 if ~isfield(cfg, 'max_consec_fail'), cfg.max_consec_fail = 20; end
 if ~isfield(cfg, 'Cdis'), cfg.Cdis = 0.5; end
+if ~isfield(cfg, 'free_I0'), cfg.free_I0 = true; end
 Ta = cfg.Tamb; Csoc = rom.Csoc; soc_t = cfg.soc_target;
 Qstop = -(soc_t - cfg.soc0)*Csoc;
 Vcv = v_limit(par); Icut = par.Qnom/50;
@@ -96,6 +97,7 @@ K = struct('t', [], 'status', [], 'sqp_iter', [], 'time_tot', [], 'wall', [], 't
 reason = 'tmax'; nfail = 0; ncons = 0; meas = struct('t', 0, 'I', 0, 'V', NaN, 'T', Ta);
 tplant = 0; tfb = 0;
 cold = true; first = true; prev = [];
+if ~cfg.free_I0, Ich = P.I(1); end   % dong dau co dinh = dong dau cua doan dau CCCV
 while t < cfg.tmax
     if toc(tw) > cfg.wall_max, reason = 'wall_limit'; break; end
     xhat = cfg.estimator(y, trk, meas);
@@ -121,7 +123,7 @@ while t < cfg.tmax
     C.solver.set('nlp_solver_max_iter', mi);
     for rep = 1:8
         tfband = [max(C.opt.tf_min_h, tf_ref/cfg.band), min(C.opt.tf_cap_h, tf_ref*cfg.band)];
-        [plan, info] = nmpc_solve(C, xhat, Ich, prm, tfband, first);
+        [plan, info] = nmpc_solve(C, xhat, Ich, prm, tfband, first && cfg.free_I0);
         ttot = ttot + info.time_tot; twal = twal + info.wall;
         tbr = tbr + [info.time_lin, info.time_sim, info.time_qp, info.time_glob];
         if numel(K.t) < cfg.print_stat
@@ -160,7 +162,7 @@ while t < cfg.tmax
         C.solver.reset();
         rem_h = max(prm(3), 0.05);
         Ineed = (soc_t - xhat(rom.ix.soc))*Csoc/rem_h;
-        Pfb = nmpc_cccv_rom(M, rom, xhat, Ta, soc_t, min(Imax, max([Ich, Ineed, Icut*2])), lim, prm(9), cfg.dt_prof, tmax_prof);
+        Pfb = nmpc_cccv_rom(M, rom, xhat, Ta, soc_t, min(Imax, max([Ich, Ineed, cfg.Icc_cccv])), lim, prm(9), cfg.dt_prof, tmax_prof);
         fprintf('  du phong: CCCV an toan ROM tu SOC %.4f: %s, con %.0f s, I dau %.2f A\n', xhat(rom.ix.soc), Pfb.reason, Pfb.t_end, Pfb.I(1));
         Tseg = cfg.Ts;
         Ifb = Pfb.I(1);

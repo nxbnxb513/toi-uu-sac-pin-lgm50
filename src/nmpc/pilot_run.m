@@ -55,6 +55,8 @@ writetable(table(Sc.t, -Sc.I, Sc.V, Sc.T - 273.15, Sc.soc, Sc.xs_sep, 1e3*Sc.eta
 % ---- NMPC (tao bo giai mot lan) ----
 bo = struct('N', cfgn.N, 'Imax', cfgn.Imax, 'codegen_dir', fullfile(pwd, 'c_generated_code'), 'E', M.E);
 bo = nmpc_variant(bo, variant);
+if isfield(bo, 'w_loss_scale'), cfgn.w_loss_scale = bo.w_loss_scale; end
+if ~isfield(bo, 'free_I0'), bo.free_I0 = true; end
 C = nmpc_build(rom, par, bo);
 fprintf('acados: tao + bien dich bo giai %.1f s\n', C.t_build);
 C.M = M; C.par = par; C.sweep = false;
@@ -68,7 +70,7 @@ for ik = iks(:).'
     cl = struct('soc0', soc0, 'soc1', soc1, 'soc_target', soc_t, 'Tamb', Ta, 'budget', k*cc.T_CCCV, 'Ts', cfgn.Ts, ...
         'w_loss_scale', cfgn.w_loss_scale, 'w_dI', cfgn.w_dI, 'Tmax', cfgn.Tmax, 'delta', cfgn.delta, 'xsmax', cfgn.xsmax, ...
         'tmax', cfgn.tmax_factor*cc.T_CCCV, 'Cdis', 0.5, 'Icc_cccv', Cbase*par.Qnom, 'T_cccv', cc.T_CCCV, ...
-        'wall_max', max(left_s/nleft, 60));
+        'wall_max', max(left_s/nleft, 60), 'free_I0', bo.free_I0);
     try
         R = nmpc_closed_loop(C, M, parp, cl);
     catch e
