@@ -75,4 +75,105 @@ Cập nhật 18/11/2026. 3 vùng (0→60, 20→80, 40→100 %) × CCCV 0.5C / 1C
 - Lão hoá hậu kiểm tạm thời (xem trên).
 - Vi phạm η/V ở ngân sách sát của 40→100 %: có thể thêm ràng buộc giữa các nút hoặc tăng N; chưa làm.
 - Khoảng 0.4–0.7 % kém CCCV ở 40→100 % 0.5C: hướng cải thiện là đoạn đầu CCCV với pha CV liên tục trên ROM. **Người dùng quyết định không làm lúc này** (18/11/2026); báo cáo đúng như số liệu.
-- Chỉ 25 °C, 3 vùng, NMPC biết hết trạng thái.
+- Chỉ 25 °C, 3 vùng, NMPC biết hết trạng thái. Kết quả NMPC + EKF: `ket_qua_nmpc_ekf.md`.
+
+## 5. Phân tích dòng điện (19/11/2026)
+
+Tính trên CI bằng `src/nmpc/current_analysis.m` (stage `current` của `nmpc.yml`, run 44421878394) từ CSV quỹ đạo của chính các job ở bảng mục 1 (cùng nguồn: 44237965357 cho 0→60 / 20→80 %, 44249331640 cho 20→80 % 1C k = 0.8, 44258812043 cho 40→100 %). Không đọc số từ hình. Kết quả đầy đủ: `tai_lieu/dong_sac/current_metrics.csv` (mỗi cách sạc × trường hợp) và `tai_lieu/dong_sac/current_soc_bins.csv` (dòng trung bình mỗi khoảng SOC 10 %, dùng cho bảng sạc nhiều bậc ở bước H). Cột `method = NMPC+EKF` thuộc `ket_qua_nmpc_ekf.md`.
+
+**Định nghĩa** (1C = 5 A, I_max = 2C = 10 A, SOC = SOC pin thật):
+- I TB = điện tích nạp / thời gian sạc. Dòng TB mỗi khoảng SOC = ∫I dt / thời gian trong khoảng đó.
+- SOC bắt đầu giảm dòng = SOC ở mẫu đầu tiên sau đỉnh mà I < 0.95 I_đỉnh. Với CCCV so với SOC lúc chuyển CC → CV (V chạm V_cv − 1 mV).
+- Phần điện tích nạp ở SOC > 80 %; thời gian ở I_max (I ≥ 0.99 I_max); η_Li min khi dòng lớn (I ≥ 0.8 I_đỉnh); thời gian η_Li < 50 mV (cách giới hạn 45 mV dưới 5 mV).
+
+Hình: dòng theo thời gian (trái) và theo SOC (phải); đen = CCCV, màu = NMPC từng k.
+
+![0→60 % 0.5C](dong_sac/current_w3_c5.png)
+![0→60 % 1C](dong_sac/current_w3_c10.png)
+![20→80 % 0.5C](dong_sac/current_w8_c5.png)
+![20→80 % 1C](dong_sac/current_w8_c10.png)
+![40→100 % 0.5C](dong_sac/current_w12_c5.png)
+![40→100 % 1C](dong_sac/current_w12_c10.png)
+
+### 5.1. Dòng trung bình (C) mỗi khoảng SOC 10 % (NMPC biết hết trạng thái)
+
+k = 1.5, 2, 3 trùng k = ∞ (sai khác ≤ 0.01C) nên không in; đủ mọi k trong CSV.
+
+| Vùng | CCCV | cách sạc | 0–10 % | 10–20 % | 20–30 % | 30–40 % | 40–50 % | 50–60 % | 60–70 % | 70–80 % | 80–90 % | 90–100 % |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 0-60 | 0.5C | CCCV | 0.50 | 0.50 | 0.50 | 0.50 | 0.50 | 0.50 |  |  |  |  |
+| 0-60 | 0.5C | NMPC k = 0.8 | 0.66 | 0.66 | 0.64 | 0.63 | 0.62 | 0.56 |  |  |  |  |
+| 0-60 | 0.5C | NMPC k = 1 | 0.50 | 0.49 | 0.49 | 0.51 | 0.55 | 0.51 |  |  |  |  |
+| 0-60 | 0.5C | NMPC k = 1.25 | 0.50 | 0.49 | 0.48 | 0.51 | 0.55 | 0.51 |  |  |  |  |
+| 0-60 | 0.5C | NMPC k = ∞ | 0.50 | 0.49 | 0.48 | 0.51 | 0.55 | 0.51 |  |  |  |  |
+| 0-60 | 1C | CCCV | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 |  |  |  |  |
+| 0-60 | 1C | NMPC k = 0.8 | 1.33 | 1.38 | 1.36 | 1.27 | 1.16 | 1.06 |  |  |  |  |
+| 0-60 | 1C | NMPC k = 1 | 1.04 | 1.11 | 1.10 | 1.03 | 0.93 | 0.85 |  |  |  |  |
+| 0-60 | 1C | NMPC k = 1.25 | 0.98 | 0.92 | 0.85 | 0.78 | 0.71 | 0.66 |  |  |  |  |
+| 0-60 | 1C | NMPC k = ∞ | 0.97 | 0.87 | 0.74 | 0.63 | 0.58 | 0.51 |  |  |  |  |
+| 20-80 | 0.5C | CCCV |  |  | 0.50 | 0.50 | 0.50 | 0.50 | 0.50 | 0.50 |  |  |
+| 20-80 | 0.5C | NMPC k = 0.8 |  |  | 0.65 | 0.64 | 0.63 | 0.61 | 0.64 | 0.65 |  |  |
+| 20-80 | 0.5C | NMPC k = 1 |  |  | 0.51 | 0.53 | 0.54 | 0.56 | 0.61 | 0.64 |  |  |
+| 20-80 | 0.5C | NMPC k = 1.25 |  |  | 0.51 | 0.53 | 0.55 | 0.56 | 0.61 | 0.64 |  |  |
+| 20-80 | 0.5C | NMPC k = ∞ |  |  | 0.51 | 0.53 | 0.55 | 0.56 | 0.61 | 0.64 |  |  |
+| 20-80 | 1C | CCCV |  |  | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 | 0.85 |  |  |
+| 20-80 | 1C | NMPC k = 0.8 |  |  | 1.96 | 1.82 | 1.61 | 1.39 | 1.12 | 0.80 |  |  |
+| 20-80 | 1C | NMPC k = 1 |  |  | 1.04 | 1.04 | 1.03 | 1.02 | 0.97 | 0.78 |  |  |
+| 20-80 | 1C | NMPC k = 1.25 |  |  | 0.97 | 0.90 | 0.82 | 0.75 | 0.72 | 0.67 |  |  |
+| 20-80 | 1C | NMPC k = ∞ |  |  | 0.97 | 0.90 | 0.82 | 0.75 | 0.72 | 0.67 |  |  |
+| 40-100 | 0.5C | CCCV |  |  |  |  | 0.50 | 0.50 | 0.50 | 0.50 | 0.31 | 0.10 |
+| 40-100 | 0.5C | NMPC k = 0.8 |  |  |  |  | 1.82 | 1.54 | 1.23 | 0.83 | 0.30 | 0.09 |
+| 40-100 | 0.5C | NMPC k = 1 |  |  |  |  | 0.53 | 0.52 | 0.51 | 0.48 | 0.30 | 0.10 |
+| 40-100 | 0.5C | NMPC k = 1.25 |  |  |  |  | 0.50 | 0.50 | 0.49 | 0.47 | 0.29 | 0.10 |
+| 40-100 | 0.5C | NMPC k = ∞ |  |  |  |  | 0.50 | 0.50 | 0.49 | 0.47 | 0.29 | 0.10 |
+| 40-100 | 1C | CCCV |  |  |  |  | 1.00 | 1.00 | 1.00 | 0.85 | 0.31 | 0.09 |
+| 40-100 | 1C | NMPC k = 1 |  |  |  |  | 1.82 | 1.54 | 1.23 | 0.83 | 0.30 | 0.09 |
+| 40-100 | 1C | NMPC k = 1.25 |  |  |  |  | 0.99 | 0.95 | 0.85 | 0.65 | 0.31 | 0.10 |
+| 40-100 | 1C | NMPC k = ∞ |  |  |  |  | 0.99 | 0.95 | 0.85 | 0.65 | 0.31 | 0.10 |
+
+### 5.2. Chỉ số chính
+
+| Vùng | CCCV | cách sạc | t sạc (s) | I đỉnh (C) | I TB (C) | SOC bắt đầu giảm dòng | SOC khi V chạm V_cv | t ở I_max (s) | η_Li min khi dòng lớn (mV) | t η_Li < 50 mV (s) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 0-60 | 0.5C | CCCV | 4200 | 0.50 | 0.50 | — | — | 0 | 87.2 | 0 |
+| 0-60 | 0.5C | NMPC k = 0.8 | 3357 | 0.66 | 0.63 | 0.322 | — | 0 | 82.0 | 0 |
+| 0-60 | 0.5C | NMPC k = 1 | 4138 | 0.55 | 0.51 | 0.517 | — | 0 | 84.9 | 0 |
+| 0-60 | 0.5C | NMPC k = 1.25 | 4161 | 0.55 | 0.50 | 0.517 | — | 0 | 85.2 | 0 |
+| 0-60 | 0.5C | NMPC k = ∞ | 4160 | 0.55 | 0.50 | 0.516 | — | 0 | 85.1 | 0 |
+| 0-60 | 1C | CCCV | 2100 | 1.00 | 1.00 | — | — | 0 | 64.6 | 0 |
+| 0-60 | 1C | NMPC k = 0.8 | 1680 | 1.39 | 1.25 | 0.312 | — | 0 | 71.5 | 0 |
+| 0-60 | 1C | NMPC k = 1 | 2100 | 1.12 | 1.00 | 0.314 | — | 0 | 80.5 | 0 |
+| 0-60 | 1C | NMPC k = 1.25 | 2624 | 1.00 | 0.80 | 0.102 | — | 0 | 110.6 | 0 |
+| 0-60 | 1C | NMPC k = ∞ | 3073 | 1.00 | 0.68 | 0.085 | — | 0 | 150.1 | 0 |
+| 20-80 | 0.5C | CCCV | 4200 | 0.50 | 0.50 | — | — | 0 | 67.9 | 0 |
+| 20-80 | 0.5C | NMPC k = 0.8 | 3300 | 0.66 | 0.64 | 0.787 | — | 0 | 62.0 | 0 |
+| 20-80 | 0.5C | NMPC k = 1 | 3741 | 0.65 | 0.56 | 0.788 | — | 0 | 62.3 | 0 |
+| 20-80 | 0.5C | NMPC k = 1.25 | 3741 | 0.65 | 0.56 | 0.788 | — | 0 | 62.4 | 0 |
+| 20-80 | 0.5C | NMPC k = ∞ | 3741 | 0.65 | 0.56 | 0.788 | — | 0 | 62.4 | 0 |
+| 20-80 | 1C | CCCV | 2163 | 1.00 | 0.97 | 0.742 | 0.734 | 0 | 51.1 | 0 |
+| 20-80 | 1C | NMPC k = 0.8 | 1589 | 2.00 | 1.32 | 0.306 | — | 55 | 56.2 | 0 |
+| 20-80 | 1C | NMPC k = 1 | 2163 | 1.05 | 0.97 | 0.611 | — | 0 | 57.2 | 0 |
+| 20-80 | 1C | NMPC k = 1.25 | 2651 | 1.00 | 0.79 | 0.289 | — | 0 | 87.8 | 0 |
+| 20-80 | 1C | NMPC k = ∞ | 2652 | 1.00 | 0.79 | 0.289 | — | 0 | 87.8 | 0 |
+| 40-100 | 0.5C | CCCV | 6090 | 0.50 | 0.32 | 0.820 | 0.814 | 0 | 67.6 | 0 |
+| 40-100 | 0.5C | NMPC k = 0.8 | 4528 | 1.98 | 0.43 | 0.430 | 0.798 | 0 | 42.5 | 380 |
+| 40-100 | 0.5C | NMPC k = 1 | 6080 | 0.53 | 0.32 | 0.719 | 0.855 | 0 | 70.1 | 0 |
+| 40-100 | 0.5C | NMPC k = 1.25 | 6197 | 0.50 | 0.32 | 0.756 | 0.856 | 0 | 70.5 | 0 |
+| 40-100 | 0.5C | NMPC k = ∞ | 6200 | 0.50 | 0.32 | 0.756 | 0.856 | 0 | 70.5 | 0 |
+| 40-100 | 1C | CCCV | 4799 | 1.00 | 0.41 | 0.740 | 0.731 | 0 | 50.7 | 0 |
+| 40-100 | 1C | NMPC k = 1 | 4525 | 1.98 | 0.43 | 0.430 | 0.798 | 0 | 42.5 | 380 |
+| 40-100 | 1C | NMPC k = 1.25 | 5016 | 1.00 | 0.39 | 0.560 | 0.838 | 0 | 63.5 | 0 |
+| 40-100 | 1C | NMPC k = ∞ | 5015 | 1.00 | 0.39 | 0.560 | 0.838 | 0 | 63.5 | 0 |
+
+Phần điện tích nạp ở SOC > 80 % (chỉ vùng 40→100 %) là 0.285–0.287 ở **mọi** cách sạc: cùng một lượng điện tích phải nạp, nên chỉ số này không phân biệt các cách sạc; khác nhau là **thời gian** nạp phần đó (pha giới hạn điện áp).
+
+### 5.3. Dòng tối ưu "trông như thế nào" (nói đơn giản)
+
+- **0→60 %, mức 1C:** bắt đầu bằng đúng 1C rồi **giảm dần đều** theo SOC (k ≥ 1.5: 0.97 → 0.51C, bắt đầu giảm ngay từ SOC ~8 %), không có pha CC phẳng như CCCV. Sạc lâu hơn CCCV 46 % (3072 so với 2100 s) nhưng mất ít hơn 12.7 %. k = 1 (không được lâu hơn CCCV): cùng dòng TB 1.00C nhưng **dồn dòng về đầu** (1.04–1.11C ở 0–30 %, 0.85C ở 50–60 %). k = 0.8: 1.3–1.4C ở nửa đầu rồi giảm.
+- **0→60 %, mức 0.5C:** gần như **phẳng như CCCV** (0.48–0.55C), nhô nhẹ 0.55C ở 40–50 %; vì vậy lợi gần như bằng 0.
+- **20→80 %, mức 1C:** k ≥ 1.25 bắt đầu 1C rồi giảm dần (0.97 → 0.67C), không dùng pha CV. k = 1: phẳng ~1.03C rồi giảm ở 70–80 % (0.78C), giống CCCV.
+- **20→80 %, mức 0.5C:** ngược lại — dòng **tăng dần** theo SOC (0.51 → 0.64C), đỉnh ở SOC ~75 %. Sạc nhanh hơn CCCV (3741 so với 4200 s) mà vẫn lợi 2.3 %: ở mức dòng thấp, SEI theo thời gian trội hơn, nên rút ngắn thời gian ở SOC cao có lợi.
+- **40→100 %:** phần trên ~80 % bị giới hạn điện áp ở mọi cách sạc (≈ 0.30C ở 80–90 %, ≈ 0.10C ở 90–100 %). 1C, k ≥ 1.25: giảm dòng **sớm hơn** CCCV (bắt đầu ở SOC 0.56 so với 0.74), 0.99 → 0.65C trong 40–80 % ⇒ chậm hơn 216 s, lợi 1.1 %. 0.5C: gần như trùng CCCV (0.47–0.50C), chỉ giảm dòng mềm hơn trước CV ⇒ chậm hơn ~110 s và **kém** 0.7 % (mục 3).
+- **Theo k:** khi ngân sách đủ rộng (k ≥ 1.25 ở 1C, k ≥ 1 ở 0.5C), dòng **không đổi theo k** — ngân sách không còn ràng buộc. Ngân sách sát (k = 0.8, hoặc k = 1 ở 40→100 % 1C) đẩy dòng lên cao ở đầu: đỉnh 1.98–2.00C (gần I_max; chỉ 20→80 % 1C k = 0.8 thực sự ở I_max, 55 s).
+- **Gần giới hạn mạ lithium:** η_Li của NMPC khi dòng lớn luôn ≥ 56 mV (CCCV 1C: 50.7–51.1 mV), trừ trường hợp ngân sách sát 40→100 % (0.5C k = 0.8 và 1C k = 1, cùng một profile): 380 s có η_Li < 50 mV khi dòng TB 1.67C, min 42.5 mV — chính là vi phạm ở mục 1. Ở mọi trường hợp khác η_Li không xuống dưới 50 mV, tức ràng buộc mạ lithium **không** là thứ quyết định hình dạng dòng ở 25 °C; hình dạng do cân bằng SEI (dòng lớn) với thời gian sạc.
+- **Gợi ý cho bảng nhiều bậc (bước H):** mức 1C: các bậc giảm dần theo SOC (0→60 %, k ≥ 1.5: 0.97 / 0.87 / 0.74 / 0.63 / 0.58 / 0.51C cho từng khoảng 10 %; 20→80 %, k ≥ 1.25: 0.97 → 0.67C); mức 0.5C: giữ gần CCCV, ở 20→80 % có thể tăng nhẹ về cuối. Giá trị cụ thể lấy từ `current_soc_bins.csv`.

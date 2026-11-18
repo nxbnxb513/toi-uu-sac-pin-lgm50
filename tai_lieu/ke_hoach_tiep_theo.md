@@ -291,3 +291,7 @@ Với mỗi trường hợp (vùng sạc × mức dòng CCCV × nhiệt độ m�
 - KHÔNG thử warm start CV liên tục cho vùng gần đầy lúc này. Hoàn thành toàn bộ dự án theo kế hoạch trước (silicon bước D, NMPC+EKF, bước H, lưới đầy đủ, K, L); chênh lệch 0,5–0,7 % ở 40→100 % 0,5C được báo cáo như hiện tại.
 - **18/11/2026 (sau):** đã gộp 42 trường hợp (44237965357 + 44249331640 + 44258812043) vào `ket_qua_pilot_nmpc.md` / `.csv`, sửa GD-88. Còn mở: vi phạm η 2.5 mV ở 40→100 % ngân sách sát (0.5C k = 0.8, 1C k = 1); NMPC kém CCCV 0.4–0.7 % ở 40→100 % 0.5C (người dùng: chưa sửa, ghi là giới hạn).
 - **Cập nhật 19/11/2026: bước D XONG.** Dạng C, k = 3.5e-14 (68debba); tầng 2 chạy đủ (run 44319826055). Kết quả: `tai_lieu/ket_qua_silicon.md`, artifact sao ở `tai_lieu/ket_qua_silicon/`; README và GD-93/95 đã điền.
+
+### Bàn giao NMPC + EKF và phân tích dòng (19/11/2026)
+- **Xong:** vòng kín NMPC + EKF (GD-89, biến thể `pilot+ekf`), run 44332295621, 42 trường hợp: `tai_lieu/ket_qua_nmpc_ekf.md` / `.csv`. Phân tích dòng sạc (`src/nmpc/current_analysis.m`, stage `current`, run 44421878394): mục 5 của `ket_qua_pilot_nmpc.md`, mục 4 của `ket_qua_nmpc_ekf.md`, dữ liệu `tai_lieu/dong_sac/`.
+- **Cần quyết:** ở 40→100 % NMPC + EKF nạp thiếu 0.21–0.35 % SOC (5 trường hợp) và vượt V_cv 0.45–1.89 mV do nhiễu đo V gần ngưỡng (v_b và điều kiện dừng dùng một mẫu đo). Đề xuất: lọc bằng trung bình 30 s, chạy lại 14 job vùng 40→100 %; hoặc giữ và báo. Vòng kín với pin lệch tham số chưa chạy.
