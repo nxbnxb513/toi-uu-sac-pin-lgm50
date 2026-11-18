@@ -48,7 +48,7 @@ f = {'soc', 's_soc', 'eta', 's_eta', 'T', 's_T', 'lli', 's_lli', 'rf', 's_rf', '
 for i = 1:numel(f), R.(f{i}) = NaN(n, 1); end
 R = put(R, 1, ekf_outputs(E, xa, P, Im(1), Ta), NaN, 0, 0);
 Xs = NaN(E.na, n); Ps = cell(n, 1); Xs(:, 1) = [xa(E.fi); xa(end)]; Ps{1} = P;
-te = tic; nskip = 0; failed = 0;
+te = tic; nskip = 0; failed = 0; nls = 0; nfade = 0;
 for k = 2:n
     dtk = t(k) - t(k-1);
     tw = tic;
@@ -67,6 +67,8 @@ for k = 2:n
     if k <= 4
         fprintf('  buoc %d: innov V %.2f mV, T %.3f K, NIS %.2f, SOC %.4f, rf %.3f\n', k, 1e3*inf_.innov(1), inf_.innov(2), inf_.nis, xa(E.ix.soc), xa(end));
     end
+    if isfield(inf_, 'alpha') && inf_.alpha < 1, nls = nls + 1; end
+    if isfield(inf_, 'lam') && inf_.lam > 1, nfade = nfade + 1; end
     R = put(R, k, ekf_outputs(E, xa, P, Im(k), Ta), inf_.nis, inf_.proj, toc(tw));
     Xs(:, k) = [xa(E.fi); xa(end)]; Ps{k} = P;
     if mod(k, 200) == 0
@@ -86,7 +88,7 @@ end
 S.tag = tag; if nargin >= 7, S.over = string(over); else, S.over = ""; end; S.Tc = Tc; S.crate = crate; S.noise = noise; S.socerr = socerr; S.scen = scen;
 S.plant_desc = pinfo.desc; S.reason = strjoin(D.reason, '/'); S.t_end = t(end);
 S.failed_at = failed; S.n = n; S.tbuild = tbuild; S.tplant = tplant; S.tekf = tekf; S.ms_per_step = 1e3*tekf/(n-1);
-S.nskip = nskip; S.nproj = sum(R.proj(2:end) > 0);
+S.nskip = nskip; S.nproj = sum(R.proj(2:end) > 0); S.nls = nls; S.nfade = nfade;
 es = R.soc - soc_t; ee = R.eta - eta_t; eT = R.T - T;
 late = t >= 600;
 S.soc_rmse = 100*rmsv(es); S.soc_max = 100*max(abs(es));

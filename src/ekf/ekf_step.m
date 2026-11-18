@@ -32,21 +32,43 @@ info.innov = []; info.nis = NaN; info.S = [];
 if ~isempty(y)
     % EKF lap (Gauss-Newton, Bell & Cathey 1993) voi c.n_iter lan; n_iter = 1 la EKF thuong.
     % Moi lan lap: tuyen tinh hoa lai h tai diem lap, chieu ve mien vat ly.
-    xp = [x(fi); rf]; xi = xp; xfull = x;
+    xp = [x(fi); rf]; xi = xp; xfull = x; np = 0; info.lam = 1; info.alpha = 1;
+    ls = isfield(c, 'ls') && c.ls; fade = 0; if isfield(c, 'fade'), fade = c.fade; end
+    Rm = @(dhdI) diag([c.sV_sens^2 + c.sV_model^2, c.sT_sens^2 + c.sT_model^2]) + (dhdI*dhdI.')*(c.sI_sens^2 + c.bI_filter^2);
+    if fade > 1
+        % GD-78 (b): nhan P du doan voi lam khi innovation qua lon so voi S (NIS vuot nguong chi2 2 bac
+        % tu do 99.9 % = 13.8): lam = min(fade, NIS/2). Bo loc "fading memory" (Sorenson & Sacks 1971).
+        [hv, H, dhdI] = meas(E, xfull, rf, u.I1, Ta);
+        S0 = H*P*H.' + Rm(dhdI); nu0 = y(:) - hv; nis0 = nu0.'*(S0\nu0);
+        if nis0 > 13.8, info.lam = min(fade, nis0/2); P = info.lam*P; end
+    end
+    if ls
+        [Lc, flag] = chol((P + P.')/2, 'lower');
+        if flag, Lc = chol((P + P.')/2 + 1e-14*eye(E.na), 'lower'); end
+    end
     for it = 1:max(1, c.n_iter)
         xfull(fi) = xi(1:nf);
         [hv, H, dhdI] = meas(E, xfull, xi(end), u.I1, Ta);
-        R = diag([c.sV_sens^2 + c.sV_model^2, c.sT_sens^2 + c.sT_model^2]) + (dhdI*dhdI.')*(c.sI_sens^2 + c.bI_filter^2);
+        R = Rm(dhdI);
         S = H*P*H.' + R; S = (S + S.')/2;
         K = (P*H.')/S;
         if isfield(u, 'hold') && u.hold, K = hold_gain(E, K); end
         if it == 1, nu = y(:) - hv; info.innov = nu; info.S = S; info.nis = nu.'*(S\nu); end
         xn = xp + K*(y(:) - hv - H*(xp - xi));
-        xfull(fi) = xn(1:nf);
-        [xfull, np] = project(E, xfull); xn(1:nf) = xfull(fi);
-        if xn(end) < 0.05, xn(end) = 0.05; np = np + 1; end
-        stepn = max(abs(xn - xi)); xi = xn;
-        if stepn < 1e-7, break; end
+        if ls
+            % GD-78 (a): tim theo duong (Gauss-Newton co tat dan): chia doi buoc toi khi trang thai
+            % nam trong mien vat ly (khong phai chieu) va ham muc tieu MAP giam.
+            [xn, xfull, np, alpha, ok] = line_search(E, xi, xn, xp, Lc, R, y(:), hv, xfull, u.I1, Ta);
+            if it == 1, info.alpha = alpha; end
+            stepn = max(abs(xn - xi)); xi = xn;
+            if ~ok || stepn < 1e-7, break; end
+        else
+            xfull(fi) = xn(1:nf);
+            [xfull, np] = project(E, xfull); xn(1:nf) = xfull(fi);
+            if xn(end) < 0.05, xn(end) = 0.05; np = np + 1; end
+            stepn = max(abs(xn - xi)); xi = xn;
+            if stepn < 1e-7, break; end
+        end
     end
     info.iter = it; info.proj = np;
     x = xfull; x(fi) = xi(1:nf); rf = xi(end);
@@ -138,4 +160,34 @@ lo = x(th) < 1e-6; hi = x(th) > 1 - 1e-6;
 n = n + nnz(lo) + nnz(hi);
 x(th(lo)) = 1e-6; x(th(hi)) = 1 - 1e-6;
 lc = x(ix.ce) < 1e-3; n = n + nnz(lc); x(ix.ce(lc)) = 1e-3;
+end
+
+function [xn, xfull, np, alpha, ok] = line_search(E, xi, xc, xp, Lc, R, y, hv, xfull, I, Ta)
+% Chia doi buoc d = xc - xi (alpha = 1, 1/2, ..., 1/256). Nhan alpha dau tien ma trang thai
+% hop le (stoich trong (0, 1), c_e > 0, rf >= 0.05, giai duoc z) va ham MAP
+%   J(x) = |Lc \ (x - xp)|^2 + (y - h(x))' R^-1 (y - h(x))
+% giam so voi tai xi. Neu khong co: lay buoc nho nhat hop le (ok = false, dung lap).
+fi = E.fi; nf = E.nf;
+J = @(x, h) sum((Lc\(x - xp)).^2) + (y - h).'*(R\(y - h));
+J0 = J(xi, hv); d = xc - xi; ok = false; np = 0;
+xbest = []; 
+for alpha = 2.^-(0:8)
+    x = xi + alpha*d;
+    xf = xfull; xf(fi) = x(1:nf);
+    [~, nproj] = project(E, xf);
+    if nproj > 0 || x(end) < 0.05, continue; end
+    try
+        h = meas(E, xf, x(end), I, Ta);
+    catch
+        continue
+    end
+    if isempty(xbest), xbest = x; abest = alpha; end
+    if J(x, h) < J0, ok = true; xn = x; xfull = xf; return; end
+end
+if isempty(xbest)
+    % khong buoc nao hop le: giu xi (khong hieu chinh o lan lap nay)
+    xn = xi; alpha = 0; xfull(fi) = xi(1:nf); np = 1;
+else
+    xn = xbest; alpha = abest; xfull(fi) = xn(1:nf);
+end
 end

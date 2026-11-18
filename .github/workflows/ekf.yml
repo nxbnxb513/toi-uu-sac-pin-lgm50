@@ -19,7 +19,7 @@ on:
         default: ''
 
 concurrency:
-  group: ekf-${{ github.ref }}-${{ github.event_name }}
+  group: ekf-${{ github.ref }}-${{ github.event_name }}-${{ inputs.over }}
   cancel-in-progress: true
 
 jobs:
@@ -95,7 +95,7 @@ jobs:
     timeout-minutes: 300
     strategy:
       fail-fast: false
-      max-parallel: 18
+      max-parallel: 10
       matrix:
         temp: [10, 25, 40]
         crate: [0.5, 1]

@@ -96,6 +96,17 @@ Theo tiêu chí 1, cấu hình cuối thắng rõ (8.9 mV, các cấu hình khá
 - Thêm một lợi ích: NMPC dùng R_film BOL cố định, nên η_Li của EKF và của NMPC tính trên cùng mô hình (mục 7).
 - Cái giá: trong lần sạc, EKF **không báo được lão hoá** (rf, LLI đứng yên ở giá trị đầu). Đây không phải mất thông tin thật, vì các ước lượng cũ trong lần sạc đều sai (rf sai 80–280 %, LLI sai −47 % đến +80 %).
 
+### 6.3. Lần chạy lưới đầy đủ thứ nhất và sửa độ bền (18/11/2026)
+
+Run 44202422495 (cấu hình 6.2, 76 ca): **15 ca dừng giữa chừng**, tất cả là sạc 0.5C với sai SOC đầu +10 % (pin thật ở SOC 0, EKF đoán 10 %). Những ca 0.5C +10 % chạy hết cũng xấu (SOC sai 2.3–3.7 %, η_Li ước cao tới 54 mV). Nguyên nhân (đọc chuỗi thời gian): ở bước cập nhật đầu, điện áp lệch 386 mV; bước Gauss–Newton của EKF lặp **vượt quá** xuống SOC −3.3 %, một phần vỏ hạt cực âm bị chặn về 0 (chiếu về miền vật lý), độ lệch chuẩn SOC sụp còn 0.03 % trong khi sai thật 3 %. Sau đó bộ lọc quá tự tin và không tự sửa được. Ca 1C +10 % cùng điều kiện thì không bị (may mắn về chuỗi bước).
+
+Sửa (GD-78, lựa chọn của bộ ước lượng, không đổi mô hình):
+
+- (a) **Tìm theo đường** trong bước cập nhật lặp: chia đôi bước Gauss–Newton tới khi trạng thái nằm trong miền vật lý mà không cần chiếu, và hàm mục tiêu MAP giảm. Bật mặc định.
+- (b) **Nhân P khi innovation quá lớn** (bộ lọc "fading memory"): nếu NIS > 13.8 (ngưỡng χ² 99.9 %, 2 phép đo) thì nhân P dự đoán với λ = min(λ_max, NIS/2). Chạy so sánh λ_max = 10 với tắt.
+
+**Tiêu chí chọn giữa (a) và (a)+(b), đặt trước khi có kết quả:** giống mục 6.1 nhưng lấy xấu nhất trên **cả 76 ca** của lưới; thêm điều kiện 0: số ca dừng giữa chừng ít hơn thắng.
+
 KQ_THU
 
 ## 7. Giao diện cho vòng kín NMPC (ghi chú tích hợp)
