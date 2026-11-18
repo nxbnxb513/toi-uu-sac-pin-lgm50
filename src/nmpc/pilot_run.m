@@ -101,7 +101,7 @@ for ik = iks(:).'
     end
     row = pilot_row(iw, soc0, soc1, Cbase, Tamb_C, k, romcfg, variant, cc, cv, cl, R, C, cfgn, rp_cc, rp);
     row.job_wall_s = toc(tjob);    % tu dau pilot_run (gom CCCV + tao bo giai) toi khi xong lan vong kin nay
-    writetable(struct2table(row), fullfile(outdir, ['pilot_' tag '.csv']));
+    writetable(struct2table(row, 'AsArray', true), fullfile(outdir, ['pilot_' tag '.csv']));   % AsArray: truong rong ('') o dong infeasible
     if isempty(R) || strcmp(R.reason, 'infeasible_budget'), continue; end
     K = R.solve;
     fprintf(['NMPC: %s, t = %.0f s (ngan sach %.0f s), SOC cuoi %.4f; mat vinh vien %.5f mAh (CCCV %.5f, giam %.1f %%) [%s]; ' ...
