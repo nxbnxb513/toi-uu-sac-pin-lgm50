@@ -126,7 +126,7 @@ fprintf('current_analysis: %d dong chi so, %d dong khoang SOC -> %s\n', height(M
         fid = fopen(fullfile(outdir, 'current_report.md'), 'w');
         fprintf(fid, '# Phan tich dong sac (tu dong, current_analysis.m)\n\n');
         fprintf(fid, '1C = %.1f A, I_max = %.0f A, V_cv = %.3f V, gioi han eta = %.0f mV. SOC = SOC pin that (DFN).\n\n', Qn, Imax, Vcv, delta_mV);
-        fprintf(fid, '| Phuong phap | Vung | CCCV | k | t sac (s) | I dinh (C) | I TB (C) | SOC o dinh | SOC bat dau giam | SOC CC->CV (CCCV) | phan Q o SOC > 80 %% | t o I_max (s) | eta min (mV) | eta min khi I >= 0.8 I_dinh (mV) | t eta < 50 mV (s) | I TB khi eta < 50 mV (C) |\n');
+        fprintf(fid, '| Phuong phap | Vung | CCCV | k | t sac (s) | I dinh (C) | I TB (C) | SOC o dinh | SOC bat dau giam | SOC khi V cham V_cv (CCCV: CC->CV) | phan Q o SOC > 80 %% | t o I_max (s) | eta min (mV) | eta min khi I >= 0.8 I_dinh (mV) | t eta < 50 mV (s) | I TB khi eta < 50 mV (C) |\n');
         fprintf(fid, '|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|\n');
         for i = 1:height(Mt)
             r = Mt(i, :);
@@ -136,7 +136,8 @@ fprintf('current_analysis: %d dong chi so, %d dong khoang SOC -> %s\n', height(M
         fprintf(fid, '\n## Dong TB (C) moi khoang SOC 10 %%\n\n');
         lo = unique(Bt.soc_lo).';
         fprintf(fid, '| Phuong phap | Vung | CCCV | k |%s\n|---|---|---|---|%s\n', sprintf(' %g-%g |', [100*lo; 100*lo + 10]), repmat('---|', 1, numel(lo)));
-        [G, ~] = findgroups(Bt(:, {'method', 'iw', 'Cbase', 'k'}));
+        Bg = Bt; Bg.k(isnan(Bg.k)) = -1;   % CCCV: k = NaN (findgroups bo NaN)
+        [G, ~] = findgroups(Bg(:, {'method', 'iw', 'Cbase', 'k'}));
         for g = 1:max(G)
             r = Bt(G == g, :); v = repmat({''}, 1, numel(lo));
             for q = 1:height(r), v{abs(lo - r.soc_lo(q)) < 1e-9} = sprintf('%.2f', r.C_mean(q)); end
