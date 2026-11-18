@@ -13,7 +13,8 @@ c.xsmax  = 0.99;         % -    stoich be mat cuc am phia mang ngan <= 0.99 (GD-
 c.N      = 20;           % so khoang du bao tren phan sac con lai (GD-30, so hoc)
 c.Ts     = 30;           % s    chu ky giai lai NMPC / lay mau (GD-30, so hoc)
 c.w_loss = 10;           % 1/mAh trong so lithium mat cu (GD-30); tu 18/11/2026 dung w_loss_scale (GD-84)
-c.w_loss_scale = 10;     % muc tieu = 10 x (mat du doan) / (mat du doan cua doan dau CCCV tren ROM) (GD-84)
+c.w_loss_scale = 0.1;    % muc tieu = 0.1 x (mat du doan) / (mat du doan cua doan dau CCCV tren ROM) (GD-84, sua 18/11/2026:
+                         % muc tieu ~10 lam buoc Gauss-Newton qua lon -> NaN trong tim kiem duong, run 44234227906)
 c.w_dI   = 1e-4;         % 1/A^2 trong so nho cua bien thien dong giua hai khoang (GD-30)
 c.tmax_factor = 6;       % can tren thoi gian mo phong vong kin = 6 T_CCCV (an toan)
 end

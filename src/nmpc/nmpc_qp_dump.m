@@ -49,7 +49,8 @@ for k = 0:N
     if isfield(D, 'qp_zl') && ~isempty(D.qp_zl), ln = [ln, sprintf(' | zl %s Zl %s', mat2str(D.qp_zl(:).', 3), mat2str(D.qp_Zl(:).', 3))]; end %#ok<AGROW>
     fprintf('%s\n', ln);
     if k == 0 || k == N
-        if isfield(D, 'qp_q'), fprintf('    |q| max %.3g, |r| max %.3g, |b| max %.3g\n', max(abs(D.qp_q(:))), max(abs([D.qp_r(:); 0])), max(abs([D.qp_b(:); 0]))); end
+        gq = @(n) max(abs([reshape(getf(D, n), [], 1); 0]));
+        fprintf('    |q| max %.3g, |r| max %.3g, |b| max %.3g\n', gq('qp_q'), gq('qp_r'), gq('qp_b'));
     end
 end
 it = {'x', 'u', 'pi', 'lam', 'sl', 'su', 't'};
@@ -62,4 +63,8 @@ for i = 1:numel(it)
     end
 end
 fprintf('%s\n', ln);
+end
+
+function v = getf(D, n)
+if isfield(D, n), v = D.(n); else, v = []; end
 end

@@ -35,7 +35,7 @@ if ~isfield(cfg, 'band'), cfg.band = 1.3; end
 if ~isfield(cfg, 'wall_max'), cfg.wall_max = Inf; end   % gioi han thoi gian CHAY (s) cua mot lan vong kin
 if ~isfield(cfg, 'print_stat'), cfg.print_stat = 2; end
 if ~isfield(cfg, 'dt_prof'), cfg.dt_prof = 30; end
-if ~isfield(cfg, 'w_loss_scale'), cfg.w_loss_scale = 10; end
+if ~isfield(cfg, 'w_loss_scale'), cfg.w_loss_scale = 0.1; end
 if ~isfield(cfg, 'max_consec_fail'), cfg.max_consec_fail = 20; end
 if ~isfield(cfg, 'Cdis'), cfg.Cdis = 0.5; end
 if ~isfield(cfg, 'free_I0'), cfg.free_I0 = false; end   % GD-86: dong dau co dinh = dong dau doan dau CCCV
@@ -144,7 +144,7 @@ while t < cfg.tmax
     for rep = 1:8
         tfband = [max(C.opt.tf_min_h, tf_ref/cfg.band), min(C.opt.tf_cap_h, tf_ref*cfg.band)];
         [plan, info] = nmpc_solve(C, xhat, Ich, prm, tfband, first && cfg.free_I0);
-        if numel(K.t) < cfg.qp_dump && rep == 1, nmpc_qp_dump(C, info); end
+        if numel(K.t) < cfg.qp_dump && rep == 1, try, nmpc_qp_dump(C, info); catch e, fprintf('nmpc_qp_dump loi: %s\n', e.message); end, end
         ttot = ttot + info.time_tot; twal = twal + info.wall;
         tbr = tbr + [info.time_lin, info.time_sim, info.time_qp, info.time_glob];
         if numel(K.t) < cfg.print_stat
