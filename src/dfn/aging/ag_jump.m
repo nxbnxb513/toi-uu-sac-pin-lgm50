@@ -38,6 +38,13 @@ y = shift(y, 'n', L2.part_n + (tgt - L2.total));
 L3 = dfn_li_inventory(par, y);
 info.err = abs(tgt - L2.total)/tgt;          % phan chenh da bu (tuong doi)
 info.cons = abs(L3.total - tgt)/tgt;         % sau khi bu (~ 1e-15)
+if info.err > 1e-3
+    fn = {'part_n', 'part_p', 'elyte', 'sei', 'seicr', 'plated', 'dead', 'lam_n', 'lam_p', 'total'};
+    fprintf('ag_jump: J = %d, phan bu Li lon (%.3g). Thanh phan [mol] a / b / sau nhay:\n', J, info.err);
+    for k = 1:numel(fn)
+        fprintf('   %-7s %.6e  %.6e  %.6e\n', fn{k}, La.(fn{k}), L1.(fn{k}), L2.(fn{k}));
+    end
+end
 % kiem tra mien vat ly
 thn = y(ix.thn); thp = y(ix.thp);
 ag = dfn_aging_state(par, y);
