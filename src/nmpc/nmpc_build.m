@@ -25,7 +25,7 @@ d = struct('N', 20, 'Imax', 2*par.Qnom, 'tf_min_h', 10/3600, 'tf_cap_h', 20, 'ep
     'name', 'rom_nmpc', 'codegen_dir', fullfile(pwd, 'c_generated_code'), 'max_iter', 60, ...
     'num_stages', 2, 'num_steps', 8, 'lm', 1e-2, 'newton_iter', 8, 'newton_tol', 0, 'E', [], ...
     'globalization', 'MERIT_BACKTRACKING', 'jac_reuse', 0, 'tol_stat', 1e-6, 'tol_eq', 1e-7, ...
-    'tol_ineq', 1e-7, 'tol_comp', 1e-7, 'max_iter_warm', 60, 'timeout', 0);
+    'tol_ineq', 1e-7, 'tol_comp', 1e-7, 'max_iter_warm', 60, 'timeout', 0, 'eqI0', true);
 fn = fieldnames(d);
 for i = 1:numel(fn), if ~isfield(opt, fn{i}), opt.(fn{i}) = d.(fn{i}); end, end
 nx = rom.nx; nX = nx + 2; iI = nx + 1; itf = nx + 2;
@@ -39,7 +39,11 @@ ocp.cost.yref_0 = 0; ocp.cost.yref = 0; ocp.cost.yref_e = 0;
 % nut dau: co dinh x_ROM va I_ch (do/uoc luong), t_f tu do
 ocp.constraints.idxbx_0 = 0:nx;
 ocp.constraints.lbx_0 = zeros(nx + 1, 1); ocp.constraints.ubx_0 = zeros(nx + 1, 1);
-ocp.constraints.idxbxe_0 = 0:nx-1;   % I_ch (chi so nx) KHONG khai bao la dang thuc: lan giai dau de I_ch tu do (GD-82)
+% GD-86 (18/11/2026): I_ch tai nut 0 PHAI khai bao la dang thuc (idxbxe_0 = 0:nx). Ban
+% 81a1682 bo I_ch khoi idxbxe_0 de lan giai dau de I_ch tu do; khi do moi lan giai sau
+% (lb = ub = I_ch do duoc) HPIPM coi I_ch la bat dang thuc co do rong 0 -> phuong phap
+% diem trong ket o buoc nho nhat (QP status 3 MINSTEP, acados status 4) o MOI lan giai.
+if opt.eqI0, ocp.constraints.idxbxe_0 = 0:nx; else, ocp.constraints.idxbxe_0 = 0:nx-1; end
 % bien cung: dong sac va t_f
 ocp.constraints.idxbx = [iI - 1, itf - 1];
 ocp.constraints.lbx = [0; opt.tf_min_h]; ocp.constraints.ubx = [opt.Imax; opt.tf_cap_h];

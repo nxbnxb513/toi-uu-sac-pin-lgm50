@@ -22,13 +22,34 @@ switch variant
     % (jac_reuse = 1 cho NaN o do nhay IRK ngay lan dau - khong dung.)
     case 'pilot', bo.max_iter = 15; bo.max_iter_warm = 4; bo.tol_stat = 2.5e-4; bo.tol_eq = 5e-4;
         bo.tol_ineq = 1e-6; bo.tol_comp = 1e-6;
+        % GD-86: I_ch nut 0 la dang thuc, dong dau co dinh = dong dau cua doan dau CCCV
+        bo.eqI0 = true; bo.free_I0 = false;
     % 18/11/2026 (sau run 44230426135): thu LM lon hon / trong so cu khi lan giai dau NaN
     case {'pilot_lm1', 'pilot_lm10', 'pilot_wold', 'pilot_lm1_wold', 'pilot_fix0', 'pilot_wold_fix0'}
         bo = nmpc_variant(bo, 'pilot');
-        if contains(variant, 'fix0'), bo.free_I0 = false; end
+        bo.eqI0 = false; bo.free_I0 = ~contains(variant, 'fix0');   % trang thai cua 81a1682
         if contains(variant, 'lm10'), bo.lm = 10; elseif contains(variant, 'lm1'), bo.lm = 1; end
         if contains(variant, 'wold'), bo.w_loss_scale = 0.1; end   % ~ w_loss = 10 /mAh cu (muc tieu ~0.1)
-    otherwise, error('nmpc_variant: bien the %s', variant);
+    otherwise
+        % chia doi tim loi (GD-86): 'pilot+tok1+tok2...' - moi tok hoan lai MOT thay doi
+        tk = strsplit(variant, '+');
+        if numel(tk) < 2, error('nmpc_variant: bien the %s', variant); end
+        bo = nmpc_variant(bo, tk{1});
+        for i = 2:numel(tk)
+            switch tk{i}
+                case 'neq',     bo.eqI0 = false;            % I_ch nut 0 khong la dang thuc (81a1682)
+                case 'free',    bo.free_I0 = true;          % lan giai dau: I_ch nut 0 tu do (9d7815b/81a1682)
+                case 'ramp',    bo.guess_mode = 'ramp';     % doan dau cu: I = 0 doc len (ae443c1)
+                case 'noshift', bo.shift = false;           % khong dich nghiem: giu nghiem acados lam doan dau
+                case 'novb',    bo.vb_on = false;           % bo lech dien ap do duoc (tham so 9 = 0)
+                case 'wabs',    bo.w_abs = 10;              % trong so cu w_loss = 10 /mAh (khong chuan hoa)
+                case 'socr',    bo.soc_rom = false;         % SOC dich du bao = SOC dich (khong lay SOC ROM dat)
+                case 'qd',      bo.qp_dump = 2;             % in du lieu QP 2 lan giai dau
+                otherwise
+                    if startsWith(tk{i}, 'n'), bo.max_solves = str2double(tk{i}(2:end));   % 'n8': dung sau 8 lan giai
+                    else, error('nmpc_variant: tok %s', tk{i}); end
+            end
+        end
 end
 fprintf('Bien the so hoc NMPC: %s\n', variant);
 end

@@ -38,7 +38,15 @@ if ~isfield(cfg, 'dt_prof'), cfg.dt_prof = 30; end
 if ~isfield(cfg, 'w_loss_scale'), cfg.w_loss_scale = 10; end
 if ~isfield(cfg, 'max_consec_fail'), cfg.max_consec_fail = 20; end
 if ~isfield(cfg, 'Cdis'), cfg.Cdis = 0.5; end
-if ~isfield(cfg, 'free_I0'), cfg.free_I0 = true; end
+if ~isfield(cfg, 'free_I0'), cfg.free_I0 = false; end   % GD-86: dong dau co dinh = dong dau doan dau CCCV
+% cong tac chia doi tim loi (GD-86), mac dinh = cach lam chinh
+if ~isfield(cfg, 'guess_mode'), cfg.guess_mode = 'cccv'; end
+if ~isfield(cfg, 'shift'), cfg.shift = true; end
+if ~isfield(cfg, 'vb_on'), cfg.vb_on = true; end
+if ~isfield(cfg, 'w_abs'), cfg.w_abs = NaN; end
+if ~isfield(cfg, 'soc_rom'), cfg.soc_rom = true; end
+if ~isfield(cfg, 'qp_dump'), cfg.qp_dump = 0; end
+if ~isfield(cfg, 'max_solves'), cfg.max_solves = Inf; end
 Ta = cfg.Tamb; Csoc = rom.Csoc; soc_t = cfg.soc_target;
 Qstop = -(soc_t - cfg.soc0)*Csoc;
 Vcv = v_limit(par); Icut = par.Qnom/50;
@@ -82,14 +90,25 @@ R.guess_T = P.t_end; R.guess_Icc = Icc;
 R.guess_loss = P.X(rom.ix.nsei, end) + P.X(rom.ix.ndl, end);
 R.t_prof = toc(tw);
 % muc tieu chuan hoa theo mat du doan cua doan dau CCCV (GD-84)
-wl = cfg.w_loss_scale/max(R.guess_loss, 1e-6); R.w_loss = wl;
+wl = cfg.w_loss_scale/max(R.guess_loss, 1e-6); if isfinite(cfg.w_abs), wl = cfg.w_abs; end; R.w_loss = wl;
 % SOC dich trong du bao: neu ROM chi toi duoc SOC thap hon mot chut truoc khi I <= C/50
 % (sai so dien ap ROM, vung ket thuc 100 %) thi dung muc do lam dich cua bai toan toi uu;
 % vong kin van dung theo SOC dich tren pin that hoac theo dieu kien CV (GD-82).
-soc_t_rom = soc_t; if strcmp(P.reason, 'Icut'), soc_t_rom = min(soc_t, P.soc_end); end
+soc_t_rom = soc_t; if cfg.soc_rom && strcmp(P.reason, 'Icut'), soc_t_rom = min(soc_t, P.soc_end); end
 prm = [Ta; soc_t_rom; 1; wl; cfg.w_dI; cfg.Tmax; cfg.delta; cfg.xsmax; 0];
 tf_ref = P.t_end/3600;
-nmpc_set_guess(C, P, 0, tf_ref);
+if strcmp(cfg.guess_mode, 'ramp')
+    % doan dau cu (ae443c1): I = 0 tai nut 0, tang tuyen tinh toi dong trung binh can thiet
+    % trong khoang dau roi giu khong doi, t_f = thoi gian cua duong CCCV
+    tn = (0:C.N).'/C.N*P.t_end; Ig = min(Imax, (soc_t - x0(rom.ix.soc))*Csoc/(P.t_end/3600));
+    Ifr = @(s) Ig*min(s/tn(2), 1);
+    rr = rom_sim_ode(E, M, rom, x0, @(s) -Ifr(s), Ta, tn, struct('sat', false));
+    if numel(rr.t) == C.N + 1 && all(isfinite(rr.X(:))), Pr = struct('t', tn, 'X', rr.X, 'I', Ifr(tn));
+    else, Pr = struct('t', [0; P.t_end], 'X', [x0(:), x0(:)], 'I', Ifr([0; P.t_end])); end
+    nmpc_set_guess(C, Pr, 0, tf_ref); Ich = 0;
+else
+    nmpc_set_guess(C, P, 0, tf_ref);
+end
 % ---- vong lap ----
 S = struct('t', [], 'I', [], 'V', [], 'T', [], 'soc', [], 'xs_sep', [], 'eta_sep', [], 'dphi_sep', [], 'nsei', [], 'npl', []);
 K = struct('t', [], 'status', [], 'sqp_iter', [], 'time_tot', [], 'wall', [], 'tf_h', [], 'slope', [], 'loss_pred', [], 'soc_end', [], 'nrep', [], ...
@@ -97,9 +116,10 @@ K = struct('t', [], 'status', [], 'sqp_iter', [], 'time_tot', [], 'wall', [], 't
 reason = 'tmax'; nfail = 0; ncons = 0; meas = struct('t', 0, 'I', 0, 'V', NaN, 'T', Ta);
 tplant = 0; tfb = 0;
 cold = true; first = true; prev = [];
-if ~cfg.free_I0, Ich = P.I(1); end   % dong dau co dinh = dong dau cua doan dau CCCV
+if ~cfg.free_I0 && ~strcmp(cfg.guess_mode, 'ramp'), Ich = P.I(1); end   % dong dau co dinh = dong dau cua doan dau CCCV
 while t < cfg.tmax
     if toc(tw) > cfg.wall_max, reason = 'wall_limit'; break; end
+    if numel(K.t) >= cfg.max_solves, reason = 'max_solves'; break; end
     xhat = cfg.estimator(y, trk, meas);
     if xhat(rom.ix.soc) >= soc_t - 1e-6, reason = 'soc_reached'; break; end
     if unlimited
@@ -108,12 +128,12 @@ while t < cfg.tmax
         prm(3) = max((cfg.budget - t)/3600, C.opt.tf_min_h);
     end
     % lech dien ap do duoc - ROM tai trang thai hien tai (GD-83)
-    if isfinite(meas.V)
+    if isfinite(meas.V) && cfg.vb_on
         o = full(E.out(xhat, -Ich, Ta)); prm(9) = meas.V - o(io.V);
     end
     % doan dau: ke hoach truoc dich theo thoi gian, mo phong lai ROM tu xhat
     tg = tic;
-    if ~isempty(prev)
+    if ~isempty(prev) && cfg.shift
         shift_guess(prev, xhat);
     end
     tguess = toc(tg);
@@ -124,6 +144,7 @@ while t < cfg.tmax
     for rep = 1:8
         tfband = [max(C.opt.tf_min_h, tf_ref/cfg.band), min(C.opt.tf_cap_h, tf_ref*cfg.band)];
         [plan, info] = nmpc_solve(C, xhat, Ich, prm, tfband, first && cfg.free_I0);
+        if numel(K.t) < cfg.qp_dump && rep == 1, nmpc_qp_dump(C, info); end
         ttot = ttot + info.time_tot; twal = twal + info.wall;
         tbr = tbr + [info.time_lin, info.time_sim, info.time_qp, info.time_glob];
         if numel(K.t) < cfg.print_stat
