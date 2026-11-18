@@ -17,10 +17,10 @@ on:
         default: all
       variant:
         description: "pilot: bien the so hoc NMPC (nmpc_variant.m)"
-        default: jrw5
+        default: pilot
       variants:
         description: "debug: danh sach bien the (JSON)"
-        default: '["base","jr","jrw5","jrw2"]'
+        default: '["pilot"]'
       ks:
         description: "pilot: danh sach chi so k (JSON), 1..7 = 0.8, 1, 1.25, 1.5, 2, 3, khong gioi han; debug: bieu thuc MATLAB"
         default: "[1,2,3,4,5,6,7]"
