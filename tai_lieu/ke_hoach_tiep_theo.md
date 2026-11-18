@@ -286,3 +286,6 @@ Với mỗi trường hợp (vùng sạc × mức dòng CCCV × nhiệt độ m�
   3. Kiểm tra ở 40→100 %: số lần status 1 (mong 0), trạng thái k = 0.8/1 (infeasible theo kiểm tra DFN hay ok không vi phạm), η min ≥ 45 mV.
   4. Viết lại `tai_lieu/ket_qua_pilot_nmpc.md`: bảng trung thực (lão hoá là hậu kiểm TẠM THỜI), ghi rõ vùng 0→60/20→80 chạy với 8 bước IRK cố định, vùng 40→100 với GD-87/88; nêu chẩn đoán (2) ở trên. Sửa lời giải thích GD-88 theo (1).
   5. (Tuỳ chọn, cần người dùng/điều phối đồng ý) đoạn đầu CCCV trên ROM với CV liên tục thay cho bậc 30 s, để NMPC 40→100 % 0.5C không chậm hơn CCCV.
+
+### Quyết định người dùng 18/11/2026 (sau bàn giao)
+- KHÔNG thử warm start CV liên tục cho vùng gần đầy lúc này. Hoàn thành toàn bộ dự án theo kế hoạch trước (silicon bước D, NMPC+EKF, bước H, lưới đầy đủ, K, L); chênh lệch 0,5–0,7 % ở 40→100 % 0,5C được báo cáo như hiện tại.
