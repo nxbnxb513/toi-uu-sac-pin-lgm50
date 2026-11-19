@@ -299,3 +299,9 @@ Với mỗi trường hợp (vùng sạc × mức dòng CCCV × nhiệt độ m�
 ## Quyết định người dùng 19/11/2026
 - **Lưới đầy đủ chỉ chạy mô hình 5 cơ chế** (tầng 1). Tầng silicon không dùng trong lưới; chỉ nêu trong báo cáo (kết quả `ket_qua_silicon.md`) và phần giới hạn cho các vùng chạm SOC thấp.
 - **Nạp thiếu / vượt áp nhỏ chấp nhận được** (không cần chính xác tuyệt đối): KHÔNG lọc điện áp đo, KHÔNG chạy lại 14 job 40→100 %. Phân loại theo dung sai GD-96: nạp thiếu ≤ 0.5 % SOC và vượt V_cv ≤ 2 mV được tính là "đạt (trong dung sai)", vẫn ghi số thật. η_Li < 45 mV vẫn là vi phạm.
+
+### Lưới đầy đủ: chạy thử đo thời gian (19/11/2026)
+- Code: `.github/workflows/grid.yml` (plan → run → report, chạy tiếp được qua `prev_runs`), `src/nmpc/grid.py`, `src/nmpc/gd96.py`, GD-97. Pin thật = DFN có lão hoá (`NMPC_PLANT_AGING=1`).
+- Mẫu đo: run 44425116351 (vùng 0→20, 0→100, 60→80 × 0.3C/1C × 10/40 °C × k = 1, ∞ × NMPC/NMPC+EKF; 2 job 0→100 1C 10 °C hỏng do `rom_replay` → sửa, chạy lại ở run 44425494274). 47/48 trường hợp có CSV; 3 trường hợp 0→100 bị hết giờ job (`wall_limit`), 1 bị bỏ qua.
+- Thời gian một trường hợp (vòng kín + xả): vùng 20 % 1250–5500 s; 0→100 % 6300–18200 s, một số > 5.3 h (không xong trong một job 6 h). Phần chung mỗi job ~10–13 phút (CCCV + tạo bộ giải acados ~9 phút).
+- **Ước tính lưới đầy đủ (1890 trường hợp): ~3300 giờ máy, ~830 job ⇒ ~7 ngày với 20 job song song** (> 3 ngày) ⇒ CHƯA chạy; chờ người dùng chọn phương án.
