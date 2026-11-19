@@ -86,7 +86,10 @@ def plan(prev, wins, cbases, temps, ks, methods, kper, maxjobs):
                         jobs.append(dict(m=m, v=METHODS[m], w=w, c=c, T=T, ks=' '.join(str(x) for x in kk),
                                          n='-'.join(str(x) for x in kk), rs=' '.join(rs)))
     # xen ke cac phuong phap/dong de tai deu cac dot 20 job
-    jobs.sort(key=lambda j: (j['w'], j['c'], j['T'], j['m']))
+    W = [(a, b) for a in range(5) for b in range(a + 1, 6)]   # = soc_windows.m (chi so 1..15)
+    span = lambda w: (W[w - 1][1] - W[w - 1][0]) + (1 if W[w - 1][1] == 5 else 0)   # vung toi 100 % co pha CV dai
+    # job dai (vung rong, dong nho, co diem luu) chay truoc de cac lan chay tiep bat dau som
+    jobs.sort(key=lambda j: (-bool(j['rs']), -span(j['w']), j['c'], j['T'], j['w'], j['m']))
     print(json.dumps({'include': jobs[:maxjobs]}))
     sys.stderr.write(f'con {nleft} truong hop ({sum(1 for j in jobs if j["rs"])} job co diem luu), {len(jobs)} job; '
                      f'chay {min(len(jobs), maxjobs)} job lan nay\n')
