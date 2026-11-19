@@ -1,0 +1,27 @@
+name: Thu cach chay nhieu tien trinh MATLAB trong mot job
+
+# Chan doan cho GD-98: giay phep MATLAB cua repo cong khai khi chay song song
+# (parpool Processes; MATLAB con goi bang system()).
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: matlab-actions/setup-matlab@v2
+        with:
+          products: MATLAB Parallel_Computing_Toolbox
+          cache: true
+      - name: env va parpool
+        uses: matlab-actions/run-command@v2
+        with:
+          command: >
+            [~, e] = system('env | sort | grep -iE "mlm|mw_|matlab|licen" | cut -c1-120'); disp(e);
+            disp(maxNumCompThreads);
+            try, p = parpool('Processes', 4); disp(p.NumWorkers); parfor i = 1:4, fprintf('worker %d pid %d\n', i, feature('getpid')); end; delete(p); catch e2, disp(e2.message); end;
+            mb = fullfile(matlabroot, 'bin', 'matlab');
+            [s, o] = system(['"' mb '" -batch "disp(42)" 2>&1']); fprintf('matlab -batch con: %d\n%s\n', s, o);
+            [s, o] = system('matlab-batch "disp(43)" 2>&1'); fprintf('matlab-batch con: %d\n%s\n', s, o);
