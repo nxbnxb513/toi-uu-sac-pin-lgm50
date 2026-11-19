@@ -91,6 +91,9 @@ so.levenberg_marquardt = opt.lm;
 so.print_level = 0;
 ocp.solver_options = so;
 ocp.code_gen_options.code_export_directory = opt.codegen_dir;
+% ten OCP co dinh (acados mac dinh them 8 ky tu hash, khac nhau giua cac phien MATLAB => bo giai
+% dung lai tu cache khong tim thay <ten>_mex_solver.m, run 44504701182; GD-98)
+ocp.name = ['ocp_' opt.name];
 sco = struct();
 if ~isempty(opt.mex_dir), sco.output_dir = opt.mex_dir; end
 % check_reuse_possible = false: phep so hash cua acados v0.6.0 khac nhau giua hai phien MATLAB
