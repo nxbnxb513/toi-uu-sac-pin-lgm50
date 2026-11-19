@@ -305,3 +305,6 @@ Với mỗi trường hợp (vùng sạc × mức dòng CCCV × nhiệt độ m�
 - Mẫu đo: run 44425116351 (vùng 0→20, 0→100, 60→80 × 0.3C/1C × 10/40 °C × k = 1, ∞ × NMPC/NMPC+EKF; 2 job 0→100 1C 10 °C hỏng do `rom_replay` → sửa, chạy lại ở run 44425494274). 47/48 trường hợp có CSV; 3 trường hợp 0→100 bị hết giờ job (`wall_limit`), 1 bị bỏ qua.
 - Thời gian một trường hợp (vòng kín + xả): vùng 20 % 1250–5500 s; 0→100 % 6300–18200 s, một số > 5.3 h (không xong trong một job 6 h). Phần chung mỗi job ~10–13 phút (CCCV + tạo bộ giải acados ~9 phút).
 - **Ước tính lưới đầy đủ (1890 trường hợp): ~3300 giờ máy, ~830 job ⇒ ~7 ngày với 20 job song song** (> 3 ngày) ⇒ CHƯA chạy; chờ người dùng chọn phương án.
+
+### Quyết định người dùng 19/11/2026 (lưới đầy đủ)
+- Chọn phương án **tăng tốc rồi chạy đủ**: chạy song song 3–4 trường hợp/job, lưu bộ giải acados đã biên dịch giữa các job, thêm lưu dở/chạy tiếp cho trường hợp dài; kiểm tra lại kết quả trùng mẫu cũ; sau đó chạy toàn bộ lưới (không bớt phạm vi).
