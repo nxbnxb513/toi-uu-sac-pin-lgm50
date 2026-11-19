@@ -304,7 +304,16 @@ Với mỗi trường hợp (vùng sạc × mức dòng CCCV × nhiệt độ m�
 - Code: `.github/workflows/grid.yml` (plan → run → report, chạy tiếp được qua `prev_runs`), `src/nmpc/grid.py`, `src/nmpc/gd96.py`, GD-97. Pin thật = DFN có lão hoá (`NMPC_PLANT_AGING=1`).
 - Mẫu đo: run 44425116351 (vùng 0→20, 0→100, 60→80 × 0.3C/1C × 10/40 °C × k = 1, ∞ × NMPC/NMPC+EKF; 2 job 0→100 1C 10 °C hỏng do `rom_replay` → sửa, chạy lại ở run 44425494274). 47/48 trường hợp có CSV; 3 trường hợp 0→100 bị hết giờ job (`wall_limit`), 1 bị bỏ qua.
 - Thời gian một trường hợp (vòng kín + xả): vùng 20 % 1250–5500 s; 0→100 % 6300–18200 s, một số > 5.3 h (không xong trong một job 6 h). Phần chung mỗi job ~10–13 phút (CCCV + tạo bộ giải acados ~9 phút).
-- **Ước tính lưới đầy đủ (1890 trường hợp): ~3300 giờ máy, ~830 job ⇒ ~7 ngày với 20 job song song** (> 3 ngày) ⇒ CHƯA chạy; chờ người dùng chọn phương án.
+- **Ước tính lưới đầy đủ (1890 trường hợp): ~3300 giờ máy, ~830 job ⇒ ~7 ngày với 20 job song song** (> 3 ngày). Người dùng chọn phương án 2 + điểm lưu (tăng tốc, không đổi kết quả, không cắt phạm vi).
 
 ### Quyết định người dùng 19/11/2026 (lưới đầy đủ)
 - Chọn phương án **tăng tốc rồi chạy đủ**: chạy song song 3–4 trường hợp/job, lưu bộ giải acados đã biên dịch giữa các job, thêm lưu dở/chạy tiếp cho trường hợp dài; kiểm tra lại kết quả trùng mẫu cũ; sau đó chạy toàn bộ lưới (không bớt phạm vi).
+
+### Lưới đầy đủ: tăng tốc + điểm lưu, đang chạy (19–20/11/2026)
+- GD-98: 4 worker Parallel Computing Toolbox mỗi job (`grid_run_all.m`), số bước IRK riêng từng k, bộ giải acados lưu trong actions/cache (`grid_build_all.m`, tên OCP cố định `ocp_rom_nmpc_<mã>`), điểm lưu giữa chừng (`nmpc_closed_loop.m` `ckpt_*`). CCCV vi phạm: cột `cccv_status` (GD-97).
+- Kiểm chứng: so lại mẫu (run 44558052403 so với 44425116351, 14 trường hợp chung): cùng trạng thái, cùng số lần giải, lệch mất tương đối ≤ 1.2e-7. Lưu sau 40 lần giải (44488927646) rồi chạy tiếp ở job khác (44496107266, bộ giải mới; 44561078637, bộ giải từ cache): trùng chạy một mạch (lệch ~5e-9), hai bản chạy tiếp trùng nhau từng bit.
+- Thời gian: 4 trường hợp cùng lúc chậm 1.42× mỗi trường hợp (2 nhân thật) ⇒ ~2.8× nhanh hơn mỗi job. **Ước tính mới ~1580 giờ máy ⇒ ~3.3 ngày** (±25 %).
+- **Đang chạy (đợt 1):** run 44595405408 (NMPC biết hết trạng thái, 135 job) và 44595428301 (NMPC + EKF, 135 job); job vùng rộng chạy trước.
+- **Chạy tiếp (lặp tới khi hết):** khi cả hai run xong, bấm lại với mọi run đã chạy:
+  `gh workflow run grid.yml -f methods='["nmpc","ekf"]' -f tag=full-2 -f prev_runs='[44595405408,44595428301]'`
+  (plan bỏ qua trường hợp đã có CSV, xếp job chạy tiếp cho trường hợp có `ckpt_*.mat`, còn lại chạy mới; mỗi run ≤ 256 job). Đợt sau thêm run ID vào `prev_runs`. Báo cáo gộp: artifact `grid-report-<tag>` (`grid_all.csv`, `grid_summary.md`, `remaining.json` = việc còn lại).
