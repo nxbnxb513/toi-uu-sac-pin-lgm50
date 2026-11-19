@@ -48,13 +48,16 @@ def status(r):
 
 
 def cccv_status(r):
-    """CCCV cung luat: CCCV dung o Qstop/Icut (cccv_complete) va do vi pham cung cach."""
-    if str(r.get('cccv_complete', '')).strip().lower() not in ('1', 'true'):
-        return 'failed'
+    """CCCV cung luat (GD-96/GD-97). 'cccv_vi_pham' = CCCV vi pham rang buoc an toan tren DFN
+    (eta_Li < delta, T, x_s hoac V > 2 mV); them hau to '_chua_xong' neu CCCV khong toi duoc
+    dich (dung o x_s,n max, cccv_complete = 0). Bao nguyen trang, khong sua CCCV."""
+    done = str(r.get('cccv_complete', '')).strip().lower() in ('1', 'true')
     vV, ve, vT, vx = (fnum(r.get(c)) for c in ('cccv_viol_V_mV', 'cccv_viol_eta_mV', 'cccv_viol_T_K', 'cccv_viol_xs'))
     g = lambda x: x if math.isfinite(x) else 0.0
     if g(ve) > 1.0 or g(vT) > 0.1 or g(vx) > 1e-3 or g(vV) > V_TOL:
-        return 'ok_violation'
+        return 'cccv_vi_pham' + ('' if done else '_chua_xong')
+    if not done:
+        return 'cccv_chua_xong'
     if g(vV) > V_OK:
         return 'ok_tol'
     return 'ok'

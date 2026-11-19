@@ -55,6 +55,15 @@ if ~isfield(cfg, 'soc_rom'), cfg.soc_rom = true; end
 if ~isfield(cfg, 'qp_dump'), cfg.qp_dump = 0; end
 if ~isfield(cfg, 'max_solves'), cfg.max_solves = Inf; end
 if ~isfield(cfg, 'irk_probe'), cfg.irk_probe = false; end
+% Diem luu giua chung (GD-98, luoi day du): cfg.ckpt_save = file .mat -> khi het thoi gian
+% chay (wall_max) hoac sau cfg.ckpt_after lan giai thi LUU trang thai vong kin (pin DFN, bo dem
+% lao hoa, chuoi thoi gian, nghiem acados day du x/u/z/sl/su/lam/pi, trang thai EKF cua
+% cfg.est_obj) va tra ve R.reason = 'checkpoint'. cfg.ckpt_in = struct da luu -> chay tiep
+% dung tu dau vong lap tiep theo (ket qua nhu chay mot mach).
+if ~isfield(cfg, 'ckpt_save'), cfg.ckpt_save = ''; end
+if ~isfield(cfg, 'ckpt_in'), cfg.ckpt_in = []; end
+if ~isfield(cfg, 'ckpt_after'), cfg.ckpt_after = Inf; end
+if ~isfield(cfg, 'est_obj'), cfg.est_obj = []; end
 % GD-88: lech the ma lithium phia mang ngan (pin - ROM) trong rang buoc eta - chi khi biet het
 % trang thai (eta cua pin tinh tu trang thai DFN); NMPC + EKF de 0 (chua co uoc luong lech)
 if ~isfield(cfg, 'eb_on'), cfg.eb_on = full_state; end
@@ -72,16 +81,18 @@ y = dfn_state_soc(par, cfg.soc0, Ta);
 trk = aging_track('init', par);
 t = 0; Ich = 0;
 yc = dfn_consistent_init(0, y, par, struct('mode', 'I', 'value', 0, 'Tamb', Ta));
-x0 = cfg.estimator(yc, trk, struct('t', 0, 'I', 0, 'V', NaN, 'T', Ta));
+resume = ~isempty(cfg.ckpt_in);
+if ~resume, x0 = cfg.estimator(yc, trk, struct('t', 0, 'I', 0, 'V', NaN, 'T', Ta)); end
 % NMPC + EKF (GD-89): SOC dich viet theo DIEN TICH can nap (giong CCCV), khong theo SOC
 % tuyet doi: soc_off = SOC uoc luong - SOC dem Coulomb (= soc0 + dien tich da nap / C_soc).
 % Biet het trang thai: soc_off = 0, moi thu nhu cu.
 est_mode = isfield(cfg, 'sensor') && ~isempty(cfg.sensor);
-soc_off0 = 0; if est_mode, soc_off0 = x0(rom.ix.soc) - cfg.soc0; end
+soc_off0 = 0; if est_mode && ~resume, soc_off0 = x0(rom.ix.soc) - cfg.soc0; end
 qm = 0; nseg = 0;   % dien tich da nap theo dong DO [Ah], so doan da chay
 R = struct('reason', '', 'T_min_safe', NaN, 'T_min_safe_plant', NaN, 'guess_T', NaN, 'guess_Icc', NaN, 'guess_loss', NaN, 'w_loss', NaN, ...
     'nfail', 0, 'max_consec_fail', 0, 't_fallback', 0, 'wall', 0, 'plant_wall', 0, 't_prof', 0);
-tw = tic;
+tw = tic; wall0 = 0;
+if ~resume
 % ---- thoi gian sac an toan nhanh nhat (ROM) va doan dau tu CCCV ----
 Imax = C.opt.Imax;
 tmax_prof = max(cfg.tmax, 1);
@@ -135,7 +146,23 @@ reason = 'tmax'; nfail = 0; ncons = 0; meas = struct('t', 0, 'I', 0, 'V', NaN, '
 tplant = 0; tfb = 0;
 cold = true; first = true; prev = [];
 if ~cfg.free_I0 && ~strcmp(cfg.guess_mode, 'ramp'), Ich = P.I(1); end   % dong dau co dinh = dong dau cua doan dau CCCV
+else
+    % ---- chay tiep tu diem luu (GD-98) ----
+    Z = cfg.ckpt_in;
+    t = Z.t; y = Z.y; trk = Z.trk; Ich = Z.Ich; meas = Z.meas; S = Z.S; K = Z.K;
+    nfail = Z.nfail; ncons = Z.ncons; tplant = Z.tplant; tfb = Z.tfb; cold = Z.cold; first = Z.first;
+    prev = Z.prev; tf_ref = Z.tf_ref; prm = Z.prm; qm = Z.qm; nseg = Z.nseg; soc_off0 = Z.soc_off0;
+    soc_t_rom = Z.soc_t_rom; R = Z.R; wall0 = Z.wall; reason = 'tmax';
+    Imax = C.opt.Imax; tmax_prof = max(cfg.tmax, 1);
+    set_iter(Z.it);
+    fprintf('  CHAY TIEP tu diem luu: t = %.0f s, %d lan giai, SOC %.4f (da chay %.0f s)\n', t, numel(K.t), S.soc(end), wall0);
+end
 while t < cfg.tmax
+    if ~isempty(cfg.ckpt_save) && (toc(tw) > cfg.wall_max || (~resume && numel(K.t) >= cfg.ckpt_after))
+        save_ckpt(); R.reason = 'checkpoint'; R.wall = wall0 + toc(tw); R.ser = S; R.solve = K; R.nfail = nfail;
+        fprintf('  DIEM LUU: t = %.0f s, %d lan giai, SOC %.4f -> %s\n', t, numel(K.t), S.soc(end), cfg.ckpt_save);
+        return
+    end
     if toc(tw) > cfg.wall_max, reason = 'wall_limit'; break; end
     if numel(K.t) >= cfg.max_solves, reason = 'max_solves'; break; end
     xhat = cfg.estimator(y, trk, meas);
@@ -267,7 +294,7 @@ while t < cfg.tmax
     % ket thuc nhu pha CV cua CCCV (GD-25): dien ap (do) o nguong va dong <= C/50
     if Vend >= Vcv - 2e-3 && Ich <= Icut, reason = 'Icut'; break; end
 end
-R.wall = toc(tw); R.plant_wall = tplant; R.t_fallback = tfb;
+R.wall = wall0 + toc(tw); R.plant_wall = tplant; R.t_fallback = tfb;
 R.reason = reason; R.ser = S; R.solve = K; R.nfail = nfail;
 R.t_charge = t;
 R.soc_end = S.soc(end);
@@ -281,6 +308,45 @@ R.viol.eta = max(cfg.delta - min(S.eta_sep), 0);
 R.viol.xs = max(max(S.xs_sep) - cfg.xsmax, 0);
 R.viol.budget = max(t - cfg.budget, 0);
 R.loss_pred0 = K.loss_pred(1);
+
+    function save_ckpt()
+        Z = struct('t', t, 'y', y, 'trk', trk, 'Ich', Ich, 'meas', meas, 'S', S, 'K', K, 'nfail', nfail, 'ncons', ncons, ...
+            'tplant', tplant, 'tfb', tfb, 'cold', cold, 'first', first, 'prev', prev, 'tf_ref', tf_ref, 'prm', prm, ...
+            'qm', qm, 'nseg', nseg, 'soc_off0', soc_off0, 'soc_t_rom', soc_t_rom, 'R', R, 'wall', wall0 + toc(tw));
+        Z.it = get_iter();
+        Z.est = [];
+        if ~isempty(cfg.est_obj)
+            eo = cfg.est_obj;
+            Z.est = struct('xa', eo.xa, 'P', eo.P, 't_last', eo.t_last, 'I_last', eo.I_last, 'log', eo.log, ...
+                'twall', eo.twall, 'nstep', eo.nstep, 'Tamb', eo.Tamb);
+        end
+        save(cfg.ckpt_save, 'Z', '-v7');
+    end
+
+    function it = get_iter()
+        it = struct('x', {cell(C.N + 1, 1)}, 'sl', {cell(C.N + 1, 1)}, 'su', {cell(C.N + 1, 1)}, 'lam', {cell(C.N + 1, 1)}, ...
+            'u', {cell(C.N, 1)}, 'pi', {cell(C.N, 1)}, 'z', {cell(C.N, 1)});
+        for n = 0:C.N
+            it.x{n+1} = C.solver.get('x', n); it.sl{n+1} = C.solver.get('sl', n);
+            it.su{n+1} = C.solver.get('su', n); it.lam{n+1} = C.solver.get('lam', n);
+            if n < C.N
+                it.u{n+1} = C.solver.get('u', n); it.pi{n+1} = C.solver.get('pi', n);
+                try, it.z{n+1} = C.solver.get('z', n); catch, it.z{n+1} = []; end
+            end
+        end
+    end
+
+    function set_iter(it)
+        for n = 0:C.N
+            C.solver.set('x', it.x{n+1}, n); C.solver.set('lam', it.lam{n+1}, n);
+            if ~isempty(it.sl{n+1}), C.solver.set('sl', it.sl{n+1}, n); end
+            if ~isempty(it.su{n+1}), C.solver.set('su', it.su{n+1}, n); end
+            if n < C.N
+                C.solver.set('u', it.u{n+1}, n); C.solver.set('pi', it.pi{n+1}, n);
+                if ~isempty(it.z{n+1}), C.solver.set('z', it.z{n+1}, n); end
+            end
+        end
+    end
 
     function shift_guess(pv, xh)
         % ke hoach truoc (dong tai cac nut, t_f) dich di pv.elapsed giay, mo phong lai

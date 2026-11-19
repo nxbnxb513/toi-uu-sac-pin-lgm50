@@ -26,13 +26,13 @@ on:
         default: '["nmpc", "ekf"]'
       kper:
         description: "so muc k toi da moi job"
-        default: "2"
-      maxjobs:
-        description: "so job toi da trong run nay (<= 256)"
-        default: "256"
-      maxpar:
-        description: "so job song song toi da (tong toan repo <= 20)"
-        default: "20"
+        default: "7"
+      steps_ks:
+        description: "so buoc IRK: rong = rieng tung k (GD-98); JSON vd [2,7] = chung cho cac k nay (chi de so voi mau 44425116351)"
+        default: ""
+      ckpt_after:
+        description: "thu diem luu: luu sau N lan giai (Inf = chi khi het gio job)"
+        default: "Inf"
       prev_runs:
         description: "cac run grid truoc (JSON, vd [123, 456]) de bo qua truong hop da xong va gop bao cao"
         default: "[]"
@@ -62,13 +62,13 @@ jobs:
         run: |
           mkdir -p results/prev
           for id in $(echo '${{ inputs.prev_runs }}' | python3 -c 'import json,sys; print(" ".join(str(x) for x in json.load(sys.stdin)))'); do
-            gh run download "$id" -R "$GITHUB_REPOSITORY" -p 'gcase-*' -D "results/prev/$id" || echo "run $id: khong tai duoc"
+            bash src/nmpc/grid_dl.sh "$id" gmeta- results/prev
           done
       - id: p
         name: Lap ke hoach (bo qua truong hop da xong)
         run: |
           python3 src/nmpc/grid.py plan results/prev '${{ inputs.wins }}' '${{ inputs.cbases }}' '${{ inputs.temps }}' \
-            '${{ inputs.ks }}' '${{ inputs.methods }}' ${{ inputs.kper }} ${{ inputs.maxjobs }} > matrix.json
+            '${{ inputs.ks }}' '${{ inputs.methods }}' ${{ inputs.kper }} 256 > matrix.json
           echo "matrix=$(cat matrix.json)" >> "$GITHUB_OUTPUT"
           echo "njobs=$(python3 -c 'import json; print(len(json.load(open("matrix.json"))["include"]))')" >> "$GITHUB_OUTPUT"
 
@@ -77,16 +77,58 @@ jobs:
     if: needs.plan.outputs.njobs != '0'
     runs-on: ubuntu-latest
     timeout-minutes: 355
+    permissions:
+      actions: read
+      contents: read
     env:
       NMPC_PLANT_AGING: '1'   # pin that = DFN co lao hoa (par.aging.validated = true), GD-97
+      VAR: ${{ matrix.v }}
+      W: ${{ matrix.w }}
+      C: ${{ matrix.c }}
+      T: ${{ matrix.T }}
+      KS: ${{ matrix.ks }}
+      NSLOT: '4'
+      MIN_START: '1800'
+      MARGIN: '900'
+      STEPS_KS: ${{ inputs.steps_ks }}
+      CKPT_AFTER: ${{ inputs.ckpt_after }}
     strategy:
       fail-fast: false
-      max-parallel: ${{ fromJSON(inputs.maxpar) }}
+      max-parallel: 20
       matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
     steps:
+      - name: Moc thoi gian cua job, thu muc (codegen tao truoc khi MATLAB chay)
+        run: |
+          T0=$(date +%s)
+          echo "DEADLINE=$((T0 + 330*60))" >> "$GITHUB_ENV"
+          echo "HARDSTOP=$((T0 + 343*60))" >> "$GITHUB_ENV"
+          echo "RES=$GITHUB_WORKSPACE/results/grid" >> "$GITHUB_ENV"
+          echo "RESUME=$GITHUB_WORKSPACE/results/resume" >> "$GITHUB_ENV"
+          echo "SROOT=$RUNNER_TEMP/solv" >> "$GITHUB_ENV"
+          echo "MEXDIR=$RUNNER_TEMP/acmex" >> "$GITHUB_ENV"
+          mkdir -p "$RUNNER_TEMP/mwork/c_generated_code" "$RUNNER_TEMP/solv" "$RUNNER_TEMP/acmex"
       - uses: actions/checkout@v4
-      - name: Tao thu muc codegen truoc khi MATLAB chay
-        run: mkdir -p "${{ runner.temp }}/mwork/c_generated_code" results/grid
+      - name: Ma nguon cua bo giai (khoa cache)
+        run: |
+          mkdir -p results/grid results/resume
+          h=$(ls src/dfn/*.m src/dfn/*/*.m src/nmpc/rom_*.m src/nmpc/nmpc_model.m src/nmpc/nmpc_build.m src/nmpc/nmpc_variant.m \
+              src/nmpc/nmpc_config.m src/nmpc/aging_*.m src/nmpc/v_limit.m src/nmpc/grid_build.m .github/actions/setup-acados/action.yml 2>/dev/null \
+              | sort | xargs cat | sha256sum | cut -c1-16)
+          echo "SOLVHASH=$h" >> "$GITHUB_ENV"; echo "khoa bo giai: $h"
+      - name: Tai diem luu giua chung (GD-98)
+        if: matrix.rs != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for spec in ${{ matrix.rs }}; do
+            id=${spec%%:*}; art=${spec#*:}
+            gh run download "$id" -R "$GITHUB_REPOSITORY" -n "$art" -D "results/dl/$id" || echo "khong tai duoc $spec"
+          done
+          for k in $KS; do
+            f=$(ls -t results/dl/*/ckpt_w${W}_c*_T${T}_k${k}.mat 2>/dev/null | head -1)
+            [ -n "$f" ] && cp "$f" results/resume/ && echo "chay tiep k so $k tu $f"
+          done
+          rm -rf results/dl
       - uses: ./.github/actions/setup-acados
         with:
           casadi-matlab: 'true'
@@ -94,19 +136,104 @@ jobs:
       - uses: matlab-actions/setup-matlab@v2
         with:
           cache: true
-      - name: ${{ matrix.m }} vung ${{ matrix.w }}, ${{ matrix.c }}C, ${{ matrix.T }} degC, k so ${{ matrix.ks }}
-        uses: matlab-actions/run-command@v2
+      - id: prep
+        name: So buoc IRK cua tung k
+        run: bash src/nmpc/grid_job.sh prep
+      - id: r1
+        if: steps.prep.outputs.c1 != ''
+        uses: actions/cache/restore@v4
         with:
-          command: >
-            cd(fullfile('${{ runner.temp }}', 'mwork'));
-            addpath('${{ github.workspace }}/src/dfn'); addpath('${{ github.workspace }}/src/nmpc'); addpath('${{ github.workspace }}/src/ekf');
-            pilot_run(${{ matrix.w }}, ${{ matrix.c }}, ${{ matrix.ks }}, '${{ github.workspace }}/results/grid', 'D', '${{ matrix.v }}', ${{ matrix.T }}, 330,
-            struct('wall', 'greedy', 'margin_s', 600, 'min_start_s', 1800));
+          path: ${{ runner.temp }}/solv/${{ steps.prep.outputs.c1 }}
+          key: acsolv-v1-${{ env.SOLVHASH }}-${{ steps.prep.outputs.c1 }}
+      - id: r2
+        if: steps.prep.outputs.c2 != ''
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/solv/${{ steps.prep.outputs.c2 }}
+          key: acsolv-v1-${{ env.SOLVHASH }}-${{ steps.prep.outputs.c2 }}
+      - id: r3
+        if: steps.prep.outputs.c3 != ''
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/solv/${{ steps.prep.outputs.c3 }}
+          key: acsolv-v1-${{ env.SOLVHASH }}-${{ steps.prep.outputs.c3 }}
+      - id: r4
+        if: steps.prep.outputs.c4 != ''
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/solv/${{ steps.prep.outputs.c4 }}
+          key: acsolv-v1-${{ env.SOLVHASH }}-${{ steps.prep.outputs.c4 }}
+      - id: r5
+        if: steps.prep.outputs.c5 != ''
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/solv/${{ steps.prep.outputs.c5 }}
+          key: acsolv-v1-${{ env.SOLVHASH }}-${{ steps.prep.outputs.c5 }}
+      - id: r6
+        if: steps.prep.outputs.c6 != ''
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/solv/${{ steps.prep.outputs.c6 }}
+          key: acsolv-v1-${{ env.SOLVHASH }}-${{ steps.prep.outputs.c6 }}
+      - id: r7
+        if: steps.prep.outputs.c7 != ''
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/solv/${{ steps.prep.outputs.c7 }}
+          key: acsolv-v1-${{ env.SOLVHASH }}-${{ steps.prep.outputs.c7 }}
+      - id: build
+        name: Tao bo giai con thieu
+        run: bash src/nmpc/grid_job.sh build
+      - if: steps.prep.outputs.c1 != '' && steps.r1.outputs.cache-hit != 'true' && steps.build.outputs.ok1 == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/solv/${{ steps.prep.outputs.c1 }}
+          key: acsolv-v1-${{ env.SOLVHASH }}-${{ steps.prep.outputs.c1 }}
+      - if: steps.prep.outputs.c2 != '' && steps.r2.outputs.cache-hit != 'true' && steps.build.outputs.ok2 == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/solv/${{ steps.prep.outputs.c2 }}
+          key: acsolv-v1-${{ env.SOLVHASH }}-${{ steps.prep.outputs.c2 }}
+      - if: steps.prep.outputs.c3 != '' && steps.r3.outputs.cache-hit != 'true' && steps.build.outputs.ok3 == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/solv/${{ steps.prep.outputs.c3 }}
+          key: acsolv-v1-${{ env.SOLVHASH }}-${{ steps.prep.outputs.c3 }}
+      - if: steps.prep.outputs.c4 != '' && steps.r4.outputs.cache-hit != 'true' && steps.build.outputs.ok4 == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/solv/${{ steps.prep.outputs.c4 }}
+          key: acsolv-v1-${{ env.SOLVHASH }}-${{ steps.prep.outputs.c4 }}
+      - if: steps.prep.outputs.c5 != '' && steps.r5.outputs.cache-hit != 'true' && steps.build.outputs.ok5 == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/solv/${{ steps.prep.outputs.c5 }}
+          key: acsolv-v1-${{ env.SOLVHASH }}-${{ steps.prep.outputs.c5 }}
+      - if: steps.prep.outputs.c6 != '' && steps.r6.outputs.cache-hit != 'true' && steps.build.outputs.ok6 == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/solv/${{ steps.prep.outputs.c6 }}
+          key: acsolv-v1-${{ env.SOLVHASH }}-${{ steps.prep.outputs.c6 }}
+      - if: steps.prep.outputs.c7 != '' && steps.r7.outputs.cache-hit != 'true' && steps.build.outputs.ok7 == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/solv/${{ steps.prep.outputs.c7 }}
+          key: acsolv-v1-${{ env.SOLVHASH }}-${{ steps.prep.outputs.c7 }}
+      - name: ${{ matrix.m }} vung ${{ matrix.w }}, ${{ matrix.c }}C, ${{ matrix.T }} degC, k so ${{ matrix.ks }} (song song)
+        run: timeout $(( HARDSTOP - $(date +%s) )) bash src/nmpc/grid_job.sh run || echo "run ket thuc ma $?"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: gcase-${{ matrix.m }}-w${{ matrix.w }}-c${{ matrix.c }}-T${{ matrix.T }}-k${{ matrix.n }}
           path: results/grid
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gmeta-${{ matrix.m }}-w${{ matrix.w }}-c${{ matrix.c }}-T${{ matrix.T }}-k${{ matrix.n }}
+          path: |
+            results/grid/pilot_w*_k?.csv
+            results/grid/ckpt_*.mat
           if-no-files-found: warn
 
   report:
@@ -124,14 +251,9 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p results/all
-          for id in $(echo '${{ inputs.prev_runs }}' | python3 -c 'import json,sys; print(" ".join(str(x) for x in json.load(sys.stdin)))'); do
-            gh run download "$id" -R "$GITHUB_REPOSITORY" -p 'gcase-*' -D "results/all/$id" || echo "run $id: khong tai duoc"
+          for id in $(echo '${{ inputs.prev_runs }}' | python3 -c 'import json,sys; print(" ".join(str(x) for x in json.load(sys.stdin)))') ${{ github.run_id }}; do
+            bash src/nmpc/grid_dl.sh "$id" gmeta- results/all
           done
-      - uses: actions/download-artifact@v4
-        continue-on-error: true
-        with:
-          pattern: gcase-*
-          path: results/all/${{ github.run_id }}
       - name: Gop ket qua (GD-96)
         run: |
           python3 src/nmpc/grid.py report results/all results/report

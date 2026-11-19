@@ -28,6 +28,18 @@ if nargin < 9 || isempty(gopt), gopt = struct(); end
 if ~isfield(gopt, 'wall'), gopt.wall = 'split'; end
 if ~isfield(gopt, 'margin_s'), gopt.margin_s = 600; end
 if ~isfield(gopt, 'min_start_s'), gopt.min_start_s = 1800; end
+% luoi day du (GD-98): phase 'prep' = chi tinh so buoc IRK cua tung k roi ghi JSON gopt.prep_out;
+% solver_root = thu muc bo giai da tao san (<solver_root>/<ma so buoc>/c_generated_code, dung lai);
+% deadline = moc ket thuc job (giay POSIX); ckpt = luu/chay tiep giua chung (resume_dir: noi tim
+% ckpt_<tag>.mat cu); steps_ks = cac k dung de chon so buoc IRK (mac dinh: chinh k dang chay).
+if ~isfield(gopt, 'phase'), gopt.phase = 'all'; end
+if ~isfield(gopt, 'solver_root'), gopt.solver_root = ''; end
+if ~isfield(gopt, 'mex_dir'), gopt.mex_dir = ''; end
+if ~isfield(gopt, 'deadline'), gopt.deadline = NaN; end
+if ~isfield(gopt, 'ckpt'), gopt.ckpt = false; end
+if ~isfield(gopt, 'resume_dir'), gopt.resume_dir = ''; end
+if ~isfield(gopt, 'ckpt_after'), gopt.ckpt_after = Inf; end
+if ~isfield(gopt, 'steps_ks'), gopt.steps_ks = []; end
 tjob = tic;
 if ~exist(outdir, 'dir'), mkdir(outdir); end
 % NMPC + EKF (GD-89): muc nhieu "BMS thuc te" (GD-71), sai SOC dau +10 % (GD-77), 60 s mau nghi
@@ -95,15 +107,34 @@ if use_ekf
 end
 limg = struct('Vcv', v_limit(parp), 'Tmax', cfgn.Tmax, 'delta', cfgn.delta, 'xsmax', cfgn.xsmax, 'Icut', parp.Qnom/50, 'soc_tol', 0.005);
 Gs = cell(1, numel(Ks));
-for ik = iks(:).'
+for ik = union(iks(:).', gopt.steps_ks(:).')
     fprintf('doan dau, k = %g:\n', Ks(ik));
     cg = cl_cfg(Ks(ik)); cg.soc_target = cg.soc_target + soc_off0;   % GD-89: = soc_t khi biet het trang thai
     Gs{ik} = nmpc_guess(M, rom, x0, cg, limg, cfgn.Imax);
 end
+hI = 36; if isfield(bo, 'steps_hI'), hI = bo.steps_hI; end
+if strcmp(gopt.phase, 'prep')
+    % so buoc IRK RIENG cho tung k (moi truong hop mot bo giai, nhu chay thu 42 truong hop)
+    pr = struct('k', {}, 'ns', {}, 'code', {});
+    for ik = iks(:).'
+        if isempty(gopt.steps_ks), Pl = {Gs{ik}.P};
+        else, Pl = cellfun(@(g) g.P, Gs(gopt.steps_ks), 'UniformOutput', false); end
+        ns = nmpc_steps(Pl, cfgn.N, hI);
+        pr(end+1) = struct('k', ik, 'ns', ns, 'code', steps_code(ns)); %#ok<AGROW>
+        fprintf('k so %d: so buoc IRK %s -> %s\n', ik, mat2str(ns), steps_code(ns));
+    end
+    fid = fopen(gopt.prep_out, 'w'); fprintf(fid, '%s', jsonencode(pr)); fclose(fid);
+    fprintf('PREP %s: XONG sau %.0f s\n', jtag, toc(tjob));
+    return
+end
 if ~isfield(bo, 'num_steps')
-    hI = 36; if isfield(bo, 'steps_hI'), hI = bo.steps_hI; end
-    Pl = cellfun(@(g) g.P, Gs(iks), 'UniformOutput', false);
+    sk = gopt.steps_ks; if isempty(sk), sk = iks; end
+    Pl = cellfun(@(g) g.P, Gs(sk), 'UniformOutput', false);
     bo.num_steps = nmpc_steps(Pl, cfgn.N, hI);
+end
+if ~isempty(gopt.solver_root)
+    bo.codegen_dir = fullfile(gopt.solver_root, steps_code(bo.num_steps), 'c_generated_code');
+    bo.reuse = true; bo.mex_dir = gopt.mex_dir;
 end
 fprintf('So buoc IRK moi khoang (GD-87): %s (tong %d)\n', mat2str(bo.num_steps), sum(bo.num_steps .* ones(1, cfgn.N)));
 C = nmpc_build(rom, par, bo);
@@ -116,6 +147,7 @@ for ik = iks(:).'
     tcase = tic;
     tag = sprintf('%s_k%d', jtag, ik);
     left_s = 60*job_min - toc(tjob);
+    if isfinite(gopt.deadline), left_s = gopt.deadline - posixtime(datetime('now')); end
     nleft = sum(iks >= ik);
     fprintf('\n----- %s: k = %g, ngan sach %.0f s (con %.0f s thoi gian job cho %d lan) -----\n', tag, k, k*cc.T_CCCV, left_s, nleft);
     cl = cl_cfg(k);
@@ -139,11 +171,30 @@ for ik = iks(:).'
         cl.estimator = @(yy, tk, meas) est.estimate(meas);
         cl.sensor = @(I, V, T, n) ekf_sensor(cek, I, V, T, seed0 + n);
     end
+    if gopt.ckpt
+        cl.ckpt_save = fullfile(outdir, ['ckpt_' tag '.mat']);
+        cl.ckpt_after = gopt.ckpt_after; cl.est_obj = est;
+        fr = fullfile(gopt.resume_dir, ['ckpt_' tag '.mat']);
+        if ~isempty(gopt.resume_dir) && exist(fr, 'file')
+            Zc = load(fr); cl.ckpt_in = Zc.Z;
+            if ~isfield(cl.ckpt_in.R, 'n_resume'), cl.ckpt_in.R.n_resume = 0; end
+            cl.ckpt_in.R.n_resume = cl.ckpt_in.R.n_resume + 1;
+            if use_ekf
+                fe = fieldnames(Zc.Z.est);
+                for i = 1:numel(fe), est.(fe{i}) = Zc.Z.est.(fe{i}); end
+            end
+            fprintf('chay tiep tu %s\n', fr);
+        end
+    end
     try
         R = nmpc_closed_loop(C, M, parp, cl);
     catch e
         fprintf('NMPC LOI: %s\n%s\n', e.message, getReport(e, 'extended', 'hyperlinks', 'off'));
         R = [];
+    end
+    if ~isempty(R) && strcmp(R.reason, 'checkpoint')
+        fprintf('%s: DA LUU giua chung sau %.0f s (khong ghi CSV; run sau chay tiep)\n', tag, toc(tcase));
+        continue
     end
     rp = [];
     if ~isempty(R) && isfield(R, 'ser') && ~isempty(R.ser.t)
@@ -151,7 +202,10 @@ for ik = iks(:).'
     end
     row = pilot_row(iw, soc0, soc1, Cbase, Tamb_C, k, romcfg, variant, cc, cv, cl, R, C, cfgn, rp_cc, rp);
     row.job_wall_s = toc(tjob);    % tu dau pilot_run (gom CCCV + tao bo giai) toi khi xong lan vong kin nay
-    row.case_wall_s = toc(tcase); row.prep_wall_s = t_prep;   % thoi gian mot truong hop (vong kin + xa + replay) / phan chung
+    row.case_wall_s = toc(tcase); row.prep_wall_s = t_prep;
+    row.n_resume = 0; if ~isempty(R) && isfield(R, 'n_resume'), row.n_resume = R.n_resume; end
+    row.cl_wall_total_s = NaN; if ~isempty(R) && isfield(R, 'wall'), row.cl_wall_total_s = R.wall; end
+    row.num_steps = steps_code(bo.num_steps);   % thoi gian mot truong hop (vong kin + xa + replay) / phan chung
     if use_ekf, row = est_cols(row, est, R, soc_off0, ekf_noise, ekf_socerr); end
     writetable(struct2table(row, 'AsArray', true), fullfile(outdir, ['pilot_' tag '.csv']));   % AsArray: truong rong ('') o dong infeasible
     if isempty(R) || strcmp(R.reason, 'infeasible_budget'), continue; end
@@ -324,4 +378,15 @@ row.est_eta_under_max_mV = -1e3*min(ee);
 if any(late), row.est_eta_over_max_late_mV = 1e3*max(ee(late)); row.est_eta_rmse_late_mV = 1e3*sqrt(mean(ee(late).^2)); end
 row.est_eta_min_mV = 1e3*min(L.eta(k));
 row.est_eta_sd_med_mV = 1e3*median(L.s_eta(k));
+end
+
+function c = steps_code(ns)
+% ma ngan cua vector so buoc IRK (ten thu muc / khoa cache bo giai): '9-8x19' = [9, 8 x 19]
+c = ''; i = 1;
+while i <= numel(ns)
+    j = i; while j < numel(ns) && ns(j+1) == ns(i), j = j + 1; end
+    if j > i, p = sprintf('%dx%d', ns(i), j - i + 1); else, p = sprintf('%d', ns(i)); end
+    if isempty(c), c = p; else, c = [c '-' p]; end %#ok<AGROW>
+    i = j + 1;
+end
 end

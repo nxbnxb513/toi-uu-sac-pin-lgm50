@@ -25,7 +25,11 @@ d = struct('N', 20, 'Imax', 2*par.Qnom, 'tf_min_h', 10/3600, 'tf_cap_h', 20, 'ep
     'name', 'rom_nmpc', 'codegen_dir', fullfile(pwd, 'c_generated_code'), 'max_iter', 60, ...
     'num_stages', 2, 'num_steps', 8, 'lm', 1e-2, 'newton_iter', 8, 'newton_tol', 0, 'E', [], ...
     'globalization', 'MERIT_BACKTRACKING', 'jac_reuse', 0, 'tol_stat', 1e-6, 'tol_eq', 1e-7, ...
-    'tol_ineq', 1e-7, 'tol_comp', 1e-7, 'max_iter_warm', 60, 'timeout', 0, 'eqI0', true);
+    'tol_ineq', 1e-7, 'tol_comp', 1e-7, 'max_iter_warm', 60, 'timeout', 0, 'eqI0', true, ...
+    'reuse', false, 'mex_dir', '');
+% reuse = true (luoi day du, GD-98): dung lai bo giai DA tao san trong codegen_dir (cung OCP,
+% acados tu kiem tra hash cua OCP; khong khop thi tu tao lai). mex_dir: thu muc giao dien MEX
+% chung cua acados (mac dinh <pwd>/build). Khong doi bai toan hay so lieu.
 fn = fieldnames(d);
 for i = 1:numel(fn), if ~isfield(opt, fn{i}), opt.(fn{i}) = d.(fn{i}); end, end
 nx = rom.nx; nX = nx + 2; iI = nx + 1; itf = nx + 2;
@@ -87,9 +91,13 @@ so.levenberg_marquardt = opt.lm;
 so.print_level = 0;
 ocp.solver_options = so;
 ocp.code_gen_options.code_export_directory = opt.codegen_dir;
+ocp.code_gen_options.json_file = fullfile(fileparts(opt.codegen_dir), [opt.name '_ocp.json']);
+sco = struct();
+if ~isempty(opt.mex_dir), sco.output_dir = opt.mex_dir; end
+if opt.reuse, sco.generate = false; sco.build = false; sco.compile_mex_wrapper = false; sco.check_reuse_possible = true; end
 
 t0 = tic;
-C.solver = AcadosOcpSolver(ocp);
+C.solver = AcadosOcpSolver(ocp, sco);
 C.t_build = toc(t0);
 C.ocp = ocp; C.opt = opt; C.rom = rom; C.nX = nX; C.iI = iI; C.itf = itf; C.N = opt.N;
 C.ip = struct('Tamb', 1, 'soc_t', 2, 'bud', 3, 'wl', 4, 'wd', 5, 'Tmax', 6, 'dlt', 7, 'xsm', 8, 'vb', 9, 'eb', 10);

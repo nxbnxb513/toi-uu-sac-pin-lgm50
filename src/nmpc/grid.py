@@ -50,8 +50,28 @@ def best(rows):
     return {k: v[1] for k, v in out.items()}
 
 
+CKPAT = re.compile(r'ckpt_w(\d+)_c([\d.]+)_T([-\d.]+)_k(\d)\.mat$')
+
+
+def checkpoints(root):
+    """Diem luu giua chung (GD-98) con dung: {key: 'runid:artifact'} cua run moi nhat.
+    Cau truc thu muc: <root>/<runid>/<artifact gcase-<m>-...>/ckpt_*.mat"""
+    out = {}
+    for p in glob.glob(os.path.join(root, '*', 'g*-*', 'ckpt_*.mat')):
+        m = CKPAT.search(os.path.basename(p))
+        art = os.path.basename(os.path.dirname(p))
+        rid = os.path.basename(os.path.dirname(os.path.dirname(p)))
+        meth = art.split('-')[1]
+        c10 = float(m.group(2))
+        key = (meth, int(m.group(1)), round(c10 / 10, 3), round(float(m.group(3)), 1), int(m.group(4)))
+        if key not in out or int(rid) > int(out[key].split(':')[0]):
+            out[key] = f'{rid}:{art}'
+    return out
+
+
 def plan(prev, wins, cbases, temps, ks, methods, kper, maxjobs):
     done = {k for k, r in best(read_rows(prev)).items() if r.get('nmpc_reason') != 'wall_limit'} if os.path.isdir(prev) else set()
+    ck = checkpoints(prev) if os.path.isdir(prev) else {}
     jobs, nleft = [], 0
     for m in methods:
         for w in wins:
@@ -60,12 +80,16 @@ def plan(prev, wins, cbases, temps, ks, methods, kper, maxjobs):
                     left = [ik for ik in ks if (m, w, round(c, 3), round(float(T), 1), ik) not in done]
                     nleft += len(left)
                     for i in range(0, len(left), kper):
-                        jobs.append(dict(m=m, v=METHODS[m], w=w, c=c, T=T, ks=json.dumps(left[i:i + kper]),
-                                         n='-'.join(str(x) for x in left[i:i + kper])))
+                        kk = left[i:i + kper]
+                        rs = sorted({ck[(m, w, round(c, 3), round(float(T), 1), ik)] for ik in kk
+                                     if (m, w, round(c, 3), round(float(T), 1), ik) in ck})
+                        jobs.append(dict(m=m, v=METHODS[m], w=w, c=c, T=T, ks=' '.join(str(x) for x in kk),
+                                         n='-'.join(str(x) for x in kk), rs=' '.join(rs)))
     # xen ke cac phuong phap/dong de tai deu cac dot 20 job
     jobs.sort(key=lambda j: (j['w'], j['c'], j['T'], j['m']))
     print(json.dumps({'include': jobs[:maxjobs]}))
-    sys.stderr.write(f'con {nleft} truong hop, {len(jobs)} job; chay {min(len(jobs), maxjobs)} job lan nay\n')
+    sys.stderr.write(f'con {nleft} truong hop ({sum(1 for j in jobs if j["rs"])} job co diem luu), {len(jobs)} job; '
+                     f'chay {min(len(jobs), maxjobs)} job lan nay\n')
     return jobs, nleft
 
 
@@ -81,7 +105,8 @@ def report(root, outdir):
             'cccv_soc_end', 'budget_s', 't_charge_s', 'T_CCCV_s', 'cccv_perm_mAh', 'nmpc_perm_mAh', 'reduction_pct',
             'viol_V_mV', 'viol_eta_mV', 'viol_T_K', 'viol_xs', 'nmpc_eta_min_mV', 'nmpc_Tmax_C', 'cccv_status',
             'cccv_viol_V_mV', 'cccv_viol_eta_mV', 'cccv_viol_T_K', 'cccv_Tmax_C', 'cccv_eta_min_mV', 'aging_source',
-            'n_solves', 'n_fail', 'solve_mean_ms', 'case_wall_s', 'prep_wall_s', 'closed_loop_wall_s', 'job_wall_s',
+            'n_solves', 'n_fail', 'solve_mean_ms', 'case_wall_s', 'prep_wall_s', 'closed_loop_wall_s', 'cl_wall_total_s', 'n_resume',
+            'num_steps', 'job_wall_s',
             'est_soc_rmse_pct', 'est_eta_rmse_mV', 'src']
     out = []
     for k in keys:
@@ -105,6 +130,19 @@ def report(root, outdir):
         c = lambda s: sum(d['status'] == s for d in R)
         L.append(f"| {m} | {c('ok')} | {c('ok_tol')} | {c('ok_violation')} | {c('failed')} | {c('infeasible')} | {c('error')} | "
                  f"{sum(d['nmpc_reason'] == 'wall_limit' for d in R)} |")
+    cc = {}
+    for d in out:
+        cc[(d['window'], float(d['Cbase']), float(d['Tamb_C']))] = d
+    L += ['', '## CCCV (GD-96/GD-97: bao nguyen trang; "cccv_vi_pham" = CCCV vi pham an toan tren DFN)', '',
+          '| vung | C | T (°C) | trang thai CCCV | eta_Li min (mV) | T max (°C) | NMPC k = 1 (nmpc / ekf) |', '|---|---|---|---|---|---|---|']
+    for key in sorted(cc, key=lambda x: (x[1], x[2], x[0])):
+        d = cc[key]
+        if d['cccv_status'] == 'ok':
+            continue
+        k1 = {m: next((e['status'] for e in out if e['method'] == m and (e['window'], float(e['Cbase']), float(e['Tamb_C'])) == key
+                       and fnum(e['k']) == 1), '—') for m in METHODS}
+        L.append(f"| {key[0]} | {key[1]:g} | {key[2]:g} | {d['cccv_status']} | {fnum(d['cccv_eta_min_mV']):.1f} | "
+                 f"{fnum(d['cccv_Tmax_C']):.1f} | {k1['nmpc']} / {k1['ekf']} |")
     L += ['', '## Thoi gian chay moi truong hop (case_wall_s, s)', '',
           '| phuong phap | C | T (°C) | n | TB | trung vi | max | phan chung/job TB (s) |', '|---|---|---|---|---|---|---|---|']
     groups = {}
