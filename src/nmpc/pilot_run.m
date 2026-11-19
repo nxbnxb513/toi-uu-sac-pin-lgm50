@@ -58,7 +58,14 @@ Sc = cc.ser;
 soc_t = min(soc1, cc.soc_end);
 fprintf('SOC dich cua NMPC: %.4f (vung %.2f, CCCV dat %.4f)\n', soc_t, soc1, cc.soc_end);
 % ROM chay lai profile dong CCCV (chan doan sai lech lao hoa ROM - DFN, GD-85)
-rp_cc = rom_replay(M, rom, par, soc0, Ta, Sc.t, -Sc.I);
+% (chi chan doan: neu ROM khong tich phan duoc profile CCCV, vd CCCV dung o xsn_max khi lanh,
+% thi bo qua, GD-97)
+try
+    rp_cc = rom_replay(M, rom, par, soc0, Ta, Sc.t, -Sc.I);
+catch e
+    fprintf('rom_replay CCCV loi (bo qua, chi la chan doan): %s\n', e.message);
+    rp_cc = struct('loss', NaN);
+end
 fprintf('ROM chay lai CCCV: mat (SEI + chet) ROM %.6f mAh, DFN %.6f mAh (lech %+.2f %%)\n', rp_cc.loss, cc.nsei + cc.ndl, 100*(rp_cc.loss/(cc.nsei + cc.ndl) - 1));
 writetable(table(Sc.t, -Sc.I, Sc.V, Sc.T - 273.15, Sc.soc, Sc.xs_sep, 1e3*Sc.eta_sep, Sc.nsei, Sc.npl, ...
     'VariableNames', {'t_s', 'I_A', 'V', 'T_C', 'soc', 'xs_sep', 'eta_sep_mV', 'sei_mAh', 'pl_mAh'}), fullfile(outdir, ['pilot_' jtag '_cccv_series.csv']));
