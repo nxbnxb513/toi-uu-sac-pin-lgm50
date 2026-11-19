@@ -28,7 +28,7 @@ on:
         description: "so muc k toi da moi job"
         default: "7"
       steps_ks:
-        description: "so buoc IRK: rong = rieng tung k (GD-98); JSON vd [2,7] = chung cho cac k nay (chi de so voi mau 44425116351)"
+        description: "so buoc IRK: rong = rieng tung k (GD-98); vd 2,7 = chung cho cac k nay (chi de so voi mau 44425116351)"
         default: ""
       ckpt_after:
         description: "thu diem luu: luu sau N lan giai (Inf = chi khi het gio job)"
@@ -82,16 +82,7 @@ jobs:
       contents: read
     env:
       NMPC_PLANT_AGING: '1'   # pin that = DFN co lao hoa (par.aging.validated = true), GD-97
-      VAR: ${{ matrix.v }}
-      W: ${{ matrix.w }}
-      C: ${{ matrix.c }}
-      T: ${{ matrix.T }}
       KS: ${{ matrix.ks }}
-      NSLOT: '4'
-      MIN_START: '1800'
-      MARGIN: '900'
-      STEPS_KS: ${{ inputs.steps_ks }}
-      CKPT_AFTER: ${{ inputs.ckpt_after }}
     strategy:
       fail-fast: false
       max-parallel: 20
@@ -101,7 +92,6 @@ jobs:
         run: |
           T0=$(date +%s)
           echo "DEADLINE=$((T0 + 330*60))" >> "$GITHUB_ENV"
-          echo "HARDSTOP=$((T0 + 343*60))" >> "$GITHUB_ENV"
           echo "RES=$GITHUB_WORKSPACE/results/grid" >> "$GITHUB_ENV"
           echo "RESUME=$GITHUB_WORKSPACE/results/resume" >> "$GITHUB_ENV"
           echo "SROOT=$RUNNER_TEMP/solv" >> "$GITHUB_ENV"
@@ -124,8 +114,8 @@ jobs:
             id=${spec%%:*}; art=${spec#*:}
             gh run download "$id" -R "$GITHUB_REPOSITORY" -n "$art" -D "results/dl/$id" || echo "khong tai duoc $spec"
           done
-          for k in $KS; do
-            f=$(ls -t results/dl/*/ckpt_w${W}_c*_T${T}_k${k}.mat 2>/dev/null | head -1)
+          for k in ${{ matrix.ks }}; do
+            f=$(ls -t results/dl/*/ckpt_w${{ matrix.w }}_c*_T${{ matrix.T }}_k${k}.mat 2>/dev/null | head -1)
             [ -n "$f" ] && cp "$f" results/resume/ && echo "chay tiep k so $k tu $f"
           done
           rm -rf results/dl
@@ -135,10 +125,27 @@ jobs:
           codegen-dir: ${{ runner.temp }}/mwork/c_generated_code
       - uses: matlab-actions/setup-matlab@v2
         with:
+          products: MATLAB Parallel_Computing_Toolbox
           cache: true
+      - name: So buoc IRK cua tung k (+ giao dien MEX acados chung)
+        uses: matlab-actions/run-command@v2
+        with:
+          command: >
+            cd(fullfile('${{ runner.temp }}', 'mwork')); addpath('${{ github.workspace }}/src/dfn'); addpath('${{ github.workspace }}/src/nmpc'); addpath('${{ github.workspace }}/src/ekf');
+            try, ocp_compile_interface('${{ runner.temp }}/acmex'); catch e, disp(e.message); end;
+            pilot_run(${{ matrix.w }}, ${{ matrix.c }}, [${{ matrix.ks }}], '${{ github.workspace }}/results/grid', 'D', '${{ matrix.v }}', ${{ matrix.T }}, 330,
+            struct('phase', 'prep', 'prep_out', '${{ runner.temp }}/prep.json', 'steps_ks', [${{ inputs.steps_ks }}]));
       - id: prep
-        name: So buoc IRK cua tung k
-        run: bash src/nmpc/grid_job.sh prep
+        run: |
+          python3 - "$RUNNER_TEMP/prep.json" >> "$GITHUB_OUTPUT" <<'PY'
+          import json, sys
+          p = json.load(open(sys.argv[1])); p = [p] if isinstance(p, dict) else p
+          codes = []
+          for r in p:
+              if r['code'] not in codes: codes.append(r['code'])
+          for i in range(7): print(f'c{i+1}=' + (codes[i] if i < len(codes) else ''))
+          PY
+          cat "$GITHUB_OUTPUT"
       - id: r1
         if: steps.prep.outputs.c1 != ''
         uses: actions/cache/restore@v4
@@ -181,9 +188,24 @@ jobs:
         with:
           path: ${{ runner.temp }}/solv/${{ steps.prep.outputs.c7 }}
           key: acsolv-v1-${{ env.SOLVHASH }}-${{ steps.prep.outputs.c7 }}
+      - name: Tao bo giai con thieu (song song)
+        uses: matlab-actions/run-command@v2
+        with:
+          command: >
+            cd(fullfile('${{ runner.temp }}', 'mwork')); addpath('${{ github.workspace }}/src/dfn'); addpath('${{ github.workspace }}/src/nmpc'); addpath('${{ github.workspace }}/src/ekf');
+            grid_build_all('${{ runner.temp }}/prep.json', '${{ matrix.v }}', '${{ runner.temp }}/solv', '${{ runner.temp }}/acmex', 4);
       - id: build
-        name: Tao bo giai con thieu
-        run: bash src/nmpc/grid_job.sh build
+        run: |
+          python3 - "$RUNNER_TEMP/prep.json" "$RUNNER_TEMP/solv" >> "$GITHUB_OUTPUT" <<'PY'
+          import json, os, sys
+          p = json.load(open(sys.argv[1])); p = [p] if isinstance(p, dict) else p
+          codes = []
+          for r in p:
+              if r['code'] not in codes: codes.append(r['code'])
+          for i, c in enumerate(codes):
+              if os.path.exists(os.path.join(sys.argv[2], c, 'ok')): print(f'ok{i+1}=1')
+          PY
+          cat "$GITHUB_OUTPUT"
       - if: steps.prep.outputs.c1 != '' && steps.r1.outputs.cache-hit != 'true' && steps.build.outputs.ok1 == '1'
         uses: actions/cache/save@v4
         with:
@@ -220,7 +242,16 @@ jobs:
           path: ${{ runner.temp }}/solv/${{ steps.prep.outputs.c7 }}
           key: acsolv-v1-${{ env.SOLVHASH }}-${{ steps.prep.outputs.c7 }}
       - name: ${{ matrix.m }} vung ${{ matrix.w }}, ${{ matrix.c }}C, ${{ matrix.T }} degC, k so ${{ matrix.ks }} (song song)
-        run: timeout $(( HARDSTOP - $(date +%s) )) bash src/nmpc/grid_job.sh run || echo "run ket thuc ma $?"
+        timeout-minutes: 325
+        continue-on-error: true
+        uses: matlab-actions/run-command@v2
+        with:
+          command: >
+            cd(fullfile('${{ runner.temp }}', 'mwork')); addpath('${{ github.workspace }}/src/dfn'); addpath('${{ github.workspace }}/src/nmpc'); addpath('${{ github.workspace }}/src/ekf');
+            grid_run_all(${{ matrix.w }}, ${{ matrix.c }}, ${{ matrix.T }}, '${{ matrix.v }}', [${{ matrix.ks }}], '${{ github.workspace }}/results/grid',
+            struct('wall', 'greedy', 'margin_s', 900, 'min_start_s', 1800, 'deadline', ${{ env.DEADLINE }}, 'ckpt', true,
+            'resume_dir', '${{ github.workspace }}/results/resume', 'ckpt_after', ${{ inputs.ckpt_after }},
+            'solver_root', '${{ runner.temp }}/solv', 'mex_dir', '${{ runner.temp }}/acmex', 'steps_ks', [${{ inputs.steps_ks }}]), 4);
       - uses: actions/upload-artifact@v4
         if: always()
         with:

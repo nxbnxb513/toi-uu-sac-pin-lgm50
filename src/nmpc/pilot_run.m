@@ -135,6 +135,7 @@ end
 if ~isempty(gopt.solver_root)
     bo.codegen_dir = fullfile(gopt.solver_root, steps_code(bo.num_steps), 'c_generated_code');
     bo.reuse = true; bo.mex_dir = gopt.mex_dir;
+    bo.name = ['rom_nmpc_' strrep(steps_code(bo.num_steps), '-', '_')];   % = grid_build.m
 end
 fprintf('So buoc IRK moi khoang (GD-87): %s (tong %d)\n', mat2str(bo.num_steps), sum(bo.num_steps .* ones(1, cfgn.N)));
 C = nmpc_build(rom, par, bo);

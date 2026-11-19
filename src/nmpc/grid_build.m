@@ -14,6 +14,8 @@ code = steps_code(bo.num_steps);
 d = fullfile(root, code);
 if ~exist(d, 'dir'), mkdir(d); end
 bo.codegen_dir = fullfile(d, 'c_generated_code');
+bo.name = ['rom_nmpc_' strrep(code, '-', '_')];   % ten rieng => thu vien .so rieng, nhieu bo giai cung luc
+setenv('LD_RUN_PATH', bo.codegen_dir);          % RUNPATH cua MEX tro dung thu muc bo giai nay
 if ~isempty(mex_dir), bo.mex_dir = mex_dir; end
 cd(d);
 C = nmpc_build(rom, par, bo);
