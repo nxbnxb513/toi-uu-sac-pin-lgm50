@@ -91,10 +91,12 @@ so.levenberg_marquardt = opt.lm;
 so.print_level = 0;
 ocp.solver_options = so;
 ocp.code_gen_options.code_export_directory = opt.codegen_dir;
-ocp.code_gen_options.json_file = fullfile(fileparts(opt.codegen_dir), [opt.name '_ocp.json']);
 sco = struct();
 if ~isempty(opt.mex_dir), sco.output_dir = opt.mex_dir; end
-if opt.reuse, sco.generate = false; sco.build = false; sco.compile_mex_wrapper = false; sco.check_reuse_possible = true; end
+% check_reuse_possible = false: phep so hash cua acados v0.6.0 khac nhau giua hai phien MATLAB
+% voi cung OCP va khi khac thi goi compare_struct_to_json.m bi loi cu phap (run 44494960161);
+% bo giai dung lai chi theo khoa cache (ma nguon ROM/DFN/nmpc_build + vector so buoc IRK, GD-98).
+if opt.reuse, sco.generate = false; sco.build = false; sco.compile_mex_wrapper = false; sco.check_reuse_possible = false; end
 
 t0 = tic;
 C.solver = AcadosOcpSolver(ocp, sco);
