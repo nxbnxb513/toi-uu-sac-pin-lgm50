@@ -7,6 +7,7 @@
 # Bien moi truong: VAR W C T KS (vd "1 2 3") RES RESUME SROOT MEXDIR DEADLINE NSLOT MIN_START
 #                  MARGIN STEPS_KS (JSON hoac rong) CKPT_AFTER (Inf hoac so lan giai)
 set -uo pipefail
+# MATLAB cho repo cong khai: dung matlab-batch (setup-matlab cai, tu lay giay phep batch); 'matlab -batch' tran bi loi giay phep
 SRC="$GITHUB_WORKSPACE/src"
 ADDP="addpath('$SRC/dfn'); addpath('$SRC/nmpc'); addpath('$SRC/ekf');"
 STEPS="${STEPS_KS:-}"; [ -z "$STEPS" ] && STEPS="[]"
@@ -17,7 +18,7 @@ ml() {  # ml <thu muc lam viec> <thu muc bo giai (LD_LIBRARY_PATH) hoac -> <log>
   local wd="$1" sd="$2" log="$3" cmd="$4" ldp="$LD_LIBRARY_PATH"
   mkdir -p "$wd"
   if [ "$sd" != "-" ]; then mkdir -p "$sd"; ldp="$sd:$LD_LIBRARY_PATH"; fi
-  ( cd "$wd" && LD_LIBRARY_PATH="$ldp" LD_RUN_PATH="${sd#-}" matlab -singleCompThread -batch "$cmd" ) > "$log" 2>&1
+  ( cd "$wd" && LD_LIBRARY_PATH="$ldp" LD_RUN_PATH="${sd#-}" matlab-batch -singleCompThread "$cmd" ) > "$log" 2>&1
 }
 
 case "$1" in
