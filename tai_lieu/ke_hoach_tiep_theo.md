@@ -317,3 +317,8 @@ Với mỗi trường hợp (vùng sạc × mức dòng CCCV × nhiệt độ m�
 - **Chạy tiếp (lặp tới khi hết):** khi cả hai run xong, bấm lại với mọi run đã chạy:
   `gh workflow run grid.yml -f methods='["nmpc","ekf"]' -f tag=full-2 -f prev_runs='[44595405408,44595428301]'`
   (plan bỏ qua trường hợp đã có CSV, xếp job chạy tiếp cho trường hợp có `ckpt_*.mat`, còn lại chạy mới; mỗi run ≤ 256 job). Đợt sau thêm run ID vào `prev_runs`. Báo cáo gộp: artifact `grid-report-<tag>` (`grid_all.csv`, `grid_summary.md`, `remaining.json` = việc còn lại).
+
+### 20/11/2026 — trạng thái lưới
+- Run 44595405408 (nmpc) xong: 897/945 trường hợp (799 ok, 2 ok_tol, 30 ok_violation, 3 failed, 63 infeasible); 48 trường hợp lưu dở (17 job).
+- Đợt 2 nmpc: run 44774406780 (`methods=["nmpc"]`, `prev_runs=[44595405408]`).
+- Run 44595428301 (ekf) đang chạy; 2 job failure (w2 c1 T10, w10 c0.3 T10) — xem log khi run xong. Đợt tiếp ekf: `prev_runs=[44595428301]`, `methods=["ekf"]`.
