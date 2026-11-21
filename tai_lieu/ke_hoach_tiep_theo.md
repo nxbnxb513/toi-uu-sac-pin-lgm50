@@ -322,3 +322,8 @@ Với mỗi trường hợp (vùng sạc × mức dòng CCCV × nhiệt độ m�
 - Run 44595405408 (nmpc) xong: 897/945 trường hợp (799 ok, 2 ok_tol, 30 ok_violation, 3 failed, 63 infeasible); 48 trường hợp lưu dở (17 job).
 - Đợt 2 nmpc: run 44774406780 (`methods=["nmpc"]`, `prev_runs=[44595405408]`).
 - Run 44595428301 (ekf) đang chạy; 2 job failure (w2 c1 T10, w10 c0.3 T10) — xem log khi run xong. Đợt tiếp ekf: `prev_runs=[44595428301]`, `methods=["ekf"]`.
+
+### 21/11/2026 — trạng thái lưới
+- nmpc ĐỦ 945/945 (run 44595405408 + 44774406780): 846 ok, 2 ok_tol, 31 ok_violation, 3 failed, 63 infeasible.
+- ekf đợt 1 (44595428301): 787/945 (597 ok, 80 ok_tol, 47 ok_violation, 3 failed, 60 infeasible); 158 trường hợp còn lại (41 job), trong đó 2 job mất runner ("lost communication", có thể do thiếu RAM khi chạy 4 worker).
+- Đợt 2 ekf: run 44850137935 (`prev_runs=[44595428301]`). Báo cáo gộp cuối: `prev_runs=[44595405408,44774406780,44595428301,44850137935]`.
