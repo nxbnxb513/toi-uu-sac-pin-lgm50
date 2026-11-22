@@ -327,3 +327,9 @@ Với mỗi trường hợp (vùng sạc × mức dòng CCCV × nhiệt độ m�
 - nmpc ĐỦ 945/945 (run 44595405408 + 44774406780): 846 ok, 2 ok_tol, 31 ok_violation, 3 failed, 63 infeasible.
 - ekf đợt 1 (44595428301): 787/945 (597 ok, 80 ok_tol, 47 ok_violation, 3 failed, 60 infeasible); 158 trường hợp còn lại (41 job), trong đó 2 job mất runner ("lost communication", có thể do thiếu RAM khi chạy 4 worker).
 - Đợt 2 ekf: run 44850137935 (`prev_runs=[44595428301]`). Báo cáo gộp cuối: `prev_runs=[44595405408,44774406780,44595428301,44850137935]`.
+
+### 22/11/2026 — lưới gần đủ, tổng hợp
+- nmpc 945/945; ekf 932/945 (đợt 3: 44988511612). Đợt 4 ekf (13 trường hợp còn lại, w5/w9 dòng nhỏ): run 45019612835, `prev_runs=[44595428301,44850137935,44988511612]`.
+- Báo cáo gộp cục bộ: `python3 src/nmpc/grid.py report <gmeta của mọi run> tai_lieu/ket_qua_luoi` (thêm cột SEI/LAM/Li chết, thống kê bộ giải); số dùng trong slide: `src/nmpc/grid_stats.py` → `tai_lieu/ket_qua_luoi/thong_ke.txt`.
+- Kết quả chính (nmpc, k=∞): giảm ở 124/128 trường hợp đạt, trung vị 4,4 %, max 68 % (0→20 %, 1C, 10 °C). Lớn ở 1C–10 °C (pin mát hơn) và 0,3C–40 °C (sạc nhanh hơn CCCV). Mất Li vĩnh viễn: SEI 69 %, LAM 30 %, Li chết 1,5 %.
+- Khi đợt 4 xong: tải gmeta của 45019612835, chạy lại report + grid_stats, cập nhật slide (bảng trạng thái EKF, Phụ lục E, hiệu năng bộ giải).

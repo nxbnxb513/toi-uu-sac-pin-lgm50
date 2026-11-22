@@ -110,6 +110,9 @@ def report(root, outdir):
             'cccv_viol_V_mV', 'cccv_viol_eta_mV', 'cccv_viol_T_K', 'cccv_Tmax_C', 'cccv_eta_min_mV', 'aging_source',
             'n_solves', 'n_fail', 'solve_mean_ms', 'case_wall_s', 'prep_wall_s', 'closed_loop_wall_s', 'cl_wall_total_s', 'n_resume',
             'num_steps', 'job_wall_s',
+            'cccv_perm_sei_mAh', 'cccv_perm_dead_mAh', 'cccv_perm_lam_mAh', 'nmpc_perm_sei_mAh', 'nmpc_perm_dead_mAh',
+            'nmpc_perm_lam_mAh', 'cccv_pl_peak_mAh', 'nmpc_pl_peak_mAh',
+            'n_status0', 'n_status2', 'sqp_mean', 'solve_median_ms', 'solve_p95_ms', 'build_s',
             'est_soc_rmse_pct', 'est_eta_rmse_mV', 'src']
     out = []
     for k in keys:
