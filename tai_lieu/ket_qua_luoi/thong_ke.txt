@@ -1,7 +1,7 @@
-so truong hop: {'ekf': 932, 'nmpc': 945}
+so truong hop: {'ekf': 945, 'nmpc': 945}
 status  failed  infeasible   ok  ok_tol  ok_violation
 method                                               
-ekf          3          60  673     145            51
+ekf          3          60  674     157            51
 nmpc         3          63  846       2            31
 
 [thanh phan mat Li, NMPC k=inf dat, tong moi vung]
@@ -14,12 +14,12 @@ giam dead (%) theo C,T: {(0.3, 10): 0.7, (0.3, 25): 18.6, (0.3, 40): 30.1, (0.5,
 [bo giai]
 nmpc lan giai 156760 hoi tu 117154 (75 %) status2 39606 (25 %) that bai 0 SQP TB 0.9-4.1 (trung vi 1.9) giai trung vi/p95 (s) 14.0 86.2 TB (s) 30.5 sinh ma (s) 0-2
    that bai o: {}
-ekf lan giai 151457 hoi tu 80274 (53 %) status2 71006 (47 %) that bai 177 SQP TB 1.1-4.1 (trung vi 2.8) giai trung vi/p95 (s) 19.2 82.9 TB (s) 36.2 sinh ma (s) 0-1
+ekf lan giai 156884 hoi tu 82244 (52 %) status2 74463 (47 %) that bai 177 SQP TB 1.1-4.1 (trung vi 2.9) giai trung vi/p95 (s) 19.3 83.3 TB (s) 37.2 sinh ma (s) 0-1
    that bai o: {('0-100', 0.3, 10): 5.0, ('0-100', 0.3, 25): 1.0, ('0-100', 0.3, 40): 1.0, ('0-100', 0.5, 10): 1.0, ('0-100', 0.5, 25): 5.0, ('0-100', 0.5, 40): 11.0, ('0-100', 1.0, 25): 1.0, ('0-100', 1.0, 40): 44.0, ('20-100', 0.3, 10): 2.0, ('20-100', 0.3, 25): 2.0, ('20-100', 0.3, 40): 7.0, ('20-100', 0.5, 10): 5.0, ('20-100', 0.5, 25): 5.0, ('20-100', 0.5, 40): 4.0, ('20-100', 1.0, 25): 10.0, ('20-100', 1.0, 40): 22.0, ('40-100', 0.3, 10): 2.0, ('40-100', 0.3, 40): 1.0, ('40-100', 0.5, 25): 7.0, ('40-100', 0.5, 40): 9.0, ('40-100', 1.0, 25): 6.0, ('40-100', 1.0, 40): 7.0, ('60-100', 0.3, 10): 1.0, ('60-100', 0.3, 40): 10.0, ('60-100', 0.5, 25): 2.0, ('60-100', 0.5, 40): 6.0}
 
 [EKF so voi NMPC]
-cap cung dat 815 lech trung vi 0.03 |lech|<1: 0.861 lech min/max -6.1 7.6
+cap cung dat 828 lech trung vi 0.03 |lech|<1: 0.856 lech min/max -6.1 7.6
 NMPC dat, EKF khong: 20 {'ok_violation': 20} vuot V (mV) 2.02 4.56 eta vi pham 0
-RMSE SOC TB/max 0.16 0.78 RMSE eta TB/max 0.73 3.64
-ok_tol 145 thieu 0.05 0.38
+RMSE SOC TB/max 0.16 0.78 RMSE eta TB/max 0.72 3.64
+ok_tol 157 thieu 0.05 0.38
 EKF k=inf giam: trung vi 5.1
